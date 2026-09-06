@@ -108,12 +108,20 @@ const PatientIntake = {
       }
     });
 
-    const langNames = {
-      en: "English", hi: "हिन्दी", kn: "ಕನ್ನಡ",
-      ta: "தமிழ்", te: "తెలుగు", ml: "മലയാളം",
-      mr: "मराठी", bn: "বাংলা", gu: "ગુજરાતી", pa: "ਪੰਜਾਬੀ"
+    const nativeLangConfirm = {
+      en: "English language selected. Welcome to MediKiosk.",
+      hi: "हिन्दी भाषा चुनी गई। मेडीकियोस्क में आपका स्वागत है।",
+      kn: "ಕನ್ನಡ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ. ಮೆಡಿಕಿಯೋಸ್ಕ್‌ಗೆ ಸುಸ್ವಾಗತ.",
+      ta: "தமிழ் மொழி தேர்ந்தெடுக்கப்பட்டது. மெடிகியோஸ்கிற்கு வரவேற்கிறோம்.",
+      te: "తెలుగు భాష ఎంపిక చేయబడింది. మెడికియోస్క్‌కు స్వాగతం.",
+      ml: "മലയാളം ഭാഷ തിരഞ്ഞെടുത്തു. മെഡികിയോസ്കിലേക്ക് സ്വാഗതം.",
+      mr: "मराठी भाषा निवडली आहे. मेडीकियोस्क मध्ये आपले स्वागत आहे.",
+      bn: "বাংলা ভাষা নির্বাচন করা হয়েছে। মেডিকিয়স্কে আপনাকে স্বাগতম।",
+      gu: "ગુજરાતી ભાષા પસંદ કરવામાં આવી છે. મેડીકિયોસ્કમાં આપનું સ્વાગત છે.",
+      pa: "ਪੰਜਾਬੀ ਭਾਸ਼ਾ ਚੁਣੀ ਗਈ ਹੈ। ਮੈਡੀਕਿਓਸਕ ਵਿੱਚ ਤੁਹਾਡਾ ਸੁਆਗਤ ਹੈ।"
     };
-    SpeechManager.speakText(`Language selected: ${langNames[lang] || lang}`, lang);
+    const confirmMsg = nativeLangConfirm[lang] || `Language selected: ${lang}`;
+    SpeechManager.speakText(confirmMsg, lang);
   },
 
   handleConsentNext() {
@@ -121,7 +129,20 @@ const PatientIntake = {
     const wrapper = document.getElementById("consent-checkbox-wrapper");
     
     if (consentBox && !consentBox.checked) {
-      SpeechManager.speakText("Please tap the agreement checkbox to confirm your consent before proceeding.", this.language);
+      const nativeConsentNotice = {
+        en: "Please tap the agreement checkbox to confirm your consent before proceeding.",
+        hi: "कृपया आगे बढ़ने से पहले सहमति के डिब्बे पर टिक करें।",
+        kn: "ಮುಂದುವರಿಯುವ ಮೊದಲು ದಯವಿಟ್ಟು ಒಪ್ಪಿಗೆ ಬಾಕ್ಸ್ ಒತ್ತಿ.",
+        ta: "தொடர்வதற்கு முன் தயவுசெய்து ஒப்புதல் பெட்டியைத் தொடவும்.",
+        te: "కొనసాగడానికి ముందు దయచేసి అంగీకార పెట్టెను నొక్కండి.",
+        ml: "തുടങ്ങുന്നതിന് മുമ്പ് ദയവായി സമ്മത ബോക്സ് അമർത്തുക.",
+        mr: "पुढे जाण्यापूर्वी कृपया संमती बॉक्सवर टिक करा.",
+        bn: "এগিয়ে যাওয়ার আগে অনুগ্রহ করে সম্মতি বক্সে টিক দিন।",
+        gu: "આગળ વધતા પહેલાં કૃપા કરીને સંમતિ બોક્સ પર ટીક કરો.",
+        pa: "ਅੱਗੇ ਵਧਣ ਤੋਂ ਪਹਿਲਾਂ ਕਿਰਪਾ ਕਰਕੇ ਸਹਿਮਤੀ ਵਾਲੇ ਬਕਸੇ 'ਤੇ ਕਲਿੱਕ ਕਰੋ।"
+      };
+      const msg = nativeConsentNotice[this.language] || nativeConsentNotice["en"];
+      SpeechManager.speakText(msg, this.language);
       if (wrapper) {
         wrapper.style.borderColor = "#ef4444";
         wrapper.style.backgroundColor = "#fef2f2";
@@ -231,7 +252,20 @@ const PatientIntake = {
       }
     }
 
-    SpeechManager.speakText(`Pain severity ${this.painLevel} selected`, this.language);
+    const nativePainConfirm = {
+      en: `Pain level ${this.painLevel} selected`,
+      hi: `दर्द का स्तर ${this.painLevel} चुना गया`,
+      kn: `ನೋವಿನ ಪ್ರಮಾಣ ${this.painLevel} ಆಯ್ಕೆಮಾಡಲಾಗಿದೆ`,
+      ta: `வலி அளவு ${this.painLevel} தேர்ந்தெடுக்கப்பட்டது`,
+      te: `నొప్పి స్థాయి ${this.painLevel} ఎంపిక చేయబడింది`,
+      ml: `വേദനയുടെ അളവ് ${this.painLevel} തിരഞ്ഞെടുത്തു`,
+      mr: `वेदनेचा स्तर ${this.painLevel} निवडला आहे`,
+      bn: `ব্যথার মাত্রা ${this.painLevel} নির্বাচিত হয়েছে`,
+      gu: `દુખાવાનું પ્રમાણ ${this.painLevel} પસંદ કરવામાં આવ્યું`,
+      pa: `ਦਰਦ ਦਾ ਪੱਧਰ ${this.painLevel} ਚੁਣਿਆ ਗਿਆ`
+    };
+    const painMsg = nativePainConfirm[this.language] || nativePainConfirm["en"];
+    SpeechManager.speakText(painMsg, this.language);
   },
 
   handleComplaintNext() {
@@ -279,7 +313,20 @@ const PatientIntake = {
           </div>
         `;
       }
-      SpeechManager.speakText("Medical report uploaded and digitized successfully.", this.language);
+      const nativeDocSuccess = {
+        en: "Medical report uploaded and digitized successfully.",
+        hi: "मेडिकल रिपोर्ट सफलतापूर्वक अपलोड और डिजिटाइज़ कर दी गई है।",
+        kn: "ವೈದ್ಯಕೀಯ ವರದಿ ಯಶಸ್ವಿಯಾಗಿ ಅಪ್‌ಲೋಡ್ ಆಗಿದೆ.",
+        ta: "மருத்துவ அறிக்கை வெற்றிகரமாக பதிவேற்றப்பட்டது.",
+        te: "వైద్య నివేదిక విజయవంతంగా అప్‌లోడ్ చేయబడింది.",
+        ml: "മെഡിക്കൽ റിപ്പോർട്ട് വിജയകരമായി അപ്‌ലോഡ് ചെയ്തു.",
+        mr: "वैद्यकीय अहवाल यशस्वीरित्या अपलोड झाला आहे.",
+        bn: "মেডিকেল রিপোর্ট সফলভাবে আপলোড হয়েছে।",
+        gu: "મેડિકલ રિપોર્ટ સફળતાપૂર્વક અપલોડ થઈ ગયો છે.",
+        pa: "ਮੈਡੀਕਲ ਰਿਪੋਰਟ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਈ ਹੈ।"
+      };
+      const docMsg = nativeDocSuccess[this.language] || nativeDocSuccess["en"];
+      SpeechManager.speakText(docMsg, this.language);
       setTimeout(() => this.startSocraticIntake(), 1600);
     } catch (err) {
       console.warn("Document OCR notice:", err.message);

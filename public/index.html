@@ -86,7 +86,7 @@
               <button class="btn-primary-action" onclick="PatientIntake.goToStep(2)">
                 <span data-i18n="begin_checkin">Begin Check-In</span> →
               </button>
-              <button class="btn-icon-round" onclick="SpeechManager.toggleSpeak('Welcome to MediKiosk. Please touch the Begin Check-In button on your screen.')" title="Listen / Mute Audio Preview">
+              <button class="btn-icon-round" onclick="SpeechManager.toggleSpeakForStep(1)" title="Listen / Mute Audio Preview">
                 🔊
               </button>
             </div>
@@ -110,7 +110,7 @@
             <h2 class="card-box-title" data-i18n="step_lang_title">Select Language</h2>
             <p class="card-box-subtitle" data-i18n="step_lang_sub">Choose your preferred language for voice and text intake</p>
           </div>
-          <button class="btn-icon-round" onclick="SpeechManager.toggleSpeak('Please choose your preferred language by tapping any box on the screen.')" title="Listen / Mute Audio">🔊</button>
+          <button class="btn-icon-round" onclick="SpeechManager.toggleSpeakForStep(2)" title="Listen / Mute Audio">🔊</button>
         </div>
 
         <div class="lang-grid" id="lang-selection-grid">
@@ -181,7 +181,7 @@
             <h2 class="card-box-title" data-i18n="step_consent_title">Patient Consent & Clinical Intake Terms</h2>
             <p class="card-box-subtitle" data-i18n="step_consent_sub">Ayushman Bharat Digital Mission (ABDM) & Hospital Safety Standards</p>
           </div>
-          <button class="btn-icon-round" onclick="SpeechManager.toggleSpeak('Please listen carefully to our safety guidelines. MediKiosk prepares your symptom summary for your attending doctor. Your doctor will personally examine you and write all prescriptions. Please tap the agreement box and touch Continue.')" title="Listen / Mute Consent Audio">🔊</button>
+          <button class="btn-icon-round" onclick="SpeechManager.toggleSpeakForStep(3)" title="Listen / Mute Consent Audio">🔊</button>
         </div>
 
         <div style="background:#faf8f5; border:1px solid var(--border-color); border-radius:var(--radius-md); padding:1.5rem; margin-bottom:1.5rem;">
@@ -325,7 +325,7 @@
             <h2 class="card-box-title" data-i18n="step_complaint_title">Chief Health Complaint</h2>
             <p class="card-box-subtitle" data-i18n="step_complaint_sub">What brings you to the clinic today?</p>
           </div>
-          <button class="btn-icon-round" onclick="SpeechManager.toggleSpeak('What health problem or pain brings you to the clinic today? Touch any number from 1 to 10 to indicate your pain level, or speak your symptoms.')" title="Listen / Mute Audio">🔊</button>
+          <button class="btn-icon-round" onclick="SpeechManager.toggleSpeakForStep(5)" title="Listen / Mute Audio">🔊</button>
         </div>
 
         <div style="margin-bottom:1.5rem;">
