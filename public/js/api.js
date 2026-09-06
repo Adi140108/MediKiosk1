@@ -53,12 +53,13 @@ const api = {
     return res.json();
   },
 
-  async startIntake(patientId, language = "en", isAttendant = false, attendantId = null) {
+  async startIntake(patientId, language = "en", isAttendant = false, attendantId = null, sessionId = null) {
     const res = await fetch(`${API_BASE}/intake/start`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         patient_id: patientId,
+        session_id: sessionId || null,
         language: language,
         is_attendant_assisted: isAttendant,
         attendant_id: attendantId

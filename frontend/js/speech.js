@@ -265,7 +265,7 @@ const SpeechManager = {
         btn.classList.add('is-playing');
         btn.classList.remove('is-muted');
         btn.title = "Audio Playing — Tap to Mute";
-      } else if (state === 'muted') {
+      } else if (state === 'muted' || this.isMuted) {
         btn.innerHTML = '🔇';
         btn.classList.remove('is-playing');
         btn.classList.add('is-muted');
@@ -282,19 +282,22 @@ const SpeechManager = {
   toggleSpeak(text, lang = null) {
     if (!this.synth) return false;
 
-    // If currently speaking, mute & stop audio
-    if (this.synth.speaking || this.isSpeaking) {
-      this.stopAllAudio();
+    if (this.isMuted) {
+      // User tapped while muted -> Unmute and speak
+      this.isMuted = false;
+      const toSpeak = text || this.lastSpokenText || "Welcome to MediKiosk.";
+      this.speakText(toSpeak, lang);
+      return true;
+    } else {
+      // User tapped while unmuted / playing -> Mute completely
       this.isMuted = true;
+      this.isSpeaking = false;
+      if (this.synth) {
+        this.synth.cancel();
+      }
       this.updateButtonStates('muted');
       return false;
     }
-
-    // Otherwise unmute and speak
-    this.isMuted = false;
-    const toSpeak = text || this.lastSpokenText || "Welcome to MediKiosk.";
-    this.speakText(toSpeak, lang);
-    return true;
   },
 
   stopAllAudio() {
@@ -302,15 +305,18 @@ const SpeechManager = {
       this.synth.cancel();
     }
     this.isSpeaking = false;
-    this.updateButtonStates('idle');
+    this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
   },
 
   speakText(text, lang = null) {
     if (!this.synth) return;
-    this.synth.cancel();
+    if (this.isMuted) {
+      this.updateButtonStates('muted');
+      return;
+    }
 
+    this.synth.cancel();
     this.lastSpokenText = text;
-    this.isMuted = false;
 
     const targetLang = lang || this.currentLanguage;
     const utterance = new SpeechSynthesisUtterance(text);
@@ -327,12 +333,12 @@ const SpeechManager = {
 
     utterance.onend = () => {
       this.isSpeaking = false;
-      this.updateButtonStates('idle');
+      this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
     };
 
     utterance.onerror = () => {
       this.isSpeaking = false;
-      this.updateButtonStates('idle');
+      this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
     };
 
     this.isSpeaking = true;

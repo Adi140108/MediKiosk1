@@ -176,6 +176,8 @@ async def get_patient_case_workspace(session_id: str):
 
 @router.post("/cases/{session_id}/reassign_department")
 @router.post("/sessions/{session_id}/reassign_department")
+@router.post("/cases/{session_id}/reassign")
+@router.post("/patient/{session_id}/reassign")
 def reassign_patient_department(
     session_id: str,
     target_department: str = Query(...),
@@ -188,7 +190,29 @@ def reassign_patient_department(
     target_dept_enum = queue_service.get_department_enum(target_department)
     queue_item = queue_service.repo.get_by_session_id(session_id)
     if not queue_item:
-        raise HTTPException(status_code=404, detail=f"No active queue item found for session {session_id}")
+        patient = patient_repo.get_patient_by_session(session_id)
+        draft_summary = intake_repo.get_draft_summary_by_session(session_id)
+        pat_id = patient.patient_id if patient else (draft_summary.patient_id if draft_summary else "unknown")
+        pat_name = patient.name if patient else "Patient"
+        pat_age = patient.age if patient else 45
+        pat_gender = patient.gender if patient else "MALE"
+        queue_item = PriorityQueueItem(
+            queue_id=f"q_{session_id}",
+            patient_id=pat_id,
+            session_id=session_id,
+            patient_name=pat_name,
+            age=pat_age,
+            gender=pat_gender,
+            arrival_time=datetime.now(timezone.utc),
+            assigned_department=target_dept_enum,
+            recommended_department=target_dept_enum,
+            status=QueueStatus.WAITING,
+            overall_severity=RedFlagSeverity.CRITICAL if target_dept_enum == DepartmentId.EMERGENCY else RedFlagSeverity.NONE,
+            severity_rank=0 if target_dept_enum == DepartmentId.EMERGENCY else 3,
+            priority_group=0 if target_dept_enum == DepartmentId.EMERGENCY else 1,
+            is_red_flag=True if target_dept_enum == DepartmentId.EMERGENCY else False,
+            chief_complaint_summary=draft_summary.chief_complaint if draft_summary else "Transferred patient"
+        )
 
     old_dept = queue_item.assigned_department or DepartmentId.UNSPECIFIED
     queue_item.assigned_department = target_dept_enum

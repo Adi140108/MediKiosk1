@@ -265,28 +265,56 @@
           <div class="clinical-comparison-grid">
             <!-- Left: Modern Clinical Intake -->
             <div class="clinical-pane">
-              <h4 style="font-size:1rem; font-weight:700; color:var(--brand-primary); margin-bottom:0.75rem; display:flex; align-items:center; gap:6px;">
-                <span>🩺</span> Modern Clinical Summary (HPI)
-              </h4>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                <h4 style="font-size:1rem; font-weight:700; color:var(--brand-primary); margin:0; display:flex; align-items:center; gap:6px;">
+                  <span>🩺</span> Modern Clinical Summary (HPI)
+                </h4>
+                <button type="button" id="btn-toggle-hpi-edit" class="btn-secondary-action" style="font-size:0.75rem; padding:0.25rem 0.65rem; border-color:#94a3b8; background:#f8fafc;" onclick="PhysicianDashboard.toggleHpiEdit()">
+                  ✏️ Edit Summary
+                </button>
+              </div>
               
-              <div style="margin-bottom:0.75rem;">
-                <strong style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Chief Complaint:</strong>
-                <p id="case-chief-complaint-text" style="font-weight:600; color:#1e293b; margin-top:0.2rem;"></p>
+              <!-- Display Mode -->
+              <div id="hpi-display-container">
+                <div style="margin-bottom:0.75rem;">
+                  <strong style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Chief Complaint:</strong>
+                  <p id="case-chief-complaint-text" style="font-weight:600; color:#1e293b; margin-top:0.2rem;"></p>
+                </div>
+
+                <div style="margin-bottom:0.75rem;">
+                  <strong style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">History of Present Illness:</strong>
+                  <p id="case-hpi-text" style="font-size:0.9rem; color:#334155; margin-top:0.2rem; line-height:1.5;"></p>
+                </div>
+
+                <div style="margin-bottom:0.75rem;">
+                  <strong style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Associated Symptoms & Progression:</strong>
+                  <p id="case-progression-text" style="font-size:0.875rem; color:#334155; margin-top:0.2rem;"></p>
+                </div>
+
+                <div>
+                  <strong style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Known Conditions / Medications:</strong>
+                  <p id="case-medical-history-text" style="font-size:0.875rem; color:#334155; margin-top:0.2rem;"></p>
+                </div>
               </div>
 
-              <div style="margin-bottom:0.75rem;">
-                <strong style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">History of Present Illness:</strong>
-                <p id="case-hpi-text" style="font-size:0.9rem; color:#334155; margin-top:0.2rem; line-height:1.5;"></p>
-              </div>
-
-              <div style="margin-bottom:0.75rem;">
-                <strong style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Associated Symptoms & Progression:</strong>
-                <p id="case-progression-text" style="font-size:0.875rem; color:#334155; margin-top:0.2rem;"></p>
-              </div>
-
-              <div>
-                <strong style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Known Conditions / Medications:</strong>
-                <p id="case-medical-history-text" style="font-size:0.875rem; color:#334155; margin-top:0.2rem;"></p>
+              <!-- Inline Edit Form (Hidden by default) -->
+              <div id="hpi-edit-form-container" style="display:none; background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:var(--radius-sm); padding:0.85rem; margin-top:0.5rem;">
+                <div style="margin-bottom:0.65rem;">
+                  <label class="form-label" style="font-size:0.75rem; font-weight:700;">Chief Complaint</label>
+                  <input type="text" id="edit-chief-complaint-input" class="form-input-field" style="font-size:0.85rem; padding:0.4rem 0.65rem; background:white;">
+                </div>
+                <div style="margin-bottom:0.65rem;">
+                  <label class="form-label" style="font-size:0.75rem; font-weight:700;">History of Present Illness (HPI)</label>
+                  <textarea id="edit-hpi-narrative-input" class="form-textarea-field" rows="3" style="font-size:0.85rem; padding:0.4rem 0.65rem; background:white;"></textarea>
+                </div>
+                <div style="margin-bottom:0.65rem;">
+                  <label class="form-label" style="font-size:0.75rem; font-weight:700;">Associated Symptoms</label>
+                  <input type="text" id="edit-associated-symptoms-input" class="form-input-field" style="font-size:0.85rem; padding:0.4rem 0.65rem; background:white;" placeholder="e.g. Nausea, fatigue">
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.75rem;">
+                  <button type="button" class="btn-secondary-action" style="font-size:0.75rem; padding:0.25rem 0.65rem;" onclick="PhysicianDashboard.toggleHpiEdit(false)">Cancel</button>
+                  <button type="button" class="btn-primary-action" style="font-size:0.75rem; padding:0.25rem 0.75rem;" onclick="PhysicianDashboard.saveHpiInlineEdit()">✓ Save Changes</button>
+                </div>
               </div>
             </div>
 

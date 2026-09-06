@@ -363,14 +363,29 @@ const PhysicianDashboard = {
     if (qaList) {
       if (questions && questions.length > 0) {
         qaList.innerHTML = questions.map((q, idx) => {
-          const ans = answers.find(a => a.question_id === q.question_id);
+          const ans = answers.find(a => a.question_id === q.question_id || a.sequence === q.sequence);
+          const ansVal = ans ? (ans.answer || ans.normalized_answer || ans.original_answer || ans.answer_text) : null;
+          const isAttendant = ans && ans.source_type === "ATTENDANT";
+          const attendantBadge = isAttendant ? '<span class="gap-pill" style="font-size:0.7rem; color:#92400e; background:#fef3c7; border-color:#fde68a;">Attendant Assisted</span>' : '';
+          
+          let ansBody = '<span style="color:#94a3b8; font-style:italic;">Pending patient response...</span>';
+          if (ansVal) {
+            ansBody = `
+              <div style="font-size:0.875rem; color:#1e293b; font-weight:500;">
+                "${ansVal}"
+              </div>
+              ${(ans.original_answer && ans.original_answer !== ansVal) ? `<div style="font-size:0.75rem; color:#64748b; margin-top:2px;">Original utterance: "${ans.original_answer}" (${ans.original_language || 'Native'})</div>` : ''}
+            `;
+          }
+
           return `
             <div style="margin-bottom:0.85rem; padding-bottom:0.75rem; border-bottom:1px solid #f1ece4;">
-              <div style="font-weight:600; font-size:0.875rem; color:var(--brand-primary); margin-bottom:0.2rem;">
-                Q${idx + 1}: ${q.question}
+              <div style="font-weight:600; font-size:0.875rem; color:var(--brand-primary); margin-bottom:0.25rem; display:flex; justify-content:space-between; align-items:center;">
+                <span>Q${idx + 1}: ${q.question}</span>
+                ${attendantBadge}
               </div>
-              <div style="background:#f8fafc; border-left:3px solid var(--brand-primary); padding:0.4rem 0.65rem; border-radius:0 4px 4px 0; font-size:0.85rem; color:#1e293b;">
-                <strong>Answer:</strong> "${ans ? ans.answer_text : 'Pending'}"
+              <div style="background:#f8fafc; border-left:3px solid var(--brand-primary); padding:0.5rem 0.75rem; border-radius:0 6px 6px 0;">
+                ${ansBody}
               </div>
             </div>
           `;
@@ -415,9 +430,18 @@ const PhysicianDashboard = {
       }
     }
 
-    // 8. Decision Form Pre-fill
+    // 8. Decision Form Pre-fill & Inline Edit Inputs
     this.originalRecommendedDept = routing.recommended_department || "general-medicine";
     this.originalRecommendedPriority = red_flag.overall_severity || "NONE";
+
+    const editCc = document.getElementById("edit-chief-complaint-input");
+    if (editCc) editCc.value = draft_summary.chief_complaint || "";
+
+    const editHpi = document.getElementById("edit-hpi-narrative-input");
+    if (editHpi) editHpi.value = draft_summary.hpi_narrative || "";
+
+    const editSym = document.getElementById("edit-associated-symptoms-input");
+    if (editSym) editSym.value = (draft_summary.associated_symptoms || []).join(", ");
 
     const summaryEdit = document.getElementById("physician-summary-edit");
     if (summaryEdit) {
@@ -469,10 +493,13 @@ const PhysicianDashboard = {
   },
 
   openTransferModal() {
-    if (!this.currentSessionId) {
+    const targetSession = this.currentSessionId || (this.currentPatientData && (this.currentPatientData.session_id || this.currentPatientData.queue_item?.session_id));
+    if (!targetSession) {
       alert("Please select or open a patient case first.");
       return;
     }
+    this.currentSessionId = targetSession;
+
     const modal = document.getElementById("transfer-patient-modal");
     if (!modal) return;
     const deptSelect = document.getElementById("transfer-target-dept");
@@ -491,20 +518,17 @@ const PhysicianDashboard = {
 
   async submitDepartmentTransfer(e) {
     if (e) e.preventDefault();
-    if (!this.currentSessionId) {
+    const targetSession = this.currentSessionId || (this.currentPatientData && (this.currentPatientData.session_id || this.currentPatientData.queue_item?.session_id));
+    if (!targetSession) {
       alert("No active patient case selected.");
       return;
     }
+    this.currentSessionId = targetSession;
 
     const targetDept = document.getElementById("transfer-target-dept").value;
-    const priority = document.getElementById("transfer-priority-select").value;
-    const physicianId = document.getElementById("transfer-physician-id").value.trim() || "dr_sharma_cardio";
-    const reason = document.getElementById("transfer-reason-input").value.trim();
-
-    if (!reason) {
-      alert("Please provide a clinical rationale for the department transfer.");
-      return;
-    }
+    const priority = document.getElementById("transfer-priority-select")?.value || "HIGH";
+    const physicianId = document.getElementById("transfer-physician-id")?.value.trim() || "dr_sharma_cardio";
+    const reason = document.getElementById("transfer-reason-input")?.value.trim() || "Clinical specialist reassignment";
 
     const submitBtn = document.getElementById("btn-submit-transfer");
     if (submitBtn) {
@@ -550,20 +574,26 @@ const PhysicianDashboard = {
   },
 
   handleDirectReassign(sessionId) {
-    this.currentSessionId = sessionId;
+    if (sessionId) {
+      this.currentSessionId = sessionId;
+    }
     this.openTransferModal();
   },
 
   async escalateToEmergency(sessionId) {
-    const targetSession = sessionId || this.currentSessionId;
-    if (!targetSession) return;
+    const targetSession = sessionId || this.currentSessionId || (this.currentPatientData && (this.currentPatientData.session_id || this.currentPatientData.queue_item?.session_id));
+    if (!targetSession) {
+      alert("Please select or open a patient case first.");
+      return;
+    }
+    this.currentSessionId = targetSession;
 
-    if (!confirm("🚨 IMMEDIATE EMERGENCY ESCALATION\n\nAre you sure you want to flag this patient for Immediate Emergency Priority and move to the Emergency Department Queue?")) {
+    if (!confirm("🚨 IMMEDIATE EMERGENCY ESCALATION\n\nAre you sure you want to flag this patient for Immediate Emergency Priority and move them to the Emergency Department Queue?")) {
       return;
     }
 
     try {
-      await api.reassignDepartment(targetSession, "emergency", "attending_physician", "Emergency escalation by physician");
+      await api.reassignDepartment(targetSession, "emergency", "dr_sharma_cardio", "Immediate Emergency Escalation by physician");
       alert("🚨 Patient successfully escalated to Emergency / Trauma Department queue.");
       this.showQueueView();
     } catch (err) {
@@ -631,6 +661,15 @@ const PhysicianDashboard = {
       };
 
       await api.recordPhysicianDecision(this.currentSessionId, payload);
+
+      if (isDeptChanged) {
+        try {
+          await api.reassignDepartment(this.currentSessionId, dept, physicianId, overrideReason);
+        } catch (reassignErr) {
+          console.debug("Reassignment sync note:", reassignErr);
+        }
+      }
+
       alert("✓ Clinical record successfully finalized, signed, and logged to audit trail.");
       this.showQueueView();
     } catch (err) {
@@ -639,5 +678,50 @@ const PhysicianDashboard = {
       btn.disabled = false;
       btn.innerText = "✓ Confirm & Sign Record";
     }
+  },
+
+  toggleHpiEdit(show) {
+    const disp = document.getElementById("hpi-display-container");
+    const editForm = document.getElementById("hpi-edit-form-container");
+    const toggleBtn = document.getElementById("btn-toggle-hpi-edit");
+
+    const isShowing = editForm && editForm.style.display !== "none";
+    const nextState = show !== undefined ? show : !isShowing;
+
+    if (disp) disp.style.display = nextState ? "none" : "block";
+    if (editForm) editForm.style.display = nextState ? "block" : "none";
+    if (toggleBtn) toggleBtn.innerText = nextState ? "✕ Close Edit" : "✏️ Edit Summary";
+  },
+
+  saveHpiInlineEdit() {
+    const cc = document.getElementById("edit-chief-complaint-input")?.value.trim() || "";
+    const hpi = document.getElementById("edit-hpi-narrative-input")?.value.trim() || "";
+    const symStr = document.getElementById("edit-associated-symptoms-input")?.value.trim() || "";
+
+    // Update display fields
+    const complaintText = document.getElementById("case-chief-complaint-text");
+    if (complaintText) complaintText.innerText = cc || "No chief complaint recorded.";
+
+    const hpiText = document.getElementById("case-hpi-text");
+    if (hpiText) hpiText.innerText = hpi || "No extended narrative recorded.";
+
+    const progText = document.getElementById("case-progression-text");
+    if (progText) progText.innerText = symStr || "None reported.";
+
+    // Sync with decision textarea
+    const summaryEdit = document.getElementById("physician-summary-edit");
+    if (summaryEdit) {
+      summaryEdit.value = cc ? `${cc}. ${hpi}` : hpi;
+    }
+
+    // Update local cache
+    if (this.currentPatientData) {
+      if (!this.currentPatientData.draft_summary) this.currentPatientData.draft_summary = {};
+      this.currentPatientData.draft_summary.chief_complaint = cc;
+      this.currentPatientData.draft_summary.hpi_narrative = hpi;
+      this.currentPatientData.draft_summary.associated_symptoms = symStr ? symStr.split(",").map(s => s.trim()) : [];
+    }
+
+    this.toggleHpiEdit(false);
   }
 };

@@ -13,8 +13,16 @@ class IntakeRepository(BaseRepository):
     def get_questions_by_session(self, session_id: str) -> List[QuestionItem]:
         all_q = self.list_docs("questions")
         session_q = [q for q in all_q if q.get("session_id") == session_id]
-        session_q.sort(key=lambda x: x.get("sequence", 0))
-        return [QuestionItem.model_validate(q) for q in session_q]
+        seen = {}
+        for q in session_q:
+            qid = q.get("question_id")
+            if qid:
+                seen[qid] = q
+            else:
+                seen[str(len(seen))] = q
+        deduped = list(seen.values())
+        deduped.sort(key=lambda x: x.get("sequence", 0))
+        return [QuestionItem.model_validate(q) for q in deduped]
 
     def save_answer(self, answer: AnswerItem) -> AnswerItem:
         self.set_doc("answers", answer.answer_id, answer.model_dump())
@@ -23,8 +31,16 @@ class IntakeRepository(BaseRepository):
     def get_answers_by_session(self, session_id: str) -> List[AnswerItem]:
         all_a = self.list_docs("answers")
         session_a = [a for a in all_a if a.get("session_id") == session_id]
-        session_a.sort(key=lambda x: x.get("sequence", 0))
-        return [AnswerItem.model_validate(a) for a in session_a]
+        seen = {}
+        for a in session_a:
+            aid = a.get("answer_id") or a.get("question_id")
+            if aid:
+                seen[aid] = a
+            else:
+                seen[str(len(seen))] = a
+        deduped = list(seen.values())
+        deduped.sort(key=lambda x: x.get("sequence", 0))
+        return [AnswerItem.model_validate(a) for a in deduped]
 
     def save_context_state(self, session_id: str, context: PatientContextState) -> PatientContextState:
         self.set_doc("intake_contexts", session_id, context.model_dump())

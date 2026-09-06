@@ -303,12 +303,21 @@ const PatientIntake = {
     this.goToStep(7);
 
     try {
+      if (!this.currentSessionId && this.currentPatientId) {
+        this.currentSessionId = `sess_${this.currentPatientId}_${Date.now()}`;
+      }
+
       const res = await api.startIntake(
         this.currentPatientId,
         this.language,
         this.isAttendant,
-        this.attendantId
+        this.attendantId,
+        this.currentSessionId
       );
+
+      if (res.session_id) {
+        this.currentSessionId = res.session_id;
+      }
 
       // If initial complaint was entered, seed it
       const complaintText = document.getElementById("chief-complaint-input")?.value.trim();
