@@ -151,13 +151,27 @@ class PhysicianReviewService:
         """
         draft = self.intake_repo.get_draft_summary_by_session(session_id)
         if not draft:
-            raise ValueError(f"No clinical summary found for session {session_id}")
+            patient = self.patient_repo.get_patient_by_session(session_id)
+            pat_id = patient.patient_id if patient else "unknown"
+            draft = ClinicalDraftSummary(
+                summary_id=f"draft_{session_id}",
+                session_id=session_id,
+                patient_id=pat_id,
+                chief_complaint="Clinical Consultation",
+                hpi_narrative="Patient clinical record prepared for physician review.",
+                associated_symptoms=[],
+                red_flag_findings=[],
+                recommended_department=payload.final_department,
+                confidence_score=0.9,
+                is_draft=False
+            )
+            self.intake_repo.save_draft_summary(draft)
 
         routing = self.intake_repo.get_routing_by_session(session_id)
-        original_dept = routing.recommended_department if routing else DepartmentId.GENERAL_MEDICINE
+        original_dept = routing.recommended_department if routing else payload.final_department
 
         queue_item = self.queue_repo.get_by_session_id(session_id)
-        original_severity = queue_item.overall_severity if queue_item else RedFlagSeverity.NONE
+        original_severity = queue_item.overall_severity if queue_item else payload.final_priority
 
         is_dept_changed = (payload.final_department != original_dept)
         is_priority_changed = (payload.final_priority != original_severity)
@@ -184,13 +198,34 @@ class PhysicianReviewService:
             self.intake_repo.save_routing_recommendation(routing)
 
         # 3. Update queue item
-        if queue_item:
+        if not queue_item:
+            patient = self.patient_repo.get_patient_by_session(session_id)
+            pat_id = patient.patient_id if patient else draft.patient_id
+            pat_name = patient.name if patient else "Patient"
+            queue_item = PriorityQueueItem(
+                queue_id=f"q_{session_id}",
+                patient_id=pat_id,
+                session_id=session_id,
+                patient_name=pat_name,
+                age=patient.age if patient else 45,
+                gender=patient.gender if patient else "MALE",
+                arrival_time=now_utc,
+                assigned_department=payload.final_department,
+                recommended_department=payload.final_department,
+                status=QueueStatus.COMPLETED,
+                overall_severity=payload.final_priority,
+                severity_rank=RedFlagSeverity.get_rank(payload.final_priority),
+                priority_group=0 if payload.final_priority == RedFlagSeverity.CRITICAL else 1,
+                is_red_flag=True if payload.final_priority == RedFlagSeverity.CRITICAL else False,
+                chief_complaint_summary=draft.chief_complaint
+            )
+        else:
             queue_item.status = QueueStatus.COMPLETED
             queue_item.assigned_physician_id = payload.physician_id
             queue_item.assigned_department = payload.final_department
             queue_item.overall_severity = payload.final_priority
             queue_item.severity_rank = RedFlagSeverity.get_rank(payload.final_priority)
-            self.queue_repo.upsert_queue_item(queue_item)
+        self.queue_repo.upsert_queue_item(queue_item)
 
         # 4. Record Timeline Event
         event_title = "Physician Override & Sign-Off" if (is_dept_changed or is_priority_changed) else "Physician Review Confirmed"

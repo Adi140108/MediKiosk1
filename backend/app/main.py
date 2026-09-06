@@ -1,4 +1,5 @@
 import os
+import base64
 import logging
 from fastapi import FastAPI, Response
 from fastapi.responses import HTMLResponse
@@ -20,6 +21,7 @@ from app.templates.embedded_assets import (
     DIAGNOSTICS_HTML,
     STYLES_CSS,
     LOGO_SVG,
+    LOGO_PNG_B64,
     JS_ASSETS
 )
 
@@ -121,6 +123,11 @@ async def serve_logo_png():
                     return Response(content=f.read(), media_type="image/png")
             except Exception:
                 pass
+    if LOGO_PNG_B64:
+        try:
+            return Response(content=base64.b64decode(LOGO_PNG_B64), media_type="image/png")
+        except Exception:
+            pass
     return Response(content=b"", status_code=404)
 
 @app.get("/logo.svg", include_in_schema=False)

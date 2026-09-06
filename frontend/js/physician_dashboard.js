@@ -630,25 +630,35 @@ const PhysicianDashboard = {
   },
 
   async handleConfirmCase(e) {
-    e.preventDefault();
-    const btn = document.getElementById("btn-confirm-record");
-    btn.disabled = true;
-    btn.innerText = "Confirming & Signing...";
+    if (e && e.preventDefault) e.preventDefault();
+    const btn = document.getElementById("btn-confirm-record") || (e?.target?.querySelector ? e.target.querySelector("button[type='submit']") : null);
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = "Confirming & Signing...";
+    }
 
     try {
-      const physicianId = document.getElementById("physician-id-input").value.trim() || "dr_sharma_cardio";
-      const dept = document.getElementById("confirm-dept-select").value;
-      const priority = document.getElementById("confirm-priority-select").value;
-      const notes = document.getElementById("physician-notes-input").value;
-      const overrideReason = document.getElementById("override-reason-input").value.trim();
+      const sessionId = this.currentSessionId || this.currentPatientData?.session_id || this.currentPatientData?.queue_item?.session_id || this.currentPatientData?.patient?.session_id;
+      if (!sessionId) {
+        alert("⚠️ Please open or select an active patient case first.");
+        return;
+      }
+
+      const physicianId = document.getElementById("physician-id-input")?.value?.trim() || "dr_sharma_cardio";
+      const dept = document.getElementById("confirm-dept-select")?.value || "general-medicine";
+      const priority = document.getElementById("confirm-priority-select")?.value || "NONE";
+      const notes = document.getElementById("physician-notes-input")?.value || "";
+      const overrideReason = document.getElementById("override-reason-input")?.value?.trim() || "";
 
       const isDeptChanged = this.originalRecommendedDept && dept !== this.originalRecommendedDept;
       const isPriorityChanged = this.originalRecommendedPriority && priority !== this.originalRecommendedPriority;
 
       if ((isDeptChanged || isPriorityChanged) && !overrideReason) {
         alert("⚠️ Override rationale is required when altering the AI recommended department or priority.");
-        btn.disabled = false;
-        btn.innerText = "✓ Confirm & Sign Record";
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = "✓ Confirm & Sign Record";
+        }
         return;
       }
 
@@ -660,11 +670,11 @@ const PhysicianDashboard = {
         override_reason: overrideReason || null
       };
 
-      await api.recordPhysicianDecision(this.currentSessionId, payload);
+      await api.recordPhysicianDecision(sessionId, payload);
 
       if (isDeptChanged) {
         try {
-          await api.reassignDepartment(this.currentSessionId, dept, physicianId, overrideReason);
+          await api.reassignDepartment(sessionId, dept, physicianId, overrideReason);
         } catch (reassignErr) {
           console.debug("Reassignment sync note:", reassignErr);
         }
@@ -673,10 +683,12 @@ const PhysicianDashboard = {
       alert("✓ Clinical record successfully finalized, signed, and logged to audit trail.");
       this.showQueueView();
     } catch (err) {
-      alert("Confirmation notice: " + err.message);
+      alert("Confirmation notice: " + (err.message || "Failed to confirm patient record"));
     } finally {
-      btn.disabled = false;
-      btn.innerText = "✓ Confirm & Sign Record";
+      if (btn) {
+        btn.disabled = false;
+        btn.innerText = "✓ Confirm & Sign Record";
+      }
     }
   },
 

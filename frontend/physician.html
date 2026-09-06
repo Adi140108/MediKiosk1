@@ -89,7 +89,7 @@
   <!-- Main Navigation Bar -->
   <nav class="navbar">
     <div class="brand-wrapper" onclick="window.location.href='/physician'">
-      <img src="/logo.png?v=2" alt="MediKiosk Logo" class="brand-logo-img" width="48" height="48" onerror="this.onerror=null; this.src='/logo.svg';">
+      <img src="/logo.png?v=3" alt="MediKiosk Logo" class="brand-logo-img" style="height:52px; width:auto; object-fit:contain; border-radius:10px;" onerror="this.onerror=null; this.src='/logo.png';">
       <div class="brand-text-block">
         <span class="brand-name">MediKiosk <span style="font-size:0.95rem; font-weight:500; color:var(--brand-accent); font-family:sans-serif;">Physician Portal</span></span>
         <span class="brand-tagline-text">Clinical Command Center & Patient Triage Queue</span>
@@ -417,7 +417,7 @@
 
                   <div style="display:flex; flex-direction:column; gap:0.75rem;">
                     <div style="display:flex; gap:0.75rem;">
-                      <button type="submit" class="btn-primary-action" style="flex:1; justify-content:center;">
+                      <button type="submit" id="btn-confirm-record" class="btn-primary-action" style="flex:1; justify-content:center;">
                         ✓ Confirm & Sign Record
                       </button>
                       <button type="button" class="btn-secondary-action" style="color:#b91c1c; border-color:#fca5a5;" onclick="PhysicianDashboard.escalateToEmergency()">
