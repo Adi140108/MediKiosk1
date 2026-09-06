@@ -1,0 +1,49 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/physician",
+      "destination": "/frontend/physician.html"
+    },
+    {
+      "source": "/physician/(.*)",
+      "destination": "/frontend/physician.html"
+    },
+    {
+      "source": "/diagnostics",
+      "destination": "/frontend/diagnostics.html"
+    },
+    {
+      "source": "/diagnostics/(.*)",
+      "destination": "/frontend/diagnostics.html"
+    },
+    {
+      "source": "/css/(.*)",
+      "destination": "/frontend/css/$1"
+    },
+    {
+      "source": "/js/(.*)",
+      "destination": "/frontend/js/$1"
+    },
+    {
+      "source": "/assets/(.*)",
+      "destination": "/frontend/assets/$1"
+    },
+    {
+      "source": "/logo.png",
+      "destination": "/frontend/logo.png"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/frontend/logo.png"
+    },
+    {
+      "source": "/",
+      "destination": "/frontend/index.html"
+    }
+  ]
+}
