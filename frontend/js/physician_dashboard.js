@@ -512,35 +512,89 @@ const PhysicianDashboard = {
         pill.innerText = "ALIGNED WITH AI";
       }
     }
-  },
-
-  async handleDirectReassign(sessionId) {
-    const targetSessionId = sessionId || this.currentSessionId;
-    if (!targetSessionId) {
+  openTransferModal() {
+    if (!this.currentSessionId) {
       alert("Please select or open a patient case first.");
       return;
     }
+    const modal = document.getElementById("transfer-patient-modal");
+    if (!modal) return;
+    const deptSelect = document.getElementById("transfer-target-dept");
+    if (deptSelect && this.currentDepartment) {
+      deptSelect.value = this.currentDepartment === "cardiology" ? "general-medicine" : "cardiology";
+    }
+    const reasonInput = document.getElementById("transfer-reason-input");
+    if (reasonInput) reasonInput.value = "";
+    modal.style.display = "flex";
+  },
 
-    const deptSelect = document.getElementById("confirm-dept-select");
-    const targetDept = deptSelect ? deptSelect.value : "general-medicine";
-    const physicianInput = document.getElementById("physician-id-input");
-    const physicianId = (physicianInput && physicianInput.value.trim()) || "dr_sharma_cardio";
-    const reasonInput = document.getElementById("override-reason-input");
-    let reason = (reasonInput && reasonInput.value.trim()) || "";
+  closeTransferModal() {
+    const modal = document.getElementById("transfer-patient-modal");
+    if (modal) modal.style.display = "none";
+  },
+
+  async submitDepartmentTransfer(e) {
+    if (e) e.preventDefault();
+    if (!this.currentSessionId) {
+      alert("No active patient case selected.");
+      return;
+    }
+
+    const targetDept = document.getElementById("transfer-target-dept").value;
+    const priority = document.getElementById("transfer-priority-select").value;
+    const physicianId = document.getElementById("transfer-physician-id").value.trim() || "dr_sharma_cardio";
+    const reason = document.getElementById("transfer-reason-input").value.trim();
 
     if (!reason) {
-      reason = prompt(`Enter clinical rationale for transferring patient to ${targetDept.toUpperCase()} department:`, "Specialist transfer requested by attending physician");
-      if (reason === null) return; // User cancelled
-      if (reasonInput) reasonInput.value = reason;
+      alert("Please provide a clinical rationale for the department transfer.");
+      return;
+    }
+
+    const submitBtn = document.getElementById("btn-submit-transfer");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Transferring Patient...";
     }
 
     try {
-      await api.reassignDepartment(targetSessionId, targetDept, physicianId, reason || "Clinical transfer");
-      alert(`✓ Patient successfully transferred to ${targetDept.toUpperCase()} department queue.`);
-      this.showQueueView();
+      await api.reassignDepartment(this.currentSessionId, targetDept, physicianId, reason);
+      this.closeTransferModal();
+
+      const targetDeptInfo = {
+        "cardiology": { name: "Cardiology", icon: "🫀" },
+        "neurology": { name: "Neurology", icon: "🧠" },
+        "general-medicine": { name: "General Medicine", icon: "🩺" },
+        "pediatrics": { name: "Pediatrics", icon: "👶" },
+        "orthopedics": { name: "Orthopedics", icon: "🦴" },
+        "emergency": { name: "Emergency / Trauma", icon: "🚨" },
+        "gastroenterology": { name: "Gastroenterology", icon: "🍽️" },
+        "dermatology": { name: "Dermatology", icon: "🧴" },
+        "ent": { name: "ENT", icon: "👂" },
+        "ophthalmology": { name: "Ophthalmology", icon: "👁" },
+        "psychiatry": { name: "Psychiatry", icon: "🧩" },
+        "ayush": { name: "AYUSH / Integrative", icon: "🌿" }
+      };
+
+      const deptMeta = targetDeptInfo[targetDept] || { name: targetDept.toUpperCase(), icon: "🩺" };
+      const shouldSwitch = confirm(`✓ Patient successfully transferred to ${deptMeta.name} waiting queue!\n\nWould you like to switch to the ${deptMeta.name} Department Queue now?`);
+
+      if (shouldSwitch) {
+        this.selectDepartment(targetDept, deptMeta.name, deptMeta.icon);
+      } else {
+        this.showQueueView();
+      }
     } catch (err) {
       alert("Transfer failed: " + err.message);
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Confirm Transfer & Move Patient ↗";
+      }
     }
+  },
+
+  handleDirectReassign(sessionId) {
+    this.openTransferModal();
   },
 
   async escalateToEmergency(sessionId) {
@@ -566,8 +620,12 @@ const PhysicianDashboard = {
 
     try {
       await api.reassignDepartment(targetSessionId, "emergency", physicianId, reason);
-      alert("🚨 Patient successfully escalated to EMERGENCY (CRITICAL) queue!");
-      this.showQueueView();
+      const shouldSwitch = confirm("🚨 Patient successfully escalated to EMERGENCY (CRITICAL) queue!\n\nWould you like to switch to the Emergency / Trauma Queue now?");
+      if (shouldSwitch) {
+        this.selectDepartment("emergency", "Emergency / Trauma", "🚨");
+      } else {
+        this.showQueueView();
+      }
     } catch (err) {
       alert("Escalation failed: " + err.message);
     }

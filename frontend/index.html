@@ -86,7 +86,7 @@
               <button class="btn-primary-action" onclick="PatientIntake.goToStep(2)">
                 <span data-i18n="begin_checkin">Begin Check-In</span> →
               </button>
-              <button class="btn-icon-round" onclick="SpeechManager.speakText('Welcome to MediKiosk. Please begin check-in.')" title="Audio Preview">
+              <button class="btn-icon-round" onclick="SpeechManager.toggleSpeak('Welcome to MediKiosk. Please begin check-in.')" title="Audio Preview">
                 🔊
               </button>
             </div>
@@ -110,7 +110,7 @@
             <h2 class="card-box-title" data-i18n="step_lang_title">Select Language</h2>
             <p class="card-box-subtitle" data-i18n="step_lang_sub">Choose your preferred language for voice and text intake</p>
           </div>
-          <button class="btn-icon-round" onclick="SpeechManager.speakText('Please select your language')">🔊</button>
+          <button class="btn-icon-round" onclick="SpeechManager.toggleSpeak('Please select your language')">🔊</button>
         </div>
 
         <div class="lang-grid" id="lang-selection-grid">

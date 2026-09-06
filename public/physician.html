@@ -414,6 +414,69 @@
 
   </main>
 
+  <!-- Transfer Department Modal -->
+  <div id="transfer-patient-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:12px; max-width:540px; width:92%; padding:26px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.15);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+        <h3 style="margin:0; color:var(--brand-primary); font-size:1.25rem; display:flex; align-items:center; gap:8px;">
+          <span>🔄</span> Transfer / Reassign Department
+        </h3>
+        <button type="button" onclick="PhysicianDashboard.closeTransferModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:#64748b;">×</button>
+      </div>
+      <p style="font-size:0.875rem; color:var(--text-muted); margin-bottom:1.25rem;">
+        Choose the exact department to transfer this patient to. The patient will immediately appear in the new department's active waiting queue.
+      </p>
+
+      <form id="transfer-patient-form" onsubmit="PhysicianDashboard.submitDepartmentTransfer(event)">
+        <div style="margin-bottom:1rem;">
+          <label class="form-label" for="transfer-target-dept">Target Clinical Department *</label>
+          <select id="transfer-target-dept" class="form-select-field" required>
+            <option value="cardiology">🫀 Cardiology</option>
+            <option value="neurology">🧠 Neurology</option>
+            <option value="general-medicine">🩺 General Medicine</option>
+            <option value="pediatrics">👶 Pediatrics (0-18 yrs)</option>
+            <option value="orthopedics">🦴 Orthopedics</option>
+            <option value="emergency">🚨 Emergency / Trauma</option>
+            <option value="gastroenterology">🍽️ Gastroenterology</option>
+            <option value="dermatology">🧴 Dermatology</option>
+            <option value="ent">👂 ENT</option>
+            <option value="ophthalmology">👁 Ophthalmology</option>
+            <option value="psychiatry">🧩 Psychiatry</option>
+            <option value="ayush">🌿 AYUSH / Integrative</option>
+          </select>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
+          <div>
+            <label class="form-label" for="transfer-priority-select">Triage Urgency</label>
+            <select id="transfer-priority-select" class="form-select-field">
+              <option value="CRITICAL">🚨 Critical Urgency</option>
+              <option value="HIGH">⚠️ High Priority</option>
+              <option value="MEDIUM" selected>Medium Priority</option>
+              <option value="NONE">Normal / Standard</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="transfer-physician-id">Transferring Doctor ID *</label>
+            <input type="text" id="transfer-physician-id" class="form-input-field" value="dr_sharma_cardio" required>
+          </div>
+        </div>
+
+        <div style="margin-bottom:1.5rem;">
+          <label class="form-label" for="transfer-reason-input">Clinical Transfer Reason / Handover Notes *</label>
+          <textarea id="transfer-reason-input" class="form-textarea-field" rows="3" placeholder="Explain why patient is being transferred (e.g. Needs pediatric specialist evaluation, abnormal vitals, ECG findings)..." required></textarea>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+          <button type="button" class="btn-secondary-action" onclick="PhysicianDashboard.closeTransferModal()">Cancel</button>
+          <button type="submit" id="btn-submit-transfer" class="btn-primary-action" style="background:#0369a1; border-color:#0284c7;">
+            Confirm Transfer & Move Patient ↗
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Targeted Question Modal -->
   <div id="ask-patient-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:12px; max-width:500px; width:90%; padding:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);">

@@ -26,10 +26,15 @@ class QueueRepository(BaseRepository):
     def get_department_queue(self, department: DepartmentId) -> List[PriorityQueueItem]:
         items = self.list_docs(self.COLLECTION)
         matching = []
+        target_val = department.value if isinstance(department, DepartmentId) else str(department).lower().replace("_", "-")
         for d in items:
-            item = PriorityQueueItem.model_validate(d)
-            if item.assigned_department == department:
-                matching.append(item)
+            try:
+                item = PriorityQueueItem.model_validate(d)
+                dept_val = item.assigned_department.value if isinstance(item.assigned_department, DepartmentId) else str(item.assigned_department or "").lower().replace("_", "-")
+                if dept_val == target_val:
+                    matching.append(item)
+            except Exception:
+                pass
         return matching
 
     def list_all_queue_items(self) -> List[PriorityQueueItem]:

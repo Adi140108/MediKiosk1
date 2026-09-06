@@ -190,6 +190,24 @@ const SpeechManager = {
     }
   },
 
+  toggleSpeak(text, lang = null) {
+    if (!this.synth) return false;
+
+    // If currently speaking, mute/stop audio
+    if (this.synth.speaking || this.isSpeaking) {
+      this.synth.cancel();
+      this.isSpeaking = false;
+      document.querySelectorAll('#btn-speak-question, .btn-icon-round').forEach(btn => {
+        btn.classList.remove('pulse-audio');
+      });
+      return false;
+    }
+
+    // Otherwise unmute and speak
+    this.speakText(text, lang);
+    return true;
+  },
+
   speakText(text, lang = null) {
     if (!this.synth) return;
     this.synth.cancel();
@@ -206,17 +224,17 @@ const SpeechManager = {
       utterance.voice = matchedVoice;
     }
 
-    const speakerIcon = document.getElementById('btn-speak-question');
-    if (speakerIcon) speakerIcon.classList.add('pulse-audio');
+    const speakerButtons = document.querySelectorAll('#btn-speak-question, .btn-icon-round');
+    speakerButtons.forEach(btn => btn.classList.add('pulse-audio'));
 
     utterance.onend = () => {
       this.isSpeaking = false;
-      if (speakerIcon) speakerIcon.classList.remove('pulse-audio');
+      speakerButtons.forEach(btn => btn.classList.remove('pulse-audio'));
     };
 
     utterance.onerror = () => {
       this.isSpeaking = false;
-      if (speakerIcon) speakerIcon.classList.remove('pulse-audio');
+      speakerButtons.forEach(btn => btn.classList.remove('pulse-audio'));
     };
 
     this.isSpeaking = true;

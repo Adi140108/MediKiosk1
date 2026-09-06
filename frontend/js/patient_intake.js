@@ -292,7 +292,7 @@ const PatientIntake = {
 
   speakCurrentQuestion() {
     if (this.currentQuestionText) {
-      SpeechManager.speakText(this.currentQuestionText, this.language);
+      SpeechManager.toggleSpeak(this.currentQuestionText, this.language);
     }
   },
 
