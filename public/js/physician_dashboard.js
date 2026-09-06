@@ -1,3 +1,20 @@
+const DEFAULT_DEPARTMENTS = [
+  { id: "general-medicine", display_name: "General Medicine", icon: "🩺", description: "Primary care, acute viral illnesses, non-specific fevers and multisystem initial evaluations." },
+  { id: "cardiology", display_name: "Cardiology", icon: "🫀", description: "Chest pain, palpitations, hypertension, ischemic workup and cardiovascular risk assessments." },
+  { id: "pulmonology", display_name: "Pulmonology", icon: "🫁", description: "Respiratory distress, persistent cough, dyspnea, asthma and chronic airway disorders." },
+  { id: "neurology", display_name: "Neurology", icon: "🧠", description: "Headaches, dizziness, focal neurological deficits, seizures and stroke triage evaluations." },
+  { id: "gastroenterology", display_name: "Gastroenterology", icon: "🍽️", description: "Abdominal pain, acute gastrointestinal bleed, jaundice, peptic and hepatic conditions." },
+  { id: "orthopedics", display_name: "Orthopedics", icon: "🦴", description: "Trauma, fractures, severe joint swellings, musculoskeletal injuries and spinal pain." },
+  { id: "pediatrics", display_name: "Pediatrics", icon: "👶", description: "Infant and pediatric clinical reviews, childhood infections and pediatric triage." },
+  { id: "emergency", display_name: "Emergency / Trauma", icon: "🚨", description: "Immediate life-threatening triage, critical red flags, and emergency resuscitation." },
+  { id: "dermatology", display_name: "Dermatology", icon: "🧴", description: "Acute dermatological reactions, lesions, severe urticaria and cutaneous eruptions." },
+  { id: "ent", display_name: "ENT", icon: "👂", description: "Ear discharge, hearing changes, vertigo, acute epistaxis and throat infections." },
+  { id: "ophthalmology", display_name: "Ophthalmology", icon: "👁", description: "Visual disturbances, acute eye trauma, red eye and ocular pressure emergencies." },
+  { id: "psychiatry", display_name: "Psychiatry", icon: "🧩", description: "Acute distress, behavioral emergencies, psychiatric triage and mood disorders." },
+  { id: "ayush", display_name: "AYUSH / Integrative", icon: "🌿", description: "Ayurvedic clinical constitution, dosha assessment and integrative outpatient care." },
+  { id: "unspecified", display_name: "Triage & Float Queue", icon: "🏥", description: "Ambiguous symptoms, multi-system red flags, and float cases awaiting department routing." }
+];
+
 const PhysicianDashboard = {
   currentDepartment: null,
   currentDepartmentName: "Cardiology",
@@ -9,6 +26,7 @@ const PhysicianDashboard = {
 
   init() {
     this.bindEvents();
+    this.renderDepartmentGrid(DEFAULT_DEPARTMENTS);
     this.loadDepartmentSelection();
   },
 
@@ -44,34 +62,42 @@ const PhysicianDashboard = {
     }
   },
 
+  renderDepartmentGrid(departments) {
+    const grid = document.getElementById("dept-selection-grid");
+    if (!grid || !departments || departments.length === 0) return;
+
+    grid.innerHTML = "";
+    departments.forEach((dept) => {
+      const card = document.createElement("div");
+      card.className = "lang-tile";
+      card.style.textAlign = "left";
+      card.style.alignItems = "flex-start";
+      card.style.padding = "1.5rem";
+      card.style.cursor = "pointer";
+
+      const badgeClass = dept.id === "unspecified" ? "lang-badge-fallback" : "lang-badge-ready";
+      const badgeLabel = dept.id === "unspecified" ? "TRIAGE QUEUE →" : "ACCESS QUEUE →";
+
+      card.innerHTML = `
+        <div style="font-size:2rem; margin-bottom:0.5rem;">${dept.icon || '🩺'}</div>
+        <span class="lang-tile-native" style="font-size:1.2rem;">${dept.display_name || dept.name}</span>
+        <p style="font-size:0.825rem; color:var(--text-muted); margin-top:0.25rem; line-height:1.4;">${dept.description || 'Clinical department review queue.'}</p>
+        <span class="lang-tile-badge ${badgeClass}" style="margin-top:1rem;">${badgeLabel}</span>
+      `;
+      card.addEventListener("click", () => this.selectDepartment(dept.id, dept.display_name || dept.name, dept.icon || '🩺'));
+      grid.appendChild(card);
+    });
+  },
+
   async loadDepartmentSelection() {
     try {
       const departments = await api.getDepartments();
-      const grid = document.getElementById("dept-selection-grid");
-      if (!grid) return;
-
-      grid.innerHTML = "";
-      departments.forEach((dept) => {
-        const card = document.createElement("div");
-        card.className = "lang-tile";
-        card.style.textAlign = "left";
-        card.style.alignItems = "flex-start";
-        card.style.padding = "1.5rem";
-
-        const badgeClass = dept.id === "unspecified" ? "lang-badge-fallback" : "lang-badge-ready";
-        const badgeLabel = dept.id === "unspecified" ? "TRIAGE QUEUE →" : "ACCESS QUEUE →";
-
-        card.innerHTML = `
-          <div style="font-size:2rem; margin-bottom:0.5rem;">${dept.icon}</div>
-          <span class="lang-tile-native" style="font-size:1.2rem;">${dept.display_name}</span>
-          <p style="font-size:0.825rem; color:var(--text-muted); margin-top:0.25rem; line-height:1.4;">${dept.description}</p>
-          <span class="lang-tile-badge ${badgeClass}" style="margin-top:1rem;">${badgeLabel}</span>
-        `;
-        card.addEventListener("click", () => this.selectDepartment(dept.id, dept.display_name, dept.icon));
-        grid.appendChild(card);
-      });
+      if (departments && departments.length > 0) {
+        this.renderDepartmentGrid(departments);
+      }
     } catch (err) {
-      console.error("Failed to load departments:", err);
+      console.warn("Using default department fallback list:", err);
+      this.renderDepartmentGrid(DEFAULT_DEPARTMENTS);
     }
   },
 
@@ -146,7 +172,7 @@ const PhysicianDashboard = {
           <tr>
             <td colspan="6" style="text-align:center; padding:3rem; color:var(--text-muted);">
               <p style="font-weight:700; font-size:1.05rem;">No patients currently in this department queue.</p>
-              <p style="font-size:0.85rem; margin-top:0.25rem;">Patients completing kiosk intake or transferred will appear here automatically.</p>
+              <p style="font-size:0.85rem; margin-top:0.25rem;">Patients completing kiosk intake or transferred here will appear automatically.</p>
             </td>
           </tr>
         `;
@@ -155,55 +181,68 @@ const PhysicianDashboard = {
 
       items.forEach((item) => {
         const tr = document.createElement("tr");
-        
-        let sevBadgeClass = "lang-badge-connected";
-        let sevLabel = "NORMAL";
+
+        let sevBadge = `<span class="lang-tile-badge lang-badge-connected">NORMAL</span>`;
         if (item.overall_severity === "CRITICAL") {
-          sevBadgeClass = "lang-badge-connected' style='background:#fee2e2; color:#991b1b; font-weight:700;";
-          sevLabel = "🚨 CRITICAL";
+          sevBadge = `<span class="lang-tile-badge" style="background:#fee2e2; color:#991b1b; border:1px solid #ef4444;">🚨 CRITICAL</span>`;
         } else if (item.overall_severity === "HIGH") {
-          sevBadgeClass = "lang-badge-connected' style='background:#ffedd5; color:#9a3412; font-weight:700;";
-          sevLabel = "⚠️ HIGH PRIORITY";
+          sevBadge = `<span class="lang-tile-badge" style="background:#ffedd5; color:#9a3412; border:1px solid #f97316;">⚠️ HIGH</span>`;
         } else if (item.overall_severity === "MEDIUM") {
-          sevBadgeClass = "lang-badge-connected' style='background:#fef3c7; color:#92400e;";
-          sevLabel = "MEDIUM";
+          sevBadge = `<span class="lang-tile-badge" style="background:#fef3c7; color:#92400e; border:1px solid #f59e0b;">MEDIUM</span>`;
         }
 
-        const arrivalTime = new Date(item.arrival_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        let statusBadge = `<span class="lang-tile-badge lang-badge-connected">${item.status}</span>`;
+        if (item.status === "WAITING") {
+          statusBadge = `<span class="lang-tile-badge" style="background:#ecfdf5; color:#065f46; border:1px solid #10b981;">WAITING</span>`;
+        } else if (item.status === "IN_REVIEW") {
+          statusBadge = `<span class="lang-tile-badge" style="background:#e0f2fe; color:#0369a1; border:1px solid #38bdf8;">IN REVIEW</span>`;
+        } else if (item.status === "COMPLETED") {
+          statusBadge = `<span class="lang-tile-badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">COMPLETED</span>`;
+        }
+
+        const waitDisplay = item.waiting_time_minutes > 60
+          ? `${Math.floor(item.waiting_time_minutes / 60)}h ${item.waiting_time_minutes % 60}m`
+          : `${item.waiting_time_minutes} min`;
 
         tr.innerHTML = `
           <td>
-            <div style="font-weight:700; color:var(--brand-primary); font-size:1rem;">${item.patient_name}</div>
-            <div style="font-size:0.75rem; color:var(--text-muted); font-family:monospace;">${item.patient_id}</div>
+            <div style="font-weight:700; color:var(--brand-primary); font-size:0.95rem;">${item.patient_name}</div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">${item.patient_id} • ${item.age}y / ${item.gender}</div>
           </td>
-          <td>${item.age} yrs • ${item.gender}</td>
+          <td>${sevBadge}</td>
           <td>
-            <span class="lang-tile-badge ${item.status === 'WAITING' ? 'lang-badge-ready' : 'lang-badge-connected'}">
-              ${item.status}
-            </span>
-          </td>
-          <td>
-            <span class="lang-tile-badge ${sevBadgeClass}">${sevLabel}</span>
+            <div style="font-size:0.85rem; font-weight:600; color:#1e293b; max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${item.chief_complaint_summary || "Clinical check-in completed"}
+            </div>
+            ${item.has_documents ? '<span style="font-size:0.7rem; color:#0369a1; font-weight:600;">📎 Records Attached</span>' : ''}
           </td>
           <td>
-            <div>${arrivalTime}</div>
-            <div style="font-size:0.75rem; color:#0284c7; font-weight:600;">⏱️ ${item.waiting_time_minutes} min</div>
+            <span style="font-size:0.85rem; font-weight:600;">${waitDisplay}</span>
           </td>
+          <td>${statusBadge}</td>
           <td>
-            <button class="btn-primary-action" style="padding:0.45rem 0.95rem; font-size:0.85rem;" onclick="PhysicianDashboard.openCase('${item.session_id}')">
-              Review Case ↗
-            </button>
+            <div style="display:flex; gap:0.4rem;">
+              <button class="btn-primary-action" style="padding:0.35rem 0.75rem; font-size:0.8rem;" onclick="PhysicianDashboard.inspectPatientCase('${item.session_id}')">
+                Review Case →
+              </button>
+              <button class="btn-secondary-action" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Reassign Department" onclick="PhysicianDashboard.handleDirectReassign('${item.session_id}')">
+                ↗ Transfer
+              </button>
+            </div>
           </td>
         `;
         tableBody.appendChild(tr);
       });
     } catch (err) {
-      console.error("Failed to load department queue:", err);
+      console.error("Queue fetch error:", err);
     }
   },
 
-  async openCase(sessionId) {
+  async inspectPatientCase(sessionId) {
     this.currentSessionId = sessionId;
+    clearInterval(this.refreshTimer);
+
+    document.getElementById("physician-dept-view").style.display = "none";
     document.getElementById("physician-queue-view").style.display = "none";
     document.getElementById("physician-case-view").style.display = "block";
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -211,274 +250,156 @@ const PhysicianDashboard = {
     try {
       const data = await api.getPatientCase(sessionId);
       this.currentPatientData = data;
-      this.renderPatientCase(data);
+      this.populateCaseInspector(data);
     } catch (err) {
-      console.error("Failed to load patient case:", err);
-      alert("Notice: " + err.message);
+      alert("Failed to load patient case record: " + err.message);
+      this.showQueueView();
     }
   },
 
-  renderPatientCase(data) {
-    if (!data) return;
+  populateCaseInspector(data) {
+    const { patient, draft_summary, red_flag, routing, documents, medical_history, ayurvedic_assessment, questions, answers, timeline, information_gaps, physician_decision } = data;
 
-    const patient = data.patient || {};
-    const red_flag = data.red_flag || data.red_flags || {};
-    const routing = data.routing || {};
-    const draft_summary = data.draft_summary || data.clinical_brief || {};
-    const questions = data.questions || [];
-    const answers = data.answers || [];
-    const timeline = data.timeline || [];
-    const documents = data.documents || [];
+    // 1. Patient Header Details
+    const patNameEl = document.getElementById("inspect-patient-name");
+    const patMetaEl = document.getElementById("inspect-patient-meta");
+    const patAbhaEl = document.getElementById("inspect-patient-abha");
 
-    this.originalRecommendedDept = routing.recommended_department ? routing.recommended_department.toLowerCase() : "general-medicine";
-    this.originalRecommendedPriority = red_flag.overall_severity || "NONE";
+    if (patNameEl) patNameEl.innerText = patient.name || "Unknown Patient";
+    if (patMetaEl) patMetaEl.innerText = `ID: ${patient.patient_id} • Age: ${patient.age} • Gender: ${patient.gender} • Language: ${(patient.preferred_language || 'EN').toUpperCase()}`;
+    if (patAbhaEl) patAbhaEl.innerText = patient.abha_id ? `ABHA: ${patient.abha_id}` : `Hospital Registration: Regular`;
 
-    const isDraft = draft_summary.is_draft !== undefined ? draft_summary.is_draft : true;
-
-    // 1. Patient Header Overview
-    const infoEl = document.getElementById("case-patient-overview");
-    if (infoEl) {
-      infoEl.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <h2 style="font-size:1.5rem; color:var(--brand-primary);">${patient.name || 'Patient'} (${patient.age || 'N/A'} yrs • ${patient.gender || 'N/A'})</h2>
-            <p style="color:var(--text-muted); font-size:0.875rem; margin-top:0.25rem;">
-              Patient ID: <strong>${patient.patient_id || 'N/A'}</strong> | Identity: <strong>${patient.abha_id ? 'ABHA ' + patient.abha_id : 'Standard Registration'}</strong> | Phone: ${patient.phone || 'Not recorded'}
-            </p>
-          </div>
-          <div>
-            <span class="lang-tile-badge ${isDraft ? 'lang-badge-ready' : 'lang-badge-connected'}" style="font-size:0.85rem; padding:0.35rem 0.75rem;">
-              ${isDraft ? 'AI DRAFT RECORD' : 'CONFIRMED CLINICAL RECORD'}
-            </span>
-          </div>
-        </div>
-      `;
-    }
-
-    // 2. Explainable AI Cards
-    const explainRouting = document.getElementById("explain-routing-content");
-    if (explainRouting) {
-      const scorePct = Math.round((routing.confidence || routing.confidence_score || 0.85) * 100);
-      const alts = routing.alternative_departments && routing.alternative_departments.length
-        ? routing.alternative_departments.map(a => `${a.department || a.department_id} (${Math.round((a.score || 0.1) * 100)}%)`).join(', ')
-        : "None";
+    // 2. Triage & Red Flag Banner
+    const redFlagBanner = document.getElementById("inspect-red-flag-banner");
+    const redFlagDetails = document.getElementById("inspect-red-flag-details");
+    if (redFlag && red_flag.is_red_flag) {
+      redFlagBanner.style.display = "block";
+      const critClass = red_flag.overall_severity === "CRITICAL" ? "color:#991b1b; background:#fee2e2; border-color:#ef4444;" : "color:#9a3412; background:#ffedd5; border-color:#f97316;";
+      redFlagBanner.style.cssText += critClass;
       
-      explainRouting.innerHTML = `
-        <div>Primary Dept: <strong>${(routing.recommended_department || 'General Medicine').toUpperCase()}</strong> (${scorePct}% match)</div>
-        <div style="margin-top:4px; font-size:0.8rem; color:#64748b;">Confidence: ${scorePct >= 70 ? 'High' : 'Moderate'}</div>
-        <div style="margin-top:4px; font-size:0.8rem; color:#64748b;">Alternatives: ${alts}</div>
+      const reasons = (red_flag.flagged_reasons || []).join(" • ");
+      redFlagDetails.innerHTML = `
+        <strong>🚨 ${red_flag.overall_severity} CLINICAL RED FLAG DETECTED:</strong>
+        <p style="margin-top:0.25rem;">${reasons}</p>
+      `;
+    } else {
+      redFlagBanner.style.display = "none";
+    }
+
+    // 3. Information Gaps Callout
+    const gapContainer = document.getElementById("inspect-gaps-container");
+    const gapList = document.getElementById("inspect-gaps-list");
+    if (information_gaps && information_gaps.length > 0) {
+      gapContainer.style.display = "block";
+      gapList.innerHTML = information_gaps.map(g => `<span class="gap-pill">⚠️ ${g.label}</span>`).join("");
+    } else {
+      gapContainer.style.display = "none";
+    }
+
+    // 4. Clinical Brief vs Ayurvedic Insights
+    const modernBriefEl = document.getElementById("inspect-clinical-brief");
+    if (modernBriefEl) {
+      modernBriefEl.innerHTML = `
+        <p style="margin-bottom:0.75rem;"><strong>Chief Complaint:</strong> ${draft_summary.chief_complaint || 'N/A'}</p>
+        <p style="margin-bottom:0.75rem;"><strong>History of Present Illness:</strong> ${draft_summary.hpi_narrative || 'N/A'}</p>
+        <p style="margin-bottom:0.75rem;"><strong>Pain Severity:</strong> ${draft_summary.pain_score || 0}/10</p>
+        <p style="margin-bottom:0.5rem;"><strong>Associated Symptoms:</strong> ${(draft_summary.associated_symptoms || []).join(', ') || 'None recorded'}</p>
       `;
     }
 
-    const explainPriority = document.getElementById("explain-priority-content");
-    if (explainPriority) {
-      if (red_flag && red_flag.has_red_flags) {
-        explainPriority.innerHTML = `
-          <div style="color:#b91c1c; font-weight:700;">🚨 Triggered: ${red_flag.overall_severity}</div>
-          <div style="margin-top:4px; font-size:0.8rem; color:#7f1d1d;">Rule: ${red_flag.primary_triggered_rule || 'Clinical Red Flag'}</div>
-          <div style="margin-top:4px; font-size:0.8rem; color:#7f1d1d;">Action: Immediate clinical review required</div>
+    const ayurBriefEl = document.getElementById("inspect-ayurvedic-brief");
+    if (ayurBriefEl) {
+      if (ayurvedic_assessment && Object.keys(ayurvedic_assessment).length > 0) {
+        ayurBriefEl.innerHTML = `
+          <p style="margin-bottom:0.5rem;"><strong>Dominant Dosha Imbalance:</strong> ${ayurvedic_assessment.dominant_dosha || 'Vata-Pitta'}</p>
+          <p style="margin-bottom:0.5rem;"><strong>Agni Assessment:</strong> ${ayurvedic_assessment.agni_status || 'Manda Agni (Sluggish)'}</p>
+          <p style="margin-bottom:0.5rem;"><strong>Suggested Diet/Pathya:</strong> ${(ayurvedic_assessment.dietary_guidelines || ['Warm fluids', 'Light khichdi']).join(', ')}</p>
         `;
       } else {
-        explainPriority.innerHTML = `
-          <div style="color:#15803d; font-weight:600;">✓ No Critical Red Flags</div>
-          <div style="margin-top:4px; font-size:0.8rem; color:#475569;">Standard outpatient clinical queue assigned.</div>
-        `;
+        ayurBriefEl.innerHTML = `<p style="color:var(--text-muted); font-style:italic;">No integrative Ayurvedic findings requested during intake.</p>`;
       }
     }
 
-    const explainGaps = document.getElementById("explain-gaps-content");
-    if (explainGaps) {
-      const gaps = [];
-      if (!draft_summary.medications || draft_summary.medications.length === 0) gaps.push("Medications");
-      if (!draft_summary.allergies || draft_summary.allergies.length === 0) gaps.push("Allergies");
-      if (!draft_summary.medical_history || draft_summary.medical_history.length === 0) gaps.push("Past Medical History");
-      
-      if (gaps.length > 0) {
-        explainGaps.innerHTML = `
-          <div>Unspecified intake fields:</div>
-          <div style="margin-top:6px;">
-            ${gaps.map(g => `<span class="gap-pill">⚠️ ${g}</span>`).join('')}
-          </div>
-        `;
-      } else {
-        explainGaps.innerHTML = `<span style="color:#15803d; font-weight:600;">✓ Comprehensive intake completed.</span>`;
-      }
+    // 5. Medical History & Structured Entities
+    const medsEl = document.getElementById("inspect-medications");
+    if (medsEl) {
+      const meds = medical_history.medications || [];
+      medsEl.innerHTML = meds.length > 0 ? meds.map(m => `<li>${m}</li>`).join("") : `<li style="color:var(--text-muted);">None reported</li>`;
     }
 
-    // 3. Red Flag Banner
-    const rfBanner = document.getElementById("case-redflag-banner");
-    if (rfBanner) {
-      if (red_flag && red_flag.has_red_flags) {
-        rfBanner.style.display = "block";
-        document.getElementById("rf-banner-title").innerText = `🚨 ${red_flag.overall_severity} PRIORITY TRIAGE ALERT (${red_flag.primary_triggered_rule || 'CLINICAL RED FLAG'})`;
-        document.getElementById("rf-banner-desc").innerHTML = `
-          <strong>Triage Rationale:</strong> ${red_flag.summary_reason || 'Clinical criteria met.'}<br/>
-          <strong>Required Clinical Action:</strong> ${red_flag.flagged_rules ? red_flag.flagged_rules.map(r => r.action_required).join(' | ') : 'Specialist examination'}
-        `;
-      } else {
-        rfBanner.style.display = "none";
-      }
+    const allergiesEl = document.getElementById("inspect-allergies");
+    if (allergiesEl) {
+      const allg = medical_history.allergies || [];
+      allergiesEl.innerHTML = allg.length > 0 ? allg.map(a => `<li style="color:#b91c1c; font-weight:600;">${a}</li>`).join("") : `<li style="color:var(--text-muted);">No known drug allergies (NKDA)</li>`;
     }
 
-    // 4. Chief Complaint & HPI Details
-    const ccText = document.getElementById("case-chief-complaint-text");
-    if (ccText) {
-      ccText.innerText = `"${draft_summary.chief_complaint || 'General clinical intake'}"`;
+    const condEl = document.getElementById("inspect-conditions");
+    if (condEl) {
+      const cond = medical_history.known_conditions || [];
+      condEl.innerHTML = cond.length > 0 ? cond.map(c => `<li>${c}</li>`).join("") : `<li style="color:var(--text-muted);">None reported</li>`;
     }
 
-    const hpiText = document.getElementById("case-hpi-text");
-    if (hpiText) {
-      hpiText.innerText = draft_summary.hpi || "Symptoms recorded during Socratic intake.";
-    }
-
-    const progText = document.getElementById("case-progression-text");
-    if (progText) {
-      const assoc = draft_summary.associated_symptoms && draft_summary.associated_symptoms.length
-        ? draft_summary.associated_symptoms.join(', ')
-        : "None reported";
-      progText.innerText = `Progression: ${draft_summary.symptom_progression || 'Stable'} | Associated: ${assoc}`;
-    }
-
-    const medHistoryText = document.getElementById("case-medical-history-text");
-    if (medHistoryText) {
-      const meds = draft_summary.medications && draft_summary.medications.length
-        ? draft_summary.medications.map(m => typeof m === 'object' ? `${m.name} (${m.dosage || 'standard'})` : m).join(', ')
-        : "Not recorded";
-      const hist = draft_summary.medical_history && draft_summary.medical_history.length
-        ? draft_summary.medical_history.join(', ')
-        : "None reported";
-      const allerg = draft_summary.allergies && draft_summary.allergies.length
-        ? draft_summary.allergies.join(', ')
-        : "No known drug allergies";
-
-      medHistoryText.innerHTML = `
-        <strong>Conditions:</strong> ${hist}<br/>
-        <strong>Medications:</strong> ${meds}<br/>
-        <strong>Allergies:</strong> ${allerg}
-      `;
-    }
-
-    // 5. Ayurvedic Perspective
-    const ayurDetails = document.getElementById("case-ayurvedic-details");
-    if (ayurDetails) {
-      const ayur = draft_summary.ayurvedic_assessment || {};
-      const agni = ayur.agni || "Sama (Balanced digestion)";
-      const koshtha = ayur.koshtha || "Madhyama (Regular bowel habit)";
-      const nidra = ayur.nidra || "Samyak (Normal restful sleep)";
-      const bala = ayur.bala || "Madhyama (Moderate physical strength)";
-      const prakriti = ayur.prakriti_trend || "General holistic presentation";
-
-      ayurDetails.innerHTML = `
-        <div style="margin-bottom:6px;">🔥 <strong>Agni (Digestive Fire):</strong> ${agni}</div>
-        <div style="margin-bottom:6px;">💧 <strong>Koshtha (Bowel / Elimination):</strong> ${koshtha}</div>
-        <div style="margin-bottom:6px;">🌙 <strong>Nidra & Manasika (Sleep & Stress):</strong> ${nidra}</div>
-        <div style="margin-bottom:6px;">💪 <strong>Bala (Physical Vitality):</strong> ${bala}</div>
-        <div>⚖️ <strong>Prakriti Presentation:</strong> ${prakriti}</div>
-      `;
-    }
-
-    // 6. Interactive Q&A Transcript
-    const qaList = document.getElementById("case-qa-list");
-    if (qaList) {
-      qaList.innerHTML = "";
-      if (questions.length === 0) {
-        qaList.innerHTML = `<p style="color:var(--text-muted); font-size:0.875rem;">No interactive Q&A recorded yet.</p>`;
-      } else {
-        questions.forEach((q, idx) => {
-          const a = answers[idx];
-          const bubble = document.createElement("div");
-          bubble.className = "qa-bubble";
-          bubble.innerHTML = `
-            <div class="qa-question">
-              <span><strong>Q${idx + 1}:</strong> ${q.question}</span>
-              <span class="lang-tile-badge ${q.ayurvedic_domain ? 'lang-badge-connected' : 'lang-badge-ready'}">${q.display_label || q.objective || 'Clinical Investigation'}</span>
-            </div>
-            <div class="qa-answer" style="margin-top:0.5rem; color:#1e293b;">
-              <span><strong>Answer:</strong> ${a ? a.answer : '<em style="color:#94a3b8;">Pending response</em>'}</span>
-              ${a ? `<span class="lang-tile-badge lang-badge-fallback" style="font-size:0.7rem;">[${a.source_type}]</span>` : ''}
-            </div>
-          `;
-          qaList.appendChild(bubble);
-        });
-      }
-    }
-
-    // 7. Chronological Timeline Events
-    const timelineEl = document.getElementById("case-timeline-list");
-    if (timelineEl) {
-      timelineEl.innerHTML = "";
-      if (timeline.length === 0) {
-        timelineEl.innerHTML = `<p style="color:var(--text-muted); font-size:0.875rem;">Intake initiated.</p>`;
-      } else {
-        timeline.forEach((evt) => {
-          const item = document.createElement("div");
-          item.className = "timeline-item";
-          item.innerHTML = `
-            <div class="timeline-dot"></div>
-            <div class="timeline-content">
-              <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-muted);">
-                <strong>${evt.title}</strong>
-                <span>${new Date(evt.timestamp).toLocaleTimeString()}</span>
-              </div>
-              <p style="font-size:0.875rem; margin-top:0.25rem;">${evt.description}</p>
-            </div>
-          `;
-          timelineEl.appendChild(item);
-        });
-      }
-    }
-
-    // 8. Genuine Document Evidence Traceability (Zero Fake Data)
-    const ocrDocsList = document.getElementById("case-ocr-documents-list");
-    if (ocrDocsList) {
-      ocrDocsList.innerHTML = "";
-
-      if (!documents || documents.length === 0) {
-        ocrDocsList.innerHTML = `
-          <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; padding:1.5rem; text-align:center; color:var(--text-muted);">
-            <div style="font-size:1.5rem; margin-bottom:0.25rem;">📂</div>
-            <strong style="font-size:0.9rem; color:#475569;">No medical documents uploaded</strong>
-            <p style="font-size:0.8rem; margin-top:0.25rem;">No physical prescription, lab report, or diagnostic PDF was submitted during this kiosk intake.</p>
-          </div>
-        `;
-      } else {
-        documents.forEach((doc, idx) => {
-          const item = document.createElement("div");
-          item.className = "ocr-item-card";
-          const extText = doc.extracted_text || doc.ocr_text || "Document stored securely.";
-          const provider = doc.storage_provider === "cloudinary" ? "Cloudinary (Images)" : "Backblaze B2 (Encrypted PDF)";
-          const accessUrl = doc.access_url || "#";
-          const conf = doc.ocr_confidence ? Math.round(doc.ocr_confidence * 100) : 98;
-
-          item.innerHTML = `
+    // 6. Uploaded Medical Documents & OCR
+    const docsContainer = document.getElementById("inspect-documents-list");
+    if (docsContainer) {
+      if (documents && documents.length > 0) {
+        docsContainer.innerHTML = documents.map(d => `
+          <div class="ocr-item-card">
             <div class="ocr-item-header">
-              <span><strong>Doc ${idx + 1}: ${doc.original_filename || 'Medical Document'}</strong></span>
-              <span class="lang-tile-badge lang-badge-connected">Confidence: ${conf}%</span>
+              <span><strong>📄 ${d.filename}</strong> (${d.document_type || 'Report'})</span>
+              <span>Storage: ${d.provider_metadata?.storage_provider || 'Encrypted Store'}</span>
             </div>
             <div class="ocr-item-content">
-              "${extText}"
+              ${d.ocr_text || 'Structured OCR extraction completed.'}
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--text-muted); margin-top:0.5rem;">
-              <span>Storage: <strong>${provider}</strong></span>
-              ${accessUrl !== '#' ? `<a href="${accessUrl}" target="_blank" style="color:var(--brand-primary); font-weight:700; text-decoration:underline;">View Original Document ↗</a>` : ''}
-            </div>
-          `;
-          ocrDocsList.appendChild(item);
-        });
+            ${d.access_url ? `<a href="${d.access_url}" target="_blank" style="display:inline-block; font-size:0.75rem; color:#0369a1; font-weight:600; margin-top:0.4rem; text-decoration:none;">View Original Scan ↗</a>` : ''}
+          </div>
+        `).join("");
+      } else {
+        docsContainer.innerHTML = `<p style="color:var(--text-muted); font-size:0.875rem; font-style:italic;">No previous reports or prescriptions uploaded by patient.</p>`;
       }
     }
 
-    // 9. Form Field Bindings
-    const summaryInput = document.getElementById("physician-summary-edit");
-    if (summaryInput) {
-      summaryInput.value = draft_summary.hpi || "";
+    // 7. Socratic Q&A Dialogue Log
+    const qaContainer = document.getElementById("inspect-qa-dialogue");
+    if (qaContainer) {
+      if (questions && questions.length > 0) {
+        qaContainer.innerHTML = questions.map((q, idx) => {
+          const ans = answers.find(a => a.question_id === q.question_id);
+          return `
+            <div style="margin-bottom:1rem; padding-bottom:0.75rem; border-bottom:1px solid #f1ece4;">
+              <div style="font-weight:600; font-size:0.9rem; color:var(--brand-primary); margin-bottom:0.25rem;">
+                Q${idx + 1}: ${q.question}
+              </div>
+              <div style="background:#f8fafc; border-left:3px solid var(--brand-primary); padding:0.5rem 0.75rem; border-radius:0 4px 4px 0; font-size:0.875rem; color:#1e293b;">
+                <strong>Patient:</strong> "${ans ? ans.answer_text : 'No recorded answer'}"
+              </div>
+            </div>
+          `;
+        }).join("");
+      } else {
+        qaContainer.innerHTML = `<p style="color:var(--text-muted); font-size:0.875rem;">Direct registration intake without extended branching.</p>`;
+      }
     }
+
+    // 8. Decision Confirmation Form Pre-filling
+    this.originalRecommendedDept = routing ? routing.recommended_department : "general-medicine";
+    this.originalRecommendedPriority = red_flag ? red_flag.overall_severity : "NONE";
+
+    const summaryEdit = document.getElementById("physician-summary-edit");
+    if (summaryEdit) {
+      summaryEdit.value = draft_summary.chief_complaint 
+        ? `${draft_summary.chief_complaint}. ${draft_summary.hpi_narrative || ''}`
+        : "Patient presents for consultation review.";
+    }
+
     const deptSelect = document.getElementById("confirm-dept-select");
-    if (deptSelect && routing.recommended_department) {
-      deptSelect.value = routing.recommended_department.toLowerCase();
+    if (deptSelect && routing && routing.recommended_department) {
+      deptSelect.value = routing.recommended_department;
     }
+
     const prioritySelect = document.getElementById("confirm-priority-select");
-    if (prioritySelect && red_flag.overall_severity) {
+    if (prioritySelect && red_flag && red_flag.overall_severity) {
       prioritySelect.value = red_flag.overall_severity;
     }
 
@@ -512,6 +433,8 @@ const PhysicianDashboard = {
         pill.innerText = "ALIGNED WITH AI";
       }
     }
+  },
+
   openTransferModal() {
     if (!this.currentSessionId) {
       alert("Please select or open a patient case first.");
@@ -594,38 +517,22 @@ const PhysicianDashboard = {
   },
 
   handleDirectReassign(sessionId) {
+    this.currentSessionId = sessionId;
     this.openTransferModal();
   },
 
   async escalateToEmergency(sessionId) {
-    const targetSessionId = sessionId || this.currentSessionId;
-    if (!targetSessionId) {
-      alert("Please select or open a patient case first.");
+    const targetSession = sessionId || this.currentSessionId;
+    if (!targetSession) return;
+
+    if (!confirm("🚨 IMMEDIATE EMERGENCY ESCALATION\n\nAre you sure you want to flag this patient for Immediate Emergency Priority and move to the Emergency Department Queue?")) {
       return;
     }
 
-    const prioritySelect = document.getElementById("confirm-priority-select");
-    const deptSelect = document.getElementById("confirm-dept-select");
-    if (prioritySelect) prioritySelect.value = "CRITICAL";
-    if (deptSelect) deptSelect.value = "emergency";
-    this.checkOverrideStatus();
-
-    const confirmEscalate = confirm("🚨 Are you sure you want to escalate this patient to the EMERGENCY / Trauma queue with CRITICAL priority immediately?");
-    if (!confirmEscalate) return;
-
-    const physicianInput = document.getElementById("physician-id-input");
-    const physicianId = (physicianInput && physicianInput.value.trim()) || "dr_sharma_cardio";
-    const reasonInput = document.getElementById("override-reason-input");
-    let reason = (reasonInput && reasonInput.value.trim()) || "Emergency Escalation - Acute clinical triage elevation";
-
     try {
-      await api.reassignDepartment(targetSessionId, "emergency", physicianId, reason);
-      const shouldSwitch = confirm("🚨 Patient successfully escalated to EMERGENCY (CRITICAL) queue!\n\nWould you like to switch to the Emergency / Trauma Queue now?");
-      if (shouldSwitch) {
-        this.selectDepartment("emergency", "Emergency / Trauma", "🚨");
-      } else {
-        this.showQueueView();
-      }
+      await api.reassignDepartment(targetSession, "emergency", "attending_physician", "Emergency escalation by physician");
+      alert("🚨 Patient successfully escalated to Emergency / Trauma Department queue.");
+      this.showQueueView();
     } catch (err) {
       alert("Escalation failed: " + err.message);
     }
@@ -642,30 +549,26 @@ const PhysicianDashboard = {
   },
 
   async submitTargetedQuestion() {
-    if (!this.currentSessionId) return;
-
     const category = document.getElementById("ask-category-select").value;
-    const custom = document.getElementById("ask-custom-input").value.trim() || null;
-    const physicianId = document.getElementById("physician-id-input").value.trim() || "dr_sharma_cardio";
+    const custom = document.getElementById("ask-custom-input").value.trim();
 
     try {
       await api.askTargetedQuestion(this.currentSessionId, {
-        physician_id: physicianId,
-        category: category,
-        custom_question: custom
+        physician_id: "dr_sharma_cardio",
+        category,
+        custom_question: custom || null
       });
-
-      alert("✓ Targeted follow-up question dispatched to patient kiosk.");
+      alert("✓ Question dispatched to patient intake session!");
       this.closeAskPatientModal();
-      this.openCase(this.currentSessionId);
+      this.inspectPatientCase(this.currentSessionId);
     } catch (err) {
-      alert("Notice: " + err.message);
+      alert("Failed to send question: " + err.message);
     }
   },
 
   async handleConfirmCase(e) {
     e.preventDefault();
-    const btn = e.target.querySelector('button[type="submit"]');
+    const btn = document.getElementById("btn-confirm-record");
     btn.disabled = true;
     btn.innerText = "Confirming & Signing...";
 
@@ -673,7 +576,6 @@ const PhysicianDashboard = {
       const physicianId = document.getElementById("physician-id-input").value.trim() || "dr_sharma_cardio";
       const dept = document.getElementById("confirm-dept-select").value;
       const priority = document.getElementById("confirm-priority-select").value;
-      const editedSummary = document.getElementById("physician-summary-edit").value;
       const notes = document.getElementById("physician-notes-input").value;
       const overrideReason = document.getElementById("override-reason-input").value.trim();
 

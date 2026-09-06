@@ -19,6 +19,7 @@ from app.templates.embedded_assets import (
     PHYSICIAN_HTML,
     DIAGNOSTICS_HTML,
     STYLES_CSS,
+    LOGO_SVG,
     JS_ASSETS
 )
 
@@ -104,21 +105,33 @@ async def serve_js(file_path: str):
         return Response(content=js_content, media_type="application/javascript")
     return Response(content="// JS not found", status_code=404, media_type="application/javascript")
 
+@app.get("/logo.svg", include_in_schema=False)
 @app.get("/logo.png", include_in_schema=False)
 @app.get("/favicon.ico", include_in_schema=False)
 async def serve_logo():
-    for candidate in [
+    for svg_candidate in [
+        os.path.join("public", "logo.svg"),
+        os.path.join("frontend", "logo.svg"),
+        "logo.svg"
+    ]:
+        if os.path.exists(svg_candidate):
+            try:
+                with open(svg_candidate, "r", encoding="utf-8") as f:
+                    return Response(content=f.read(), media_type="image/svg+xml")
+            except Exception:
+                pass
+    for png_candidate in [
         os.path.join("public", "logo.png"),
         os.path.join("frontend", "logo.png"),
         "logo.png"
     ]:
-        if os.path.exists(candidate):
+        if os.path.exists(png_candidate):
             try:
-                with open(candidate, "rb") as f:
+                with open(png_candidate, "rb") as f:
                     return Response(content=f.read(), media_type="image/png")
             except Exception:
                 pass
-    return Response(status_code=204)
+    return Response(content=LOGO_SVG, media_type="image/svg+xml")
 
 # Optional static directory mount for local uvicorn
 for static_candidate in ["frontend", "public"]:

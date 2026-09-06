@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MediKiosk — AI-Assisted Clinical Intake & Triage System</title>
-  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="icon" type="image/svg+xml" href="/logo.svg">
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,7 +26,7 @@
   <!-- Main Navigation Bar -->
   <nav class="navbar">
     <div class="brand-wrapper" onclick="window.location.reload()">
-      <img src="/logo.png" alt="MediKiosk Logo" class="brand-logo-img">
+      <img src="/logo.svg" alt="MediKiosk Logo" class="brand-logo-img" width="48" height="48">
       <div class="brand-text-block">
         <span class="brand-name">MediKiosk</span>
         <span class="brand-tagline-text" data-i18n="brand_tagline">Traditional Wisdom. Modern Care.</span>
@@ -86,7 +86,7 @@
               <button class="btn-primary-action" onclick="PatientIntake.goToStep(2)">
                 <span data-i18n="begin_checkin">Begin Check-In</span> →
               </button>
-              <button class="btn-icon-round" onclick="SpeechManager.toggleSpeak('Welcome to MediKiosk. Please begin check-in.')" title="Audio Preview">
+              <button class="btn-icon-round" onclick="SpeechManager.toggleSpeak('Welcome to MediKiosk. Please touch the Begin Check-In button on your screen.')" title="Listen / Mute Audio Preview">
                 🔊
               </button>
             </div>
@@ -110,7 +110,7 @@
             <h2 class="card-box-title" data-i18n="step_lang_title">Select Language</h2>
             <p class="card-box-subtitle" data-i18n="step_lang_sub">Choose your preferred language for voice and text intake</p>
           </div>
-          <button class="btn-icon-round" onclick="SpeechManager.toggleSpeak('Please select your language')">🔊</button>
+          <button class="btn-icon-round" onclick="SpeechManager.toggleSpeak('Please choose your preferred language by tapping any box on the screen.')" title="Listen / Mute Audio">🔊</button>
         </div>
 
         <div class="lang-grid" id="lang-selection-grid">
@@ -178,19 +178,54 @@
       <div id="kiosk-step-3" class="card-box" style="display:none;">
         <div class="card-box-header">
           <div>
-            <h2 class="card-box-title" data-i18n="step_consent_title">Patient Consent & Privacy Notice</h2>
-            <p class="card-box-subtitle" data-i18n="step_consent_sub">Ayushman Bharat Digital Mission (ABDM) Compliance</p>
+            <h2 class="card-box-title" data-i18n="step_consent_title">Patient Consent & Clinical Intake Terms</h2>
+            <p class="card-box-subtitle" data-i18n="step_consent_sub">Ayushman Bharat Digital Mission (ABDM) & Hospital Safety Standards</p>
           </div>
+          <button class="btn-icon-round" onclick="SpeechManager.toggleSpeak('Please listen carefully to our safety guidelines. MediKiosk prepares your symptom summary for your attending doctor. Your doctor will personally examine you and write all prescriptions. Please tap the agreement box and touch Continue.')" title="Listen / Mute Consent Audio">🔊</button>
         </div>
 
         <div style="background:#faf8f5; border:1px solid var(--border-color); border-radius:var(--radius-md); padding:1.5rem; margin-bottom:1.5rem;">
-          <p style="font-size:0.95rem; line-height:1.6; color:#334155;" data-i18n="consent_body">
-            By proceeding, you consent to MediKiosk processing your health symptoms and medical documents using AI to prepare a clinical summary for your attending physician. MediKiosk does not replace medical advice.
+          <p style="font-size:0.95rem; line-height:1.6; color:#1e293b; font-weight:600; margin-bottom:1rem;" data-i18n="consent_body">
+            Please review the key terms before proceeding with your intelligent clinical check-in:
           </p>
-          <div style="margin-top:1.25rem;">
-            <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; font-weight:600;">
-              <input type="checkbox" id="consent-checkbox" checked>
-              <span data-i18n="consent_agree">I understand and agree to the clinical intake terms</span>
+
+          <div style="display:flex; flex-direction:column; gap:0.85rem; margin-bottom:1.25rem; font-size:0.9rem; color:#334155;">
+            <div style="display:flex; gap:0.6rem; align-items:flex-start;">
+              <span style="font-size:1.1rem; line-height:1.2;">🛡️</span>
+              <div>
+                <strong>Physician-in-the-Loop Care:</strong> MediKiosk is an intake assistant, not a doctor. Your consultation physician personally evaluates your symptoms, performs examinations, and writes all prescriptions.
+              </div>
+            </div>
+            <div style="display:flex; gap:0.6rem; align-items:flex-start;">
+              <span style="font-size:1.1rem; line-height:1.2;">🔒</span>
+              <div>
+                <strong>ABDM Privacy & Confidentiality:</strong> Your health records and Ayushman Bharat Health Account (ABHA) details are strictly confidential and shared only with your treating hospital doctors.
+              </div>
+            </div>
+            <div style="display:flex; gap:0.6rem; align-items:flex-start;">
+              <span style="font-size:1.1rem; line-height:1.2;">🎙️</span>
+              <div>
+                <strong>Voice & Accessibility Assistance:</strong> Clear spoken voice guidance and speech recognition are provided so all patients, regardless of literacy level, can comfortably complete check-in.
+              </div>
+            </div>
+            <div style="display:flex; gap:0.6rem; align-items:flex-start;">
+              <span style="font-size:1.1rem; line-height:1.2;">🚨</span>
+              <div>
+                <strong>Urgent Emergency Priority:</strong> If severe or critical symptoms (such as acute chest pressure or severe breathing difficulty) are detected, you will be flagged for immediate emergency priority attention.
+              </div>
+            </div>
+            <div style="display:flex; gap:0.6rem; align-items:flex-start;">
+              <span style="font-size:1.1rem; line-height:1.2;">🏥</span>
+              <div>
+                <strong>Attendant & Staff Support:</strong> A family member or attendant is welcome to assist you with registration, and hospital helpdesk staff are available at any time.
+              </div>
+            </div>
+          </div>
+
+          <div id="consent-checkbox-wrapper" style="background:#ffffff; border:1.5px solid #d8cbba; border-radius:8px; padding:1.1rem; transition:all 0.3s ease;">
+            <label style="display:flex; align-items:center; gap:0.85rem; cursor:pointer; font-weight:700; color:var(--brand-primary); user-select:none;">
+              <input type="checkbox" id="consent-checkbox" style="width:1.35rem; height:1.35rem; accent-color:var(--brand-primary); cursor:pointer;">
+              <span data-i18n="consent_agree" style="font-size:0.95rem;">I have read, understood, and agree to the clinical intake & privacy terms</span>
             </label>
           </div>
         </div>
@@ -198,7 +233,7 @@
         <div style="display:flex; justify-content:space-between;">
           <button class="btn-secondary-action" onclick="PatientIntake.goToStep(2)">← Back</button>
           <button class="btn-primary-action" onclick="PatientIntake.handleConsentNext()">
-            <span data-i18n="continue_btn">Continue</span> →
+            <span data-i18n="continue_btn">Continue to Details</span> →
           </button>
         </div>
       </div>

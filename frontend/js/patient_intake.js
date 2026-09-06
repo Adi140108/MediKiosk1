@@ -15,6 +15,10 @@ const PatientIntake = {
     SpeechManager.init();
     I18n.setLanguage("en");
     this.updateStepIndicator(1);
+    // Automatic welcoming voice guidance for illiterate/rural patients on kiosk startup
+    setTimeout(() => {
+      SpeechManager.speakStepGuidance(1, this.language);
+    }, 800);
   },
 
   bindEvents() {
@@ -59,6 +63,13 @@ const PatientIntake = {
     this.currentStep = stepNum;
     this.updateStepIndicator(stepNum);
     window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // Step 7 questions are spoken dynamically in renderQuestion
+    if (stepNum !== 7) {
+      setTimeout(() => {
+        SpeechManager.speakStepGuidance(stepNum, this.language);
+      }, 350);
+    }
   },
 
   updateStepIndicator(stepNum) {
@@ -98,17 +109,29 @@ const PatientIntake = {
     });
 
     const langNames = {
-      en: "English", hi: "हिन्दी (Hindi)", kn: "ಕನ್ನಡ (Kannada)",
-      ta: "தமிழ் (Tamil)", te: "తెలుగు (Telugu)", ml: "മലയാളം (Malayalam)",
-      mr: "मराठी (Marathi)", bn: "বাংলা (Bengali)", gu: "ગુજરાતી (Gujarati)", pa: "ਪੰਜਾਬੀ (Punjabi)"
+      en: "English", hi: "हिन्दी", kn: "ಕನ್ನಡ",
+      ta: "தமிழ்", te: "తెలుగు", ml: "മലയാളം",
+      mr: "मराठी", bn: "বাংলা", gu: "ગુજરાતી", pa: "ਪੰਜਾਬੀ"
     };
     SpeechManager.speakText(`Language selected: ${langNames[lang] || lang}`, lang);
   },
 
   handleConsentNext() {
     const consentBox = document.getElementById("consent-checkbox");
+    const wrapper = document.getElementById("consent-checkbox-wrapper");
+    
     if (consentBox && !consentBox.checked) {
-      alert("Please agree to the privacy and intake terms to continue.");
+      SpeechManager.speakText("Please tap the agreement checkbox to confirm your consent before proceeding.", this.language);
+      if (wrapper) {
+        wrapper.style.borderColor = "#ef4444";
+        wrapper.style.backgroundColor = "#fef2f2";
+        wrapper.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => {
+          wrapper.style.borderColor = "#d8cbba";
+          wrapper.style.backgroundColor = "#ffffff";
+        }, 2500);
+      }
+      alert("⚠️ Please check the agreement box to confirm your consent before proceeding.");
       return;
     }
     this.goToStep(4);
@@ -177,7 +200,6 @@ const PatientIntake = {
   },
 
   handleComplaintNext() {
-    const input = document.getElementById("chief-complaint-input");
     this.painLevel = document.getElementById("pain-range")?.value || 7;
     this.goToStep(6);
   },
@@ -238,7 +260,6 @@ const PatientIntake = {
       // If initial complaint was entered, seed it
       const complaintText = document.getElementById("chief-complaint-input")?.value.trim();
       if (complaintText) {
-        // Pre-submit initial complaint
         const answerRes = await api.submitAnswer(
           this.currentSessionId,
           res.question.question_id,
@@ -286,7 +307,7 @@ const PatientIntake = {
       input.focus();
     }
 
-    // Auto-speak question using TTS
+    // Auto-speak question using Indian female voice TTS
     SpeechManager.speakText(question.question, this.language);
   },
 
@@ -384,4 +405,3 @@ const PatientIntake = {
     }
   }
 };
-

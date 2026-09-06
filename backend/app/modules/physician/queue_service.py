@@ -57,16 +57,16 @@ class PhysicianQueueService:
         """
         all_items = self.repo.list_all_queue_items()
         
-        # Filter for department
-        if department_id == DepartmentId.UNSPECIFIED:
+        target_val = department_id.value if isinstance(department_id, DepartmentId) else str(department_id).lower().replace("_", "-")
+        if target_val == "unspecified":
             dept_items = [
                 it for it in all_items
-                if it.assigned_department == DepartmentId.UNSPECIFIED or it.assigned_department is None
+                if not it.assigned_department or (it.assigned_department.value if isinstance(it.assigned_department, DepartmentId) else str(it.assigned_department).lower().replace("_", "-")) == "unspecified"
             ]
         else:
             dept_items = [
                 it for it in all_items
-                if it.assigned_department == department_id
+                if (it.assigned_department.value if isinstance(it.assigned_department, DepartmentId) else str(it.assigned_department or "").lower().replace("_", "-")) == target_val
             ]
 
         now_utc = datetime.now(timezone.utc)

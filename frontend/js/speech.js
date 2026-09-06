@@ -1,4 +1,4 @@
-// MediKiosk Production-Grade 6-State Speech-to-Speech Engine
+// MediKiosk Production-Grade 6-State Speech-to-Speech Engine with Indian Female Voice & Accessibility Support
 const SpeechState = {
   IDLE: 'IDLE',
   LISTENING: 'LISTENING',
@@ -16,6 +16,7 @@ const SpeechManager = {
   synth: window.speechSynthesis || null,
   currentLanguage: 'en',
   audioCtx: null,
+  voicesLoaded: false,
 
   langLocaleMap: {
     en: 'en-IN',
@@ -32,6 +33,13 @@ const SpeechManager = {
 
   init() {
     this.setupRecognition();
+    if (this.synth) {
+      if (this.synth.onvoiceschanged !== undefined) {
+        this.synth.onvoiceschanged = () => {
+          this.voicesLoaded = true;
+        };
+      }
+    }
   },
 
   getAudioContext() {
@@ -190,22 +198,85 @@ const SpeechManager = {
     }
   },
 
+  getIndianFemaleVoice(targetLang) {
+    if (!this.synth) return null;
+    const voices = this.synth.getVoices();
+    if (!voices || voices.length === 0) return null;
+
+    const locale = this.langLocaleMap[targetLang] || 'en-IN';
+    const targetLangCode = targetLang || 'en';
+    
+    // 1. Search for named Indian female voices (Microsoft Neerja, Heera, Swara, Aditi, Priya, etc.)
+    const indianFemaleNames = ['neerja', 'heera', 'swara', 'aditi', 'priya', 'shashi', 'veena', 'anjali', 'kavya', 'kalpana', 'geeta', 'sunita', 'alka', 'deepa', 'divya', 'sneha'];
+    const namedMatch = voices.find(v => {
+      const nameLow = v.name.toLowerCase();
+      return indianFemaleNames.some(fn => nameLow.includes(fn));
+    });
+    if (namedMatch) return namedMatch;
+
+    // 2. Search for Indian locale voices that are female (e.g. en-IN or hi-IN)
+    const localeMatches = voices.filter(v => {
+      const langNorm = v.lang.replace('_', '-').toLowerCase();
+      return langNorm.startsWith(locale.toLowerCase()) || langNorm.startsWith(targetLangCode.toLowerCase());
+    });
+
+    const femaleMatch = localeMatches.find(v => {
+      const nameLow = v.name.toLowerCase();
+      const isMale = nameLow.includes('male') || nameLow.includes('guy') || nameLow.includes('george') || nameLow.includes('david') || nameLow.includes('ravi') || nameLow.includes('mark') || nameLow.includes('prabhat');
+      return (nameLow.includes('female') || nameLow.includes('woman') || nameLow.includes('google') || !isMale);
+    });
+    if (femaleMatch) return femaleMatch;
+    if (localeMatches.length > 0) return localeMatches[0];
+
+    // 3. Fallback to any clear female English voice
+    const anyFemale = voices.find(v => {
+      const nameLow = v.name.toLowerCase();
+      return nameLow.includes('female') || nameLow.includes('zira') || nameLow.includes('samantha') || nameLow.includes('victoria') || nameLow.includes('karen') || nameLow.includes('woman');
+    });
+    return anyFemale || voices[0];
+  },
+
+  speakStepGuidance(stepNum, lang = 'en') {
+    const guidanceMap = {
+      1: "Namaste! Welcome to MediKiosk intelligent hospital check-in. Please touch the Begin Check-In button on your screen to start.",
+      2: "Please choose your preferred language by tapping any box on the screen: English, Hindi, Kannada, Tamil, Telugu, and more.",
+      3: "Please listen carefully to our safety notice. MediKiosk prepares your symptom summary for your attending doctor. Your doctor will personally examine you and write all prescriptions. Please tap the agreement box and touch Continue.",
+      4: "Please enter or speak your name, age, gender, and phone number. If a family member or attendant is helping you, you can check the attendant box.",
+      5: "What health problem or pain brings you to the clinic today? You can speak your answer using the microphone, or select from the common symptom buttons.",
+      6: "If you have previous doctor prescriptions or lab test reports, you can upload them here, or tap Skip to proceed.",
+      7: "Please listen to the clinical question and speak your answer using the microphone button.",
+      8: "Your clinical check-in is complete! Your consultation ticket is ready. Please proceed to the waiting area of your assigned department."
+    };
+    const text = guidanceMap[stepNum];
+    if (text) {
+      this.speakText(text, lang);
+    }
+  },
+
   toggleSpeak(text, lang = null) {
     if (!this.synth) return false;
 
-    // If currently speaking, mute/stop audio
+    // If currently speaking, mute / stop audio
     if (this.synth.speaking || this.isSpeaking) {
-      this.synth.cancel();
-      this.isSpeaking = false;
-      document.querySelectorAll('#btn-speak-question, .btn-icon-round').forEach(btn => {
-        btn.classList.remove('pulse-audio');
-      });
+      this.stopAllAudio();
       return false;
     }
 
     // Otherwise unmute and speak
     this.speakText(text, lang);
     return true;
+  },
+
+  stopAllAudio() {
+    if (this.synth) {
+      this.synth.cancel();
+    }
+    this.isSpeaking = false;
+    const speakerButtons = document.querySelectorAll('#btn-speak-question, .btn-icon-round');
+    speakerButtons.forEach(btn => {
+      btn.classList.remove('pulse-audio');
+      btn.title = "Listen with Audio / Voice";
+    });
   },
 
   speakText(text, lang = null) {
@@ -215,26 +286,34 @@ const SpeechManager = {
     const targetLang = lang || this.currentLanguage;
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = this.langLocaleMap[targetLang] || 'en-IN';
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
+    utterance.rate = 0.88;  // Calm, accessible pace for patients
+    utterance.pitch = 1.12; // Natural, warm Indian female pitch
 
-    const voices = this.synth.getVoices();
-    const matchedVoice = voices.find(v => v.lang.startsWith(targetLang) || v.lang.startsWith(this.langLocaleMap[targetLang]));
-    if (matchedVoice) {
-      utterance.voice = matchedVoice;
+    const assignedVoice = this.getIndianFemaleVoice(targetLang);
+    if (assignedVoice) {
+      utterance.voice = assignedVoice;
     }
 
     const speakerButtons = document.querySelectorAll('#btn-speak-question, .btn-icon-round');
-    speakerButtons.forEach(btn => btn.classList.add('pulse-audio'));
+    speakerButtons.forEach(btn => {
+      btn.classList.add('pulse-audio');
+      btn.title = "Click to Mute Audio";
+    });
 
     utterance.onend = () => {
       this.isSpeaking = false;
-      speakerButtons.forEach(btn => btn.classList.remove('pulse-audio'));
+      speakerButtons.forEach(btn => {
+        btn.classList.remove('pulse-audio');
+        btn.title = "Listen with Audio / Voice";
+      });
     };
 
     utterance.onerror = () => {
       this.isSpeaking = false;
-      speakerButtons.forEach(btn => btn.classList.remove('pulse-audio'));
+      speakerButtons.forEach(btn => {
+        btn.classList.remove('pulse-audio');
+        btn.title = "Listen with Audio / Voice";
+      });
     };
 
     this.isSpeaking = true;
