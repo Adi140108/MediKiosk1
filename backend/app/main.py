@@ -42,16 +42,21 @@ app.include_router(speech_router, prefix="/api/v1")
 app.include_router(health_router, prefix="/api/v1")
 
 def find_frontend_dir() -> str:
-    """Discovers frontend directory across local development and Vercel serverless environments."""
+    """Discovers public or frontend directory across local development and Vercel serverless environments."""
     candidate_paths = [
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "public")),
         os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend")),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public")),
         os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend")),
+        os.path.abspath(os.path.join(os.getcwd(), "public")),
         os.path.abspath(os.path.join(os.getcwd(), "frontend")),
+        "/var/task/public",
         "/var/task/frontend",
+        os.path.abspath("./public"),
         os.path.abspath("./frontend"),
     ]
     for p in candidate_paths:
-        if os.path.exists(p) and os.path.isdir(p):
+        if os.path.exists(p) and os.path.isdir(p) and os.path.exists(os.path.join(p, "index.html")):
             return p
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend"))
 
@@ -63,6 +68,19 @@ def read_frontend_file(filename: str) -> str:
     if os.path.exists(filepath):
         with open(filepath, "r", encoding="utf-8") as f:
             return f.read()
+            
+    # Recursive fallback across repository tree
+    for search_root in [os.getcwd(), "/var/task", os.path.abspath(".")]:
+        if os.path.exists(search_root):
+            for root, _, files in os.walk(search_root):
+                if filename in files:
+                    try:
+                        with open(os.path.join(root, filename), "r", encoding="utf-8") as f:
+                            content = f.read()
+                            if content:
+                                return content
+                    except Exception:
+                        pass
     return ""
 
 @app.get("/", include_in_schema=False)
@@ -128,6 +146,7 @@ async def serve_logo():
         os.path.join(fdir, "logo.png"),
         os.path.join(fdir, "assets", "logo.png"),
         os.path.abspath("./logo.png"),
+        os.path.abspath("./public/logo.png"),
         os.path.abspath("./frontend/logo.png")
     ]:
         if os.path.exists(candidate):

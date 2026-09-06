@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediKiosk — AI-Assisted Clinical Intake & Triage System</title>
+  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+
+  <!-- Safety Top Notice Banner -->
+  <div class="safety-top-banner">
+    <div class="safety-notice-content">
+      <span>⚠️</span>
+      <span data-i18n="safety_notice">Safety Notice: MediKiosk does not diagnose conditions or prescribe medications. Your healthcare provider reviews all information.</span>
+    </div>
+    <div class="physician-loop-pill">
+      <span>🛡️</span>
+      <span data-i18n="physician_in_loop">Physician-in-the-Loop</span>
+    </div>
+  </div>
+
+  <!-- Main Navigation Bar -->
+  <nav class="navbar">
+    <div class="brand-wrapper" onclick="window.location.reload()">
+      <img src="/logo.png" alt="MediKiosk Logo" class="brand-logo-img">
+      <div class="brand-text-block">
+        <span class="brand-name">MediKiosk</span>
+        <span class="brand-tagline-text" data-i18n="brand_tagline">Traditional Wisdom. Modern Care.</span>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <div class="lang-pill-indicator">
+        <span>🌐</span>
+        <span id="current-lang-pill">EN</span>
+      </div>
+
+      <!-- Current Language Indicator -->
+    </div>
+  </nav>
+
+  <!-- Main Content Wrapper -->
+  <main class="main-wrapper">
+
+    <!-- ========================================================= -->
+    <!-- SECTION 1: PATIENT KIOSK (8-STEP WIZARD) -->
+    <!-- ========================================================= -->
+    <section id="section-patient" class="view-section active">
+
+      <!-- Wizard Steps Indicator -->
+      <div class="wizard-steps-bar" id="kiosk-step-indicator">
+        <div class="wizard-step-node active" id="step-node-1">1</div>
+        <div class="wizard-step-line" id="step-line-1"></div>
+        <div class="wizard-step-node" id="step-node-2">2</div>
+        <div class="wizard-step-line" id="step-line-2"></div>
+        <div class="wizard-step-node" id="step-node-3">3</div>
+        <div class="wizard-step-line" id="step-line-3"></div>
+        <div class="wizard-step-node" id="step-node-4">4</div>
+        <div class="wizard-step-line" id="step-line-4"></div>
+        <div class="wizard-step-node" id="step-node-5">5</div>
+        <div class="wizard-step-line" id="step-line-5"></div>
+        <div class="wizard-step-node" id="step-node-6">6</div>
+        <div class="wizard-step-line" id="step-line-6"></div>
+        <div class="wizard-step-node" id="step-node-7">7</div>
+        <div class="wizard-step-line" id="step-line-7"></div>
+        <div class="wizard-step-node" id="step-node-8">8</div>
+      </div>
+
+      <!-- Step 1: Welcome & Landing -->
+      <div id="kiosk-step-1" class="card-box">
+        <div class="hero-split-grid">
+          <div class="hero-left-content">
+            <div class="hero-badge-ready">
+              <span>✨</span>
+              <span data-i18n="speech_ready">Speech-to-Speech Ready</span>
+            </div>
+            <h1 class="hero-headline" data-i18n="hero_title">Your Intelligent Clinical Check-In.</h1>
+            <p class="hero-description" data-i18n="hero_sub">
+              Complete your pre-consultation intake before you see your doctor. MediKiosk collects your symptoms using AI and hands-free voice — in your language.
+            </p>
+            <div class="hero-action-row">
+              <button class="btn-primary-action" onclick="PatientIntake.goToStep(2)">
+                <span data-i18n="begin_checkin">Begin Check-In</span> →
+              </button>
+              <button class="btn-icon-round" onclick="SpeechManager.speakText('Welcome to MediKiosk. Please begin check-in.')" title="Audio Preview">
+                🔊
+              </button>
+            </div>
+          </div>
+          <div>
+            <div class="hero-graphic-card">
+              <div class="hero-graphic-inner">
+                <div class="hero-graphic-icon">💚</div>
+                <h4 data-i18n="secure_private">Secure & Private</h4>
+                <p data-i18n="secure_sub">All information is encrypted and securely transmitted directly to your physician.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Language Selection -->
+      <div id="kiosk-step-2" class="card-box" style="display:none;">
+        <div class="card-box-header">
+          <div>
+            <h2 class="card-box-title" data-i18n="step_lang_title">Select Language</h2>
+            <p class="card-box-subtitle" data-i18n="step_lang_sub">Choose your preferred language for voice and text intake</p>
+          </div>
+          <button class="btn-icon-round" onclick="SpeechManager.speakText('Please select your language')">🔊</button>
+        </div>
+
+        <div class="lang-grid" id="lang-selection-grid">
+          <div class="lang-tile selected" onclick="PatientIntake.selectLanguage('en')" data-lang="en">
+            <span class="lang-tile-native">English</span>
+            <span class="lang-tile-latin">English</span>
+            <span class="lang-tile-badge lang-badge-connected">FULLY CONNECTED</span>
+          </div>
+          <div class="lang-tile" onclick="PatientIntake.selectLanguage('hi')" data-lang="hi">
+            <span class="lang-tile-native">हिन्दी</span>
+            <span class="lang-tile-latin">Hindi</span>
+            <span class="lang-tile-badge lang-badge-ready">TRANSLATION READY</span>
+          </div>
+          <div class="lang-tile" onclick="PatientIntake.selectLanguage('kn')" data-lang="kn">
+            <span class="lang-tile-native">ಕನ್ನಡ</span>
+            <span class="lang-tile-latin">Kannada</span>
+            <span class="lang-tile-badge lang-badge-fallback">TEXT FALLBACK</span>
+          </div>
+          <div class="lang-tile" onclick="PatientIntake.selectLanguage('ta')" data-lang="ta">
+            <span class="lang-tile-native">தமிழ்</span>
+            <span class="lang-tile-latin">Tamil</span>
+            <span class="lang-tile-badge lang-badge-fallback">TEXT FALLBACK</span>
+          </div>
+          <div class="lang-tile" onclick="PatientIntake.selectLanguage('te')" data-lang="te">
+            <span class="lang-tile-native">తెలుగు</span>
+            <span class="lang-tile-latin">Telugu</span>
+            <span class="lang-tile-badge lang-badge-fallback">TEXT FALLBACK</span>
+          </div>
+          <div class="lang-tile" onclick="PatientIntake.selectLanguage('ml')" data-lang="ml">
+            <span class="lang-tile-native">മലയാളം</span>
+            <span class="lang-tile-latin">Malayalam</span>
+            <span class="lang-tile-badge lang-badge-fallback">TEXT FALLBACK</span>
+          </div>
+          <div class="lang-tile" onclick="PatientIntake.selectLanguage('mr')" data-lang="mr">
+            <span class="lang-tile-native">मराठी</span>
+            <span class="lang-tile-latin">Marathi</span>
+            <span class="lang-tile-badge lang-badge-fallback">TEXT FALLBACK</span>
+          </div>
+          <div class="lang-tile" onclick="PatientIntake.selectLanguage('bn')" data-lang="bn">
+            <span class="lang-tile-native">বাংলা</span>
+            <span class="lang-tile-latin">Bengali</span>
+            <span class="lang-tile-badge lang-badge-fallback">TEXT FALLBACK</span>
+          </div>
+          <div class="lang-tile" onclick="PatientIntake.selectLanguage('gu')" data-lang="gu">
+            <span class="lang-tile-native">ગુજરાતી</span>
+            <span class="lang-tile-latin">Gujarati</span>
+            <span class="lang-tile-badge lang-badge-fallback">TEXT FALLBACK</span>
+          </div>
+          <div class="lang-tile" onclick="PatientIntake.selectLanguage('pa')" data-lang="pa">
+            <span class="lang-tile-native">ਪੰਜਾਬੀ</span>
+            <span class="lang-tile-latin">Punjabi</span>
+            <span class="lang-tile-badge lang-badge-fallback">TEXT FALLBACK</span>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-top:1.5rem;">
+          <button class="btn-secondary-action" onclick="PatientIntake.goToStep(1)">← Back</button>
+          <button class="btn-primary-action" onclick="PatientIntake.goToStep(3)">
+            <span data-i18n="continue_btn">Continue</span> →
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: Patient Consent -->
+      <div id="kiosk-step-3" class="card-box" style="display:none;">
+        <div class="card-box-header">
+          <div>
+            <h2 class="card-box-title" data-i18n="step_consent_title">Patient Consent & Privacy Notice</h2>
+            <p class="card-box-subtitle" data-i18n="step_consent_sub">Ayushman Bharat Digital Mission (ABDM) Compliance</p>
+          </div>
+        </div>
+
+        <div style="background:#faf8f5; border:1px solid var(--border-color); border-radius:var(--radius-md); padding:1.5rem; margin-bottom:1.5rem;">
+          <p style="font-size:0.95rem; line-height:1.6; color:#334155;" data-i18n="consent_body">
+            By proceeding, you consent to MediKiosk processing your health symptoms and medical documents using AI to prepare a clinical summary for your attending physician. MediKiosk does not replace medical advice.
+          </p>
+          <div style="margin-top:1.25rem;">
+            <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; font-weight:600;">
+              <input type="checkbox" id="consent-checkbox" checked>
+              <span data-i18n="consent_agree">I understand and agree to the clinical intake terms</span>
+            </label>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between;">
+          <button class="btn-secondary-action" onclick="PatientIntake.goToStep(2)">← Back</button>
+          <button class="btn-primary-action" onclick="PatientIntake.handleConsentNext()">
+            <span data-i18n="continue_btn">Continue</span> →
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 4: Patient Registration & Attendant Mode -->
+      <div id="kiosk-step-4" class="card-box" style="display:none;">
+        <div class="card-box-header">
+          <div>
+            <h2 class="card-box-title" data-i18n="step_patient_title">Patient Details</h2>
+            <p class="card-box-subtitle" data-i18n="step_patient_sub">Enter your identification or Ayushman Bharat Health Account (ABHA)</p>
+          </div>
+        </div>
+
+        <form id="patient-reg-form">
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.25rem; margin-bottom:1rem;">
+            <div>
+              <label class="form-label" for="reg-name" data-i18n="full_name">Full Name *</label>
+              <input type="text" id="reg-name" class="form-input-field" placeholder="e.g. Ramesh Sharma" required>
+            </div>
+            <div>
+              <label class="form-label" for="reg-age" data-i18n="age">Age *</label>
+              <input type="number" id="reg-age" class="form-input-field" placeholder="e.g. 48" required min="1" max="120">
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.25rem; margin-bottom:1rem;">
+            <div>
+              <label class="form-label" for="reg-gender" data-i18n="gender">Gender *</label>
+              <select id="reg-gender" class="form-select-field" required>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="reg-phone" data-i18n="phone">Phone Number</label>
+              <input type="tel" id="reg-phone" class="form-input-field" placeholder="+91 98765 43210">
+            </div>
+          </div>
+
+          <div style="margin-bottom:1.5rem;">
+            <label class="form-label" for="reg-abha" data-i18n="abha_id">ABHA ID (Ayushman Bharat Health Account)</label>
+            <input type="text" id="reg-abha" class="form-input-field" placeholder="e.g. 91-4829-1049-2810 or username@abdm">
+          </div>
+
+          <!-- Attendant-Assisted Mode -->
+          <div style="background:#fdfcf9; border:1.5px dashed #d8cbba; border-radius:var(--radius-md); padding:1.25rem; margin-bottom:1.5rem;">
+            <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; font-weight:700; color:var(--brand-primary);">
+              <input type="checkbox" id="is-attendant-assisted">
+              <span data-i18n="attendant_toggle">Attendant / Family Member Assisting Patient</span>
+            </label>
+
+            <div id="attendant-fields" style="display:none; margin-top:1rem; padding-top:1rem; border-top:1px solid #e7dcce;">
+              <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:1rem;">
+                <div>
+                  <label class="form-label" for="att-name" data-i18n="attendant_name">Attendant Name</label>
+                  <input type="text" id="att-name" class="form-input-field" placeholder="e.g. Sunita Sharma">
+                </div>
+                <div>
+                  <label class="form-label" for="att-phone" data-i18n="attendant_phone">Attendant Phone</label>
+                  <input type="tel" id="att-phone" class="form-input-field" placeholder="Phone">
+                </div>
+                <div>
+                  <label class="form-label" for="att-rel" data-i18n="relationship">Relationship</label>
+                  <select id="att-rel" class="form-select-field">
+                    <option value="Spouse">Spouse</option>
+                    <option value="Parent">Parent</option>
+                    <option value="Child">Child</option>
+                    <option value="Sibling">Sibling</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between;">
+            <button type="button" class="btn-secondary-action" onclick="PatientIntake.goToStep(3)">← Back</button>
+            <button type="submit" class="btn-primary-action">
+              <span data-i18n="continue_btn">Continue to Symptoms</span> →
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Step 5: Chief Complaint & Quick Tags -->
+      <div id="kiosk-step-5" class="card-box" style="display:none;">
+        <div class="card-box-header">
+          <div>
+            <h2 class="card-box-title" data-i18n="step_complaint_title">Chief Health Complaint</h2>
+            <p class="card-box-subtitle" data-i18n="step_complaint_sub">What brings you to the clinic today?</p>
+          </div>
+        </div>
+
+        <div style="margin-bottom:1.5rem;">
+          <textarea id="chief-complaint-input" class="form-textarea-field" rows="3" placeholder="e.g. Severe throbbing headache for 3 days and occasional chest tightness"></textarea>
+          
+          <div style="margin-top:1rem;">
+            <span style="font-size:0.85rem; font-weight:700; color:var(--text-muted);" data-i18n="quick_tags">Common Symptoms:</span>
+            <div class="tags-cloud">
+              <span class="symptom-tag-pill" onclick="PatientIntake.appendTag('Chest pain')">🫀 Chest Discomfort</span>
+              <span class="symptom-tag-pill" onclick="PatientIntake.appendTag('Severe headache')">🧠 Severe Headache</span>
+              <span class="symptom-tag-pill" onclick="PatientIntake.appendTag('High fever')">🌡️ Fever & Chills</span>
+              <span class="symptom-tag-pill" onclick="PatientIntake.appendTag('Breathlessness')">🫁 Shortness of Breath</span>
+              <span class="symptom-tag-pill" onclick="PatientIntake.appendTag('Joint swelling')">🦴 Joint Pain</span>
+              <span class="symptom-tag-pill" onclick="PatientIntake.appendTag('Abdominal cramps')">🩺 Stomach Pain</span>
+              <span class="symptom-tag-pill" onclick="PatientIntake.appendTag('Skin rash')">🩹 Skin Itching/Rash</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:1.5rem; background:#faf8f5; border:1px solid var(--border-color); border-radius:var(--radius-md); padding:1rem;">
+          <label class="form-label" for="pain-range" data-i18n="pain_level">Symptom Severity / Pain Level (1-10): <strong id="pain-val-display">7</strong></label>
+          <input type="range" id="pain-range" min="1" max="10" value="7" style="width:100%; accent-color:var(--brand-primary);" oninput="document.getElementById('pain-val-display').innerText=this.value">
+        </div>
+
+        <div style="display:flex; justify-content:space-between;">
+          <button class="btn-secondary-action" onclick="PatientIntake.goToStep(4)">← Back</button>
+          <button class="btn-primary-action" onclick="PatientIntake.handleComplaintNext()">
+            <span data-i18n="continue_btn">Continue to Documents</span> →
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 6: Medical Document Upload (Cloudinary / Backblaze B2 & OCR) -->
+      <div id="kiosk-step-6" class="card-box" style="display:none;">
+        <div class="card-box-header">
+          <div>
+            <h2 class="card-box-title" data-i18n="step_docs_title">Previous Medical Documents & Prescriptions</h2>
+            <p class="card-box-subtitle" data-i18n="step_docs_sub">Upload previous prescriptions, discharge summaries, or lab reports (Images -> Cloudinary, PDFs -> Backblaze B2)</p>
+          </div>
+        </div>
+
+        <form id="doc-upload-form" style="margin-bottom:1.5rem;">
+          <input type="file" id="doc-file-input" class="form-input-field" accept="image/*,application/pdf" style="padding:1.5rem; border:2px dashed var(--border-color); text-align:center;">
+          
+          <div id="doc-ocr-result" style="margin-top:1rem;"></div>
+
+          <div style="display:flex; justify-content:space-between; margin-top:1.5rem;">
+            <button type="button" class="btn-secondary-action" onclick="PatientIntake.startSocraticIntake()" data-i18n="skip_docs">Skip Document Upload</button>
+            <button type="submit" id="btn-upload-doc" class="btn-primary-action">
+              <span data-i18n="upload_doc_btn">Upload & Run OCR</span> →
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Step 7: Socratic & Ayurvedic Intake Interview with Speech-to-Speech -->
+      <div id="kiosk-step-7" class="card-box" style="display:none;">
+        <div class="card-box-header">
+          <div>
+            <h2 class="card-box-title" data-i18n="step_intake_title">AI Clinical Intake Interview</h2>
+            <div style="display:flex; gap:0.5rem; margin-top:0.35rem;">
+              <span id="current-question-badge" class="lang-tile-badge lang-badge-ready">Objective: Broad Exploration</span>
+              <span id="current-ayur-badge" class="lang-tile-badge lang-badge-connected" style="display:none;">Ayurveda: Agni / Prakriti</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <button id="btn-speak-question" class="btn-icon-round" title="Listen to Question" onclick="PatientIntake.speakCurrentQuestion()">
+              🔊
+            </button>
+          </div>
+        </div>
+
+        <!-- Question Bubble Box -->
+        <div style="background:linear-gradient(180deg, #faf8f5 0%, #f4ede2 100%); border:1.5px solid #d8cbba; border-radius:var(--radius-lg); padding:2rem; margin-bottom:1.5rem;">
+          <h3 id="current-question-text" style="font-size:1.35rem; font-weight:700; color:var(--brand-primary); line-height:1.5;">
+            What is the main health concern bringing you here today?
+          </h3>
+
+          <div id="live-summary-box" style="display:none; margin-top:1.25rem; background:#ecfdf5; border:1px solid #a7f3d0; padding:0.85rem; border-radius:var(--radius-md); font-size:0.9rem; color:#065f46;">
+          </div>
+        </div>
+
+        <!-- Audio Waves Visualizer (When Recording) -->
+        <div class="audio-waves-container" id="audio-wave-bars" style="display:none;">
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+        </div>
+
+        <!-- Patient Answer Input & Speech Controls -->
+        <div style="margin-bottom:1.5rem;">
+          <textarea id="patient-answer-input" class="form-textarea-field" rows="3" placeholder="Type your answer or tap the microphone to speak..." data-i18n-ph="answer_placeholder"></textarea>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <button id="btn-mic-toggle" type="button" class="mic-action-btn" onclick="SpeechManager.toggleListening()">
+            <span>🎙️</span>
+            <span id="mic-status-label" data-i18n="mic_speak_btn">Tap to Speak Answer</span>
+          </button>
+
+          <button id="btn-submit-answer" class="btn-primary-action" onclick="PatientIntake.handleAnswerSubmit()">
+            <span data-i18n="submit_answer">Submit Answer</span> →
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 8: Triage Receipt & Summary Ticket -->
+      <div id="kiosk-step-8" class="card-box" style="display:none;">
+        <div class="ticket-receipt-card">
+          <div class="ticket-header-pill">
+            <div>
+              <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted);" data-i18n="ticket_num">Consultation Ticket #</span>
+              <h2 id="ticket-number-display" style="font-size:1.8rem; color:var(--brand-primary); font-family:monospace;">MK-30378350</h2>
+            </div>
+            <div id="ticket-triage-badge">
+              <span class="lang-tile-badge lang-badge-ready" style="font-size:0.9rem; padding:0.35rem 0.85rem;">STABLE</span>
+            </div>
+          </div>
+
+          <div id="ticket-details-body" style="line-height:1.7;">
+            <!-- Populated dynamically -->
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; margin-top:1.5rem;">
+            <button class="btn-primary-action" onclick="window.location.reload()" data-i18n="start_new">Start New Patient Intake</button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- JavaScript Modules -->
+  <script src="/js/i18n.js"></script>
+  <script src="/js/speech.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/patient_intake.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
