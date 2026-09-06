@@ -19,8 +19,7 @@ from app.templates.embedded_assets import (
     PHYSICIAN_HTML,
     DIAGNOSTICS_HTML,
     STYLES_CSS,
-    JS_ASSETS,
-    LOGO_PNG_BYTES
+    JS_ASSETS
 )
 
 logger = logging.getLogger("medikiosk.main")
@@ -108,7 +107,18 @@ async def serve_js(file_path: str):
 @app.get("/logo.png", include_in_schema=False)
 @app.get("/favicon.ico", include_in_schema=False)
 async def serve_logo():
-    return Response(content=LOGO_PNG_BYTES, media_type="image/png")
+    for candidate in [
+        os.path.join("public", "logo.png"),
+        os.path.join("frontend", "logo.png"),
+        "logo.png"
+    ]:
+        if os.path.exists(candidate):
+            try:
+                with open(candidate, "rb") as f:
+                    return Response(content=f.read(), media_type="image/png")
+            except Exception:
+                pass
+    return Response(status_code=204)
 
 # Optional static directory mount for local uvicorn
 for static_candidate in ["frontend", "public"]:
