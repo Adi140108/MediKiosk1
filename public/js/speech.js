@@ -1,4 +1,4 @@
-// MediKiosk Production-Grade 6-State Speech-to-Speech Engine with Indian Female Voice & Accessibility Support
+// MediKiosk Production-Grade 6-State Speech-to-Speech Engine with Indian Female Voice & Visual Mute State
 const SpeechState = {
   IDLE: 'IDLE',
   LISTENING: 'LISTENING',
@@ -12,11 +12,13 @@ const SpeechManager = {
   state: SpeechState.IDLE,
   isListening: false,
   isSpeaking: false,
+  isMuted: false,
   recognition: null,
   synth: window.speechSynthesis || null,
   currentLanguage: 'en',
   audioCtx: null,
   voicesLoaded: false,
+  lastSpokenText: "",
 
   langLocaleMap: {
     en: 'en-IN',
@@ -237,12 +239,14 @@ const SpeechManager = {
   },
 
   speakStepGuidance(stepNum, lang = 'en') {
+    if (this.isMuted) return;
+
     const guidanceMap = {
       1: "Namaste! Welcome to MediKiosk intelligent hospital check-in. Please touch the Begin Check-In button on your screen to start.",
       2: "Please choose your preferred language by tapping any box on the screen: English, Hindi, Kannada, Tamil, Telugu, and more.",
       3: "Please listen carefully to our safety notice. MediKiosk prepares your symptom summary for your attending doctor. Your doctor will personally examine you and write all prescriptions. Please tap the agreement box and touch Continue.",
       4: "Please enter or speak your name, age, gender, and phone number. If a family member or attendant is helping you, you can check the attendant box.",
-      5: "What health problem or pain brings you to the clinic today? You can speak your answer using the microphone, or select from the common symptom buttons.",
+      5: "What health problem or pain brings you to the clinic today? Touch any number from 1 to 10 to indicate your pain level, or speak your symptoms.",
       6: "If you have previous doctor prescriptions or lab test reports, you can upload them here, or tap Skip to proceed.",
       7: "Please listen to the clinical question and speak your answer using the microphone button.",
       8: "Your clinical check-in is complete! Your consultation ticket is ready. Please proceed to the waiting area of your assigned department."
@@ -253,17 +257,43 @@ const SpeechManager = {
     }
   },
 
+  updateButtonStates(state) {
+    const buttons = document.querySelectorAll('#btn-speak-question, .btn-icon-round');
+    buttons.forEach(btn => {
+      if (state === 'playing') {
+        btn.innerHTML = '🔊';
+        btn.classList.add('is-playing');
+        btn.classList.remove('is-muted');
+        btn.title = "Audio Playing — Tap to Mute";
+      } else if (state === 'muted') {
+        btn.innerHTML = '🔇';
+        btn.classList.remove('is-playing');
+        btn.classList.add('is-muted');
+        btn.title = "Audio Muted — Tap to Unmute & Listen";
+      } else {
+        btn.innerHTML = '🔊';
+        btn.classList.remove('is-playing');
+        btn.classList.remove('is-muted');
+        btn.title = "Listen with Audio / Voice";
+      }
+    });
+  },
+
   toggleSpeak(text, lang = null) {
     if (!this.synth) return false;
 
-    // If currently speaking, mute / stop audio
+    // If currently speaking, mute & stop audio
     if (this.synth.speaking || this.isSpeaking) {
       this.stopAllAudio();
+      this.isMuted = true;
+      this.updateButtonStates('muted');
       return false;
     }
 
     // Otherwise unmute and speak
-    this.speakText(text, lang);
+    this.isMuted = false;
+    const toSpeak = text || this.lastSpokenText || "Welcome to MediKiosk.";
+    this.speakText(toSpeak, lang);
     return true;
   },
 
@@ -272,16 +302,15 @@ const SpeechManager = {
       this.synth.cancel();
     }
     this.isSpeaking = false;
-    const speakerButtons = document.querySelectorAll('#btn-speak-question, .btn-icon-round');
-    speakerButtons.forEach(btn => {
-      btn.classList.remove('pulse-audio');
-      btn.title = "Listen with Audio / Voice";
-    });
+    this.updateButtonStates('idle');
   },
 
   speakText(text, lang = null) {
     if (!this.synth) return;
     this.synth.cancel();
+
+    this.lastSpokenText = text;
+    this.isMuted = false;
 
     const targetLang = lang || this.currentLanguage;
     const utterance = new SpeechSynthesisUtterance(text);
@@ -294,26 +323,16 @@ const SpeechManager = {
       utterance.voice = assignedVoice;
     }
 
-    const speakerButtons = document.querySelectorAll('#btn-speak-question, .btn-icon-round');
-    speakerButtons.forEach(btn => {
-      btn.classList.add('pulse-audio');
-      btn.title = "Click to Mute Audio";
-    });
+    this.updateButtonStates('playing');
 
     utterance.onend = () => {
       this.isSpeaking = false;
-      speakerButtons.forEach(btn => {
-        btn.classList.remove('pulse-audio');
-        btn.title = "Listen with Audio / Voice";
-      });
+      this.updateButtonStates('idle');
     };
 
     utterance.onerror = () => {
       this.isSpeaking = false;
-      speakerButtons.forEach(btn => {
-        btn.classList.remove('pulse-audio');
-        btn.title = "Listen with Audio / Voice";
-      });
+      this.updateButtonStates('idle');
     };
 
     this.isSpeaking = true;

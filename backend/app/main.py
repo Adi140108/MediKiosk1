@@ -105,30 +105,38 @@ async def serve_js(file_path: str):
         return Response(content=js_content, media_type="application/javascript")
     return Response(content="// JS not found", status_code=404, media_type="application/javascript")
 
-@app.get("/logo.svg", include_in_schema=False)
 @app.get("/logo.png", include_in_schema=False)
-@app.get("/favicon.ico", include_in_schema=False)
-async def serve_logo():
-    for svg_candidate in [
-        os.path.join("public", "logo.svg"),
-        os.path.join("frontend", "logo.svg"),
-        "logo.svg"
-    ]:
-        if os.path.exists(svg_candidate):
-            try:
-                with open(svg_candidate, "r", encoding="utf-8") as f:
-                    return Response(content=f.read(), media_type="image/svg+xml")
-            except Exception:
-                pass
+async def serve_logo_png():
     for png_candidate in [
-        os.path.join("public", "logo.png"),
+        "logo.png",
         os.path.join("frontend", "logo.png"),
-        "logo.png"
+        os.path.join("public", "logo.png"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "logo.png"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "public", "logo.png"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "logo.png")
     ]:
         if os.path.exists(png_candidate):
             try:
                 with open(png_candidate, "rb") as f:
                     return Response(content=f.read(), media_type="image/png")
+            except Exception:
+                pass
+    return Response(content=b"", status_code=404)
+
+@app.get("/logo.svg", include_in_schema=False)
+@app.get("/favicon.ico", include_in_schema=False)
+async def serve_logo_svg():
+    for svg_candidate in [
+        os.path.join("frontend", "logo.svg"),
+        os.path.join("public", "logo.svg"),
+        "logo.svg",
+        os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "logo.svg"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "public", "logo.svg")
+    ]:
+        if os.path.exists(svg_candidate):
+            try:
+                with open(svg_candidate, "r", encoding="utf-8") as f:
+                    return Response(content=f.read(), media_type="image/svg+xml")
             except Exception:
                 pass
     return Response(content=LOGO_SVG, media_type="image/svg+xml")

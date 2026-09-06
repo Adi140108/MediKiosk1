@@ -26,7 +26,7 @@
   <!-- Main Navigation Bar -->
   <nav class="navbar">
     <div class="brand-wrapper" onclick="window.location.reload()">
-      <img src="/logo.svg" alt="MediKiosk Logo" class="brand-logo-img" width="48" height="48">
+      <img src="/logo.png" alt="MediKiosk Logo" class="brand-logo-img" width="48" height="48" onerror="this.onerror=null; this.src='/logo.svg';">
       <div class="brand-text-block">
         <span class="brand-name">MediKiosk</span>
         <span class="brand-tagline-text" data-i18n="brand_tagline">Traditional Wisdom. Modern Care.</span>
@@ -297,7 +297,6 @@
                   <input type="tel" id="att-phone" class="form-input-field" placeholder="Phone">
                 </div>
                 <div>
-                  <label class="form-label" for="att-rel" data-i18n="relationship">Relationship</label>
                   <select id="att-rel" class="form-select-field">
                     <option value="Spouse">Spouse</option>
                     <option value="Parent">Parent</option>
@@ -326,6 +325,7 @@
             <h2 class="card-box-title" data-i18n="step_complaint_title">Chief Health Complaint</h2>
             <p class="card-box-subtitle" data-i18n="step_complaint_sub">What brings you to the clinic today?</p>
           </div>
+          <button class="btn-icon-round" onclick="SpeechManager.toggleSpeak('What health problem or pain brings you to the clinic today? Touch any number from 1 to 10 to indicate your pain level, or speak your symptoms.')" title="Listen / Mute Audio">🔊</button>
         </div>
 
         <div style="margin-bottom:1.5rem;">
@@ -345,9 +345,32 @@
           </div>
         </div>
 
-        <div style="margin-bottom:1.5rem; background:#faf8f5; border:1px solid var(--border-color); border-radius:var(--radius-md); padding:1rem;">
-          <label class="form-label" for="pain-range" data-i18n="pain_level">Symptom Severity / Pain Level (1-10): <strong id="pain-val-display">7</strong></label>
-          <input type="range" id="pain-range" min="1" max="10" value="7" style="width:100%; accent-color:var(--brand-primary);" oninput="document.getElementById('pain-val-display').innerText=this.value">
+        <div style="margin-bottom:1.5rem; background:#faf8f5; border:1px solid var(--border-color); border-radius:var(--radius-md); padding:1.25rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+            <label class="form-label" style="margin:0; font-size:0.95rem; font-weight:700; color:var(--brand-primary);" data-i18n="pain_level">
+              Symptom Severity / Pain Scale (1 to 10):
+            </label>
+            <span id="pain-val-display" class="lang-tile-badge" style="background:#ffedd5; color:#9a3412; border:1px solid #f97316; font-size:0.875rem; padding:0.3rem 0.75rem; font-weight:700;">
+              Level 7 — Severe Pain
+            </span>
+          </div>
+          <p style="font-size:0.825rem; color:var(--text-muted); margin-bottom:0.85rem;">
+            Touch the number that matches your pain level (1 = Very Mild, 10 = Maximum / Critical):
+          </p>
+
+          <div class="pain-number-grid" id="pain-scale-selector">
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(1)" data-val="1">1</button>
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(2)" data-val="2">2</button>
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(3)" data-val="3">3</button>
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(4)" data-val="4">4</button>
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(5)" data-val="5">5</button>
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(6)" data-val="6">6</button>
+            <button type="button" class="pain-num-btn selected" onclick="PatientIntake.selectPainLevel(7)" data-val="7">7</button>
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(8)" data-val="8">8</button>
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(9)" data-val="9">9</button>
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(10)" data-val="10">10</button>
+          </div>
+          <input type="hidden" id="pain-range" value="7">
         </div>
 
         <div style="display:flex; justify-content:space-between;">

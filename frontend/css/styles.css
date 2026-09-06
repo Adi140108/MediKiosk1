@@ -628,6 +628,147 @@ h1, h2, h3, .font-serif {
   50% { transform: scale(1.15); }
 }
 
+.btn-icon-round {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-color);
+  background: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+  user-select: none;
+}
+
+.btn-icon-round:hover {
+  transform: scale(1.06);
+  border-color: var(--brand-primary);
+  background: var(--brand-primary-soft);
+}
+
+.btn-icon-round.is-playing {
+  border-color: #10b981;
+  background: #ecfdf5;
+  color: #065f46;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+  animation: pulseAudio 1.2s infinite;
+}
+
+.btn-icon-round.is-muted {
+  border-color: #f87171 !important;
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+  opacity: 0.9;
+}
+
+/* Pain / Severity Number Scale Grid */
+.pain-number-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.pain-num-btn {
+  height: 52px;
+  border-radius: var(--radius-sm);
+  border: 2px solid #e2e8f0;
+  background: white;
+  color: #334155;
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.pain-num-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Pain Level 1-3: Green (Mild) */
+.pain-num-btn[data-val="1"]:hover,
+.pain-num-btn[data-val="2"]:hover,
+.pain-num-btn[data-val="3"]:hover {
+  border-color: #10b981;
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.pain-num-btn.selected[data-val="1"],
+.pain-num-btn.selected[data-val="2"],
+.pain-num-btn.selected[data-val="3"] {
+  border-color: #10b981;
+  background: #10b981;
+  color: white;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+}
+
+/* Pain Level 4-6: Amber (Moderate) */
+.pain-num-btn[data-val="4"]:hover,
+.pain-num-btn[data-val="5"]:hover,
+.pain-num-btn[data-val="6"]:hover {
+  border-color: #f59e0b;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.pain-num-btn.selected[data-val="4"],
+.pain-num-btn.selected[data-val="5"],
+.pain-num-btn.selected[data-val="6"] {
+  border-color: #f59e0b;
+  background: #f59e0b;
+  color: white;
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+}
+
+/* Pain Level 7-8: Orange (Severe) */
+.pain-num-btn[data-val="7"]:hover,
+.pain-num-btn[data-val="8"]:hover {
+  border-color: #f97316;
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.pain-num-btn.selected[data-val="7"],
+.pain-num-btn.selected[data-val="8"] {
+  border-color: #ea580c;
+  background: #ea580c;
+  color: white;
+  box-shadow: 0 4px 10px rgba(234, 88, 12, 0.35);
+}
+
+/* Pain Level 9-10: Red (Critical) */
+.pain-num-btn[data-val="9"]:hover,
+.pain-num-btn[data-val="10"]:hover {
+  border-color: #ef4444;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.pain-num-btn.selected[data-val="9"],
+.pain-num-btn.selected[data-val="10"] {
+  border-color: #dc2626;
+  background: #dc2626;
+  color: white;
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.4);
+}
+
+@media (max-width: 600px) {
+  .pain-number-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
 /* Triage Summary Receipt */
 .ticket-receipt-card {
   background: #faf8f5;

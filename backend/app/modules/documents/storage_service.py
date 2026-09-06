@@ -101,18 +101,15 @@ class StorageService:
                     folder_or_prefix=document_type
                 )
             except Exception as ve:
-                # Local dev fallback when credentials are not configured
-                upload_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "frontend", "uploads", "cloudinary"))
-                os.makedirs(upload_dir, exist_ok=True)
-                ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "jpg"
+                # Safe serverless fallback without writing to read-only directory
+                import base64
+                b64_str = base64.b64encode(file_bytes).decode("utf-8")
+                data_uri = f"data:{content_type};base64,{b64_str}"
                 unique_name = f"{uuid.uuid4().hex[:12]}_{filename.replace(' ', '_')}"
-                local_path = os.path.join(upload_dir, unique_name)
-                with open(local_path, "wb") as f:
-                    f.write(file_bytes)
                 upload_res = {
                     "asset_id": f"cld_{uuid.uuid4().hex[:16]}",
                     "public_id": f"{document_type}/{unique_name}",
-                    "secure_url": f"/uploads/cloudinary/{unique_name}",
+                    "secure_url": data_uri,
                     "resource_type": "image"
                 }
 
@@ -131,22 +128,21 @@ class StorageService:
                     folder_or_prefix=document_type
                 )
             except Exception as ve:
-                # Local dev fallback when credentials are not configured
-                upload_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "frontend", "uploads", "backblaze"))
-                os.makedirs(upload_dir, exist_ok=True)
-                ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "pdf"
+                # Safe serverless fallback without writing to read-only directory
+                import base64
+                b64_str = base64.b64encode(file_bytes).decode("utf-8")
+                data_uri = f"data:{content_type};base64,{b64_str}"
                 unique_name = f"{uuid.uuid4().hex[:12]}_{filename.replace(' ', '_')}"
-                local_path = os.path.join(upload_dir, unique_name)
-                with open(local_path, "wb") as f:
-                    f.write(file_bytes)
                 upload_res = {
                     "bucket_name": self.backblaze.bucket_name,
-                    "object_key": f"/uploads/backblaze/{unique_name}"
+                    "object_key": f"/uploads/backblaze/{unique_name}",
+                    "secure_url": data_uri
                 }
 
             storage_key = upload_res.get("object_key")
             provider_metadata = {
-                "bucket_name": upload_res.get("bucket_name")
+                "bucket_name": upload_res.get("bucket_name"),
+                "secure_url": upload_res.get("secure_url")
             }
 
         metadata = DocumentMetadata(

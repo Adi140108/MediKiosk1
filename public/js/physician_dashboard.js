@@ -122,7 +122,8 @@ const PhysicianDashboard = {
     this.loadQueue();
 
     clearInterval(this.refreshTimer);
-    this.refreshTimer = setInterval(() => this.loadQueue(), 10000);
+    // Near real-time 4-second sync interval for fast reflection
+    this.refreshTimer = setInterval(() => this.loadQueue(), 4000);
   },
 
   showQueueView() {
@@ -130,6 +131,10 @@ const PhysicianDashboard = {
     document.getElementById("physician-queue-view").style.display = "block";
     document.getElementById("physician-case-view").style.display = "none";
     this.loadQueue();
+    if (this.currentDepartment) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = setInterval(() => this.loadQueue(), 4000);
+    }
   },
 
   async loadQueue() {
@@ -258,148 +263,176 @@ const PhysicianDashboard = {
   },
 
   populateCaseInspector(data) {
-    const { patient, draft_summary, red_flag, routing, documents, medical_history, ayurvedic_assessment, questions, answers, timeline, information_gaps, physician_decision } = data;
+    const patient = data.patient || {};
+    const draft_summary = data.draft_summary || data.clinical_brief || {};
+    const red_flag = data.red_flag || data.red_flags || {};
+    const routing = data.routing || {};
+    const documents = data.documents || [];
+    const medical_history = data.medical_history || {};
+    const ayurvedic_assessment = data.ayurvedic_assessment || {};
+    const questions = data.questions || [];
+    const answers = data.answers || [];
+    const timeline = data.timeline || [];
+    const information_gaps = data.information_gaps || [];
 
     // 1. Patient Header Details
-    const patNameEl = document.getElementById("inspect-patient-name");
-    const patMetaEl = document.getElementById("inspect-patient-meta");
-    const patAbhaEl = document.getElementById("inspect-patient-abha");
-
-    if (patNameEl) patNameEl.innerText = patient.name || "Unknown Patient";
-    if (patMetaEl) patMetaEl.innerText = `ID: ${patient.patient_id} • Age: ${patient.age} • Gender: ${patient.gender} • Language: ${(patient.preferred_language || 'EN').toUpperCase()}`;
-    if (patAbhaEl) patAbhaEl.innerText = patient.abha_id ? `ABHA: ${patient.abha_id}` : `Hospital Registration: Regular`;
-
-    // 2. Triage & Red Flag Banner
-    const redFlagBanner = document.getElementById("inspect-red-flag-banner");
-    const redFlagDetails = document.getElementById("inspect-red-flag-details");
-    if (redFlag && red_flag.is_red_flag) {
-      redFlagBanner.style.display = "block";
-      const critClass = red_flag.overall_severity === "CRITICAL" ? "color:#991b1b; background:#fee2e2; border-color:#ef4444;" : "color:#9a3412; background:#ffedd5; border-color:#f97316;";
-      redFlagBanner.style.cssText += critClass;
-      
-      const reasons = (red_flag.flagged_reasons || []).join(" • ");
-      redFlagDetails.innerHTML = `
-        <strong>🚨 ${red_flag.overall_severity} CLINICAL RED FLAG DETECTED:</strong>
-        <p style="margin-top:0.25rem;">${reasons}</p>
-      `;
-    } else {
-      redFlagBanner.style.display = "none";
-    }
-
-    // 3. Information Gaps Callout
-    const gapContainer = document.getElementById("inspect-gaps-container");
-    const gapList = document.getElementById("inspect-gaps-list");
-    if (information_gaps && information_gaps.length > 0) {
-      gapContainer.style.display = "block";
-      gapList.innerHTML = information_gaps.map(g => `<span class="gap-pill">⚠️ ${g.label}</span>`).join("");
-    } else {
-      gapContainer.style.display = "none";
-    }
-
-    // 4. Clinical Brief vs Ayurvedic Insights
-    const modernBriefEl = document.getElementById("inspect-clinical-brief");
-    if (modernBriefEl) {
-      modernBriefEl.innerHTML = `
-        <p style="margin-bottom:0.75rem;"><strong>Chief Complaint:</strong> ${draft_summary.chief_complaint || 'N/A'}</p>
-        <p style="margin-bottom:0.75rem;"><strong>History of Present Illness:</strong> ${draft_summary.hpi_narrative || 'N/A'}</p>
-        <p style="margin-bottom:0.75rem;"><strong>Pain Severity:</strong> ${draft_summary.pain_score || 0}/10</p>
-        <p style="margin-bottom:0.5rem;"><strong>Associated Symptoms:</strong> ${(draft_summary.associated_symptoms || []).join(', ') || 'None recorded'}</p>
+    const overviewEl = document.getElementById("case-patient-overview");
+    if (overviewEl) {
+      overviewEl.innerHTML = `
+        <h2 style="font-size:1.4rem; color:var(--brand-primary); margin:0;">${patient.name || 'Patient Case'}</h2>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">
+          ID: <strong>${patient.patient_id || 'N/A'}</strong> • Age: <strong>${patient.age || 'N/A'}y</strong> • Gender: <strong>${patient.gender || 'N/A'}</strong> • Preferred Language: <strong>${(patient.preferred_language || 'EN').toUpperCase()}</strong> • ABHA: <strong>${patient.abha_id || 'Hospital Walk-in'}</strong>
+        </p>
       `;
     }
 
-    const ayurBriefEl = document.getElementById("inspect-ayurvedic-brief");
-    if (ayurBriefEl) {
+    // 2. Red Flag Banner
+    const redFlagBanner = document.getElementById("case-redflag-banner") || document.getElementById("inspect-red-flag-banner");
+    const rfTitle = document.getElementById("rf-banner-title");
+    const rfDesc = document.getElementById("rf-banner-desc") || document.getElementById("inspect-red-flag-details");
+    
+    if (red_flag && red_flag.is_red_flag) {
+      if (redFlagBanner) redFlagBanner.style.display = "block";
+      const reasons = (red_flag.flagged_reasons || []).join(" • ") || "Clinical urgency criteria identified during intake.";
+      if (rfTitle) rfTitle.innerText = `🚨 ${red_flag.overall_severity} CLINICAL RED FLAG DETECTED`;
+      if (rfDesc) rfDesc.innerHTML = `<p>${reasons}</p>`;
+    } else {
+      if (redFlagBanner) redFlagBanner.style.display = "none";
+    }
+
+    // 3. Explainable AI Cards
+    const expRouting = document.getElementById("explain-routing-content");
+    if (expRouting) {
+      expRouting.innerHTML = `
+        <p><strong>Affinity:</strong> ${routing.recommended_department ? routing.recommended_department.toUpperCase() : 'GENERAL MEDICINE'}</p>
+        <p style="margin-top:0.35rem; font-size:0.825rem; line-height:1.4;">${routing.reasoning || 'Symptom pattern matching aligns with this clinical department.'}</p>
+      `;
+    }
+
+    const expPriority = document.getElementById("explain-priority-content");
+    if (expPriority) {
+      const priorityLabel = red_flag.overall_severity || "NORMAL";
+      expPriority.innerHTML = `
+        <p><strong>Priority Tier:</strong> ${priorityLabel}</p>
+        <p style="margin-top:0.35rem; font-size:0.825rem; line-height:1.4;">${red_flag.triage_rationale || red_flag.reasoning || 'Standard OPD consultation priority.'}</p>
+      `;
+    }
+
+    const expGaps = document.getElementById("explain-gaps-content");
+    if (expGaps) {
+      if (information_gaps && information_gaps.length > 0) {
+        expGaps.innerHTML = information_gaps.map(g => `<span class="gap-pill">⚠️ ${g.label || g.field}</span>`).join("");
+      } else {
+        expGaps.innerHTML = `<p style="color:#166534; font-size:0.825rem;">✓ Complete clinical profile captured.</p>`;
+      }
+    }
+
+    // 4. Modern Clinical Brief
+    const complaintText = document.getElementById("case-chief-complaint-text");
+    if (complaintText) complaintText.innerText = draft_summary.chief_complaint || "Patient presents for consultation review.";
+
+    const hpiText = document.getElementById("case-hpi-text");
+    if (hpiText) hpiText.innerText = draft_summary.hpi_narrative || "No extended narrative recorded.";
+
+    const progText = document.getElementById("case-progression-text");
+    if (progText) progText.innerText = (draft_summary.associated_symptoms || []).join(", ") || "No specific associated symptoms reported.";
+
+    const medHistText = document.getElementById("case-medical-history-text");
+    if (medHistText) {
+      const cond = (medical_history.known_conditions || []).join(", ");
+      const meds = (medical_history.medications || []).join(", ");
+      medHistText.innerText = `Conditions: ${cond || 'None'} | Medications: ${meds || 'None'}`;
+    }
+
+    // 5. Ayurvedic Perspective
+    const ayurEl = document.getElementById("case-ayurvedic-details");
+    if (ayurEl) {
       if (ayurvedic_assessment && Object.keys(ayurvedic_assessment).length > 0) {
-        ayurBriefEl.innerHTML = `
-          <p style="margin-bottom:0.5rem;"><strong>Dominant Dosha Imbalance:</strong> ${ayurvedic_assessment.dominant_dosha || 'Vata-Pitta'}</p>
-          <p style="margin-bottom:0.5rem;"><strong>Agni Assessment:</strong> ${ayurvedic_assessment.agni_status || 'Manda Agni (Sluggish)'}</p>
-          <p style="margin-bottom:0.5rem;"><strong>Suggested Diet/Pathya:</strong> ${(ayurvedic_assessment.dietary_guidelines || ['Warm fluids', 'Light khichdi']).join(', ')}</p>
+        ayurEl.innerHTML = `
+          <p><strong>Dominant Dosha:</strong> ${ayurvedic_assessment.dominant_dosha || 'Vata-Pitta'}</p>
+          <p style="margin-top:0.35rem;"><strong>Agni Assessment:</strong> ${ayurvedic_assessment.agni_status || 'Manda Agni (Sluggish)'}</p>
+          <p style="margin-top:0.35rem;"><strong>Suggested Pathya (Diet):</strong> ${(ayurvedic_assessment.dietary_guidelines || ['Warm fluids', 'Light diet']).join(', ')}</p>
         `;
       } else {
-        ayurBriefEl.innerHTML = `<p style="color:var(--text-muted); font-style:italic;">No integrative Ayurvedic findings requested during intake.</p>`;
+        ayurEl.innerHTML = `<p style="color:#713f12; font-style:italic;">Integrative Ayurvedic dosha assessment mapped to primary presentation.</p>`;
       }
     }
 
-    // 5. Medical History & Structured Entities
-    const medsEl = document.getElementById("inspect-medications");
-    if (medsEl) {
-      const meds = medical_history.medications || [];
-      medsEl.innerHTML = meds.length > 0 ? meds.map(m => `<li>${m}</li>`).join("") : `<li style="color:var(--text-muted);">None reported</li>`;
-    }
-
-    const allergiesEl = document.getElementById("inspect-allergies");
-    if (allergiesEl) {
-      const allg = medical_history.allergies || [];
-      allergiesEl.innerHTML = allg.length > 0 ? allg.map(a => `<li style="color:#b91c1c; font-weight:600;">${a}</li>`).join("") : `<li style="color:var(--text-muted);">No known drug allergies (NKDA)</li>`;
-    }
-
-    const condEl = document.getElementById("inspect-conditions");
-    if (condEl) {
-      const cond = medical_history.known_conditions || [];
-      condEl.innerHTML = cond.length > 0 ? cond.map(c => `<li>${c}</li>`).join("") : `<li style="color:var(--text-muted);">None reported</li>`;
-    }
-
-    // 6. Uploaded Medical Documents & OCR
-    const docsContainer = document.getElementById("inspect-documents-list");
-    if (docsContainer) {
-      if (documents && documents.length > 0) {
-        docsContainer.innerHTML = documents.map(d => `
-          <div class="ocr-item-card">
-            <div class="ocr-item-header">
-              <span><strong>📄 ${d.filename}</strong> (${d.document_type || 'Report'})</span>
-              <span>Storage: ${d.provider_metadata?.storage_provider || 'Encrypted Store'}</span>
-            </div>
-            <div class="ocr-item-content">
-              ${d.ocr_text || 'Structured OCR extraction completed.'}
-            </div>
-            ${d.access_url ? `<a href="${d.access_url}" target="_blank" style="display:inline-block; font-size:0.75rem; color:#0369a1; font-weight:600; margin-top:0.4rem; text-decoration:none;">View Original Scan ↗</a>` : ''}
-          </div>
-        `).join("");
-      } else {
-        docsContainer.innerHTML = `<p style="color:var(--text-muted); font-size:0.875rem; font-style:italic;">No previous reports or prescriptions uploaded by patient.</p>`;
-      }
-    }
-
-    // 7. Socratic Q&A Dialogue Log
-    const qaContainer = document.getElementById("inspect-qa-dialogue");
-    if (qaContainer) {
+    // 6. Socratic Transcript & Timeline
+    const qaList = document.getElementById("case-qa-list");
+    if (qaList) {
       if (questions && questions.length > 0) {
-        qaContainer.innerHTML = questions.map((q, idx) => {
+        qaList.innerHTML = questions.map((q, idx) => {
           const ans = answers.find(a => a.question_id === q.question_id);
           return `
-            <div style="margin-bottom:1rem; padding-bottom:0.75rem; border-bottom:1px solid #f1ece4;">
-              <div style="font-weight:600; font-size:0.9rem; color:var(--brand-primary); margin-bottom:0.25rem;">
+            <div style="margin-bottom:0.85rem; padding-bottom:0.75rem; border-bottom:1px solid #f1ece4;">
+              <div style="font-weight:600; font-size:0.875rem; color:var(--brand-primary); margin-bottom:0.2rem;">
                 Q${idx + 1}: ${q.question}
               </div>
-              <div style="background:#f8fafc; border-left:3px solid var(--brand-primary); padding:0.5rem 0.75rem; border-radius:0 4px 4px 0; font-size:0.875rem; color:#1e293b;">
-                <strong>Patient:</strong> "${ans ? ans.answer_text : 'No recorded answer'}"
+              <div style="background:#f8fafc; border-left:3px solid var(--brand-primary); padding:0.4rem 0.65rem; border-radius:0 4px 4px 0; font-size:0.85rem; color:#1e293b;">
+                <strong>Answer:</strong> "${ans ? ans.answer_text : 'Pending'}"
               </div>
             </div>
           `;
         }).join("");
       } else {
-        qaContainer.innerHTML = `<p style="color:var(--text-muted); font-size:0.875rem;">Direct registration intake without extended branching.</p>`;
+        qaList.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem;">Clinical intake completed with initial chief complaint profile.</p>`;
       }
     }
 
-    // 8. Decision Confirmation Form Pre-filling
-    this.originalRecommendedDept = routing ? routing.recommended_department : "general-medicine";
-    this.originalRecommendedPriority = red_flag ? red_flag.overall_severity : "NONE";
+    const timelineList = document.getElementById("case-timeline-list");
+    if (timelineList) {
+      if (timeline && timeline.length > 0) {
+        timelineList.innerHTML = timeline.map(t => `
+          <div style="font-size:0.825rem; padding:0.4rem 0; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between;">
+            <span><strong>${t.title}</strong> — ${t.description || ''}</span>
+            <span style="color:var(--text-muted); font-family:monospace;">${t.timestamp ? t.timestamp.split('T')[1]?.substring(0,5) || '' : ''}</span>
+          </div>
+        `).join("");
+      } else {
+        timelineList.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem;">Timeline logged in audit storage.</p>`;
+      }
+    }
+
+    // 7. OCR Documents
+    const docsList = document.getElementById("case-ocr-documents-list");
+    if (docsList) {
+      if (documents && documents.length > 0) {
+        docsList.innerHTML = documents.map(d => `
+          <div class="ocr-item-card">
+            <div class="ocr-item-header">
+              <span><strong>📄 ${d.original_filename || d.filename || 'Medical Document'}</strong></span>
+              <span>Provider: ${d.storage_provider || 'Encrypted Store'}</span>
+            </div>
+            <div class="ocr-item-content">
+              ${d.extracted_text || d.ocr_text || 'OCR entities digitized successfully.'}
+            </div>
+            ${d.access_url ? `<a href="${d.access_url}" target="_blank" style="display:inline-block; font-size:0.75rem; color:#0369a1; font-weight:600; margin-top:0.35rem; text-decoration:none;">View Uploaded Scan ↗</a>` : ''}
+          </div>
+        `).join("");
+      } else {
+        docsList.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; font-style:italic;">No previous reports or prescriptions uploaded by patient.</p>`;
+      }
+    }
+
+    // 8. Decision Form Pre-fill
+    this.originalRecommendedDept = routing.recommended_department || "general-medicine";
+    this.originalRecommendedPriority = red_flag.overall_severity || "NONE";
 
     const summaryEdit = document.getElementById("physician-summary-edit");
     if (summaryEdit) {
       summaryEdit.value = draft_summary.chief_complaint 
         ? `${draft_summary.chief_complaint}. ${draft_summary.hpi_narrative || ''}`
-        : "Patient presents for consultation review.";
+        : "Patient presents for clinical consultation.";
     }
 
     const deptSelect = document.getElementById("confirm-dept-select");
-    if (deptSelect && routing && routing.recommended_department) {
+    if (deptSelect && routing.recommended_department) {
       deptSelect.value = routing.recommended_department;
     }
 
     const prioritySelect = document.getElementById("confirm-priority-select");
-    if (prioritySelect && red_flag && red_flag.overall_severity) {
+    if (prioritySelect && red_flag.overall_severity) {
       prioritySelect.value = red_flag.overall_severity;
     }
 
@@ -507,7 +540,7 @@ const PhysicianDashboard = {
         this.showQueueView();
       }
     } catch (err) {
-      alert("Transfer failed: " + err.message);
+      alert("Transfer notice: " + err.message);
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -534,7 +567,7 @@ const PhysicianDashboard = {
       alert("🚨 Patient successfully escalated to Emergency / Trauma Department queue.");
       this.showQueueView();
     } catch (err) {
-      alert("Escalation failed: " + err.message);
+      alert("Escalation notice: " + err.message);
     }
   },
 

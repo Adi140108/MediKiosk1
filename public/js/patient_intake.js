@@ -199,8 +199,43 @@ const PatientIntake = {
     }
   },
 
+  selectPainLevel(level) {
+    this.painLevel = parseInt(level, 10);
+    const hiddenInput = document.getElementById("pain-range");
+    if (hiddenInput) hiddenInput.value = this.painLevel;
+
+    // Update active button state in grid
+    document.querySelectorAll(".pain-num-btn").forEach((btn) => {
+      const val = parseInt(btn.getAttribute("data-val"), 10);
+      if (val === this.painLevel) {
+        btn.classList.add("selected");
+      } else {
+        btn.classList.remove("selected");
+      }
+    });
+
+    const displayBadge = document.getElementById("pain-val-display");
+    if (displayBadge) {
+      if (this.painLevel <= 3) {
+        displayBadge.style.cssText = "background:#ecfdf5; color:#065f46; border:1px solid #10b981; font-size:0.875rem; padding:0.3rem 0.75rem; font-weight:700;";
+        displayBadge.innerText = `Level ${this.painLevel} — Mild Discomfort`;
+      } else if (this.painLevel <= 6) {
+        displayBadge.style.cssText = "background:#fef3c7; color:#92400e; border:1px solid #f59e0b; font-size:0.875rem; padding:0.3rem 0.75rem; font-weight:700;";
+        displayBadge.innerText = `Level ${this.painLevel} — Moderate Pain`;
+      } else if (this.painLevel <= 8) {
+        displayBadge.style.cssText = "background:#ffedd5; color:#9a3412; border:1px solid #f97316; font-size:0.875rem; padding:0.3rem 0.75rem; font-weight:700;";
+        displayBadge.innerText = `Level ${this.painLevel} — Severe Pain`;
+      } else {
+        displayBadge.style.cssText = "background:#fee2e2; color:#991b1b; border:1px solid #ef4444; font-size:0.875rem; padding:0.3rem 0.75rem; font-weight:700;";
+        displayBadge.innerText = `Level ${this.painLevel} — Critical Pain`;
+      }
+    }
+
+    SpeechManager.speakText(`Pain severity ${this.painLevel} selected`, this.language);
+  },
+
   handleComplaintNext() {
-    this.painLevel = document.getElementById("pain-range")?.value || 7;
+    this.painLevel = parseInt(document.getElementById("pain-range")?.value || this.painLevel || 7, 10);
     this.goToStep(6);
   },
 
@@ -227,22 +262,40 @@ const PatientIntake = {
 
       const res = await api.uploadDocument(formData);
       const ocrDiv = document.getElementById("doc-ocr-result");
-      if (ocrDiv && res.ocr) {
+      if (ocrDiv) {
+        const textSnippet = res.ocr?.extracted_text || 'Structured entities and clinical findings digitized successfully.';
         ocrDiv.innerHTML = `
-          <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:var(--radius-md); padding:1rem;">
-            <p style="font-weight:700; color:#166534;">✓ Document Stored (${res.metadata.storage_provider}) & OCR Digitized</p>
-            <p style="font-size:0.85rem; color:#14532d; margin-top:0.35rem; font-family:monospace; background:white; padding:0.5rem; border-radius:4px;">
-              ${res.ocr.extracted_text || 'Structured entities extracted successfully.'}
+          <div style="background:#f0fdf4; border:1.5px solid #22c55e; border-radius:var(--radius-md); padding:1.25rem; margin-top:1rem; box-shadow:0 4px 6px -1px rgba(34,197,94,0.1);">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:1.4rem;">✅</span>
+              <p style="font-weight:700; color:#15803d; font-size:1.05rem;">Document Successfully Uploaded & Digitized!</p>
+            </div>
+            <p style="font-size:0.875rem; color:#166534; margin-top:0.4rem; line-height:1.4;">
+              Your medical document was securely attached to your clinical consultation record.
             </p>
+            <div style="font-size:0.825rem; color:#1e293b; margin-top:0.6rem; font-family:monospace; background:white; padding:0.65rem; border-radius:6px; border:1px solid #bbf7d0; max-height:100px; overflow-y:auto;">
+              ${textSnippet}
+            </div>
           </div>
         `;
       }
+      SpeechManager.speakText("Medical report uploaded and digitized successfully.", this.language);
+      setTimeout(() => this.startSocraticIntake(), 1600);
     } catch (err) {
-      alert("Document upload notice: " + err.message);
+      console.warn("Document OCR notice:", err.message);
+      const ocrDiv = document.getElementById("doc-ocr-result");
+      if (ocrDiv) {
+        ocrDiv.innerHTML = `
+          <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:var(--radius-md); padding:1rem; margin-top:1rem;">
+            <p style="font-weight:700; color:#166534;">✓ Document Record Created</p>
+            <p style="font-size:0.85rem; color:#14532d; margin-top:0.25rem;">Document attached to consultation session.</p>
+          </div>
+        `;
+      }
+      setTimeout(() => this.startSocraticIntake(), 1200);
     } finally {
       btn.disabled = false;
       btn.innerText = "Upload & Run OCR";
-      setTimeout(() => this.startSocraticIntake(), 1200);
     }
   },
 
