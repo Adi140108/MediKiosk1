@@ -1,5 +1,7 @@
 import os
-from fastapi import FastAPI
+import logging
+from fastapi import FastAPI, Response
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
@@ -12,6 +14,8 @@ from app.api.v1 import (
     speech_router,
     health_router
 )
+
+logger = logging.getLogger("medikiosk.main")
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -37,33 +41,105 @@ app.include_router(physician_router, prefix="/api/v1")
 app.include_router(speech_router, prefix="/api/v1")
 app.include_router(health_router, prefix="/api/v1")
 
-# Static & Frontend Routing
-frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend"))
+def find_frontend_dir() -> str:
+    """Discovers frontend directory across local development and Vercel serverless environments."""
+    candidate_paths = [
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend")),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend")),
+        os.path.abspath(os.path.join(os.getcwd(), "frontend")),
+        "/var/task/frontend",
+        os.path.abspath("./frontend"),
+    ]
+    for p in candidate_paths:
+        if os.path.exists(p) and os.path.isdir(p):
+            return p
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend"))
+
+frontend_dir = find_frontend_dir()
+
+def read_frontend_file(filename: str) -> str:
+    fdir = find_frontend_dir()
+    filepath = os.path.join(fdir, filename)
+    if os.path.exists(filepath):
+        with open(filepath, "r", encoding="utf-8") as f:
+            return f.read()
+    return ""
+
+@app.get("/", include_in_schema=False)
+async def serve_patient_kiosk():
+    html = read_frontend_file("index.html")
+    if html:
+        return HTMLResponse(content=html, status_code=200)
+    return HTMLResponse(content="<h1>MediKiosk Patient Intake System</h1><p>Initializing...</p>", status_code=200)
+
+@app.get("/physician", include_in_schema=False)
+@app.get("/physician/", include_in_schema=False)
+@app.get("/physician/{full_path:path}", include_in_schema=False)
+async def serve_physician_portal(full_path: str = ""):
+    html = read_frontend_file("physician.html")
+    if html:
+        return HTMLResponse(content=html, status_code=200)
+    index_html = read_frontend_file("index.html")
+    return HTMLResponse(content=index_html, status_code=200)
+
+@app.get("/diagnostics", include_in_schema=False)
+@app.get("/diagnostics/", include_in_schema=False)
+@app.get("/diagnostics/{full_path:path}", include_in_schema=False)
+async def serve_diagnostics_page(full_path: str = ""):
+    html = read_frontend_file("diagnostics.html")
+    if html:
+        return HTMLResponse(content=html, status_code=200)
+    index_html = read_frontend_file("index.html")
+    return HTMLResponse(content=index_html, status_code=200)
+
+@app.get("/css/{file_path:path}", include_in_schema=False)
+async def serve_css(file_path: str):
+    fdir = find_frontend_dir()
+    full_path = os.path.join(fdir, "css", file_path)
+    if os.path.exists(full_path):
+        with open(full_path, "r", encoding="utf-8") as f:
+            return Response(content=f.read(), media_type="text/css")
+    return Response(content="/* CSS not found */", status_code=404, media_type="text/css")
+
+@app.get("/js/{file_path:path}", include_in_schema=False)
+async def serve_js(file_path: str):
+    fdir = find_frontend_dir()
+    full_path = os.path.join(fdir, "js", file_path)
+    if os.path.exists(full_path):
+        with open(full_path, "r", encoding="utf-8") as f:
+            return Response(content=f.read(), media_type="application/javascript")
+    return Response(content="// JS not found", status_code=404, media_type="application/javascript")
+
+@app.get("/assets/{file_path:path}", include_in_schema=False)
+async def serve_assets(file_path: str):
+    fdir = find_frontend_dir()
+    full_path = os.path.join(fdir, "assets", file_path)
+    if os.path.exists(full_path):
+        with open(full_path, "rb") as f:
+            media = "image/png" if file_path.endswith(".png") else "application/octet-stream"
+            return Response(content=f.read(), media_type=media)
+    return Response(status_code=404)
+
+@app.get("/logo.png", include_in_schema=False)
+@app.get("/favicon.ico", include_in_schema=False)
+async def serve_logo():
+    fdir = find_frontend_dir()
+    for candidate in [
+        os.path.join(fdir, "logo.png"),
+        os.path.join(fdir, "assets", "logo.png"),
+        os.path.abspath("./logo.png"),
+        os.path.abspath("./frontend/logo.png")
+    ]:
+        if os.path.exists(candidate):
+            with open(candidate, "rb") as f:
+                return Response(content=f.read(), media_type="image/png")
+    return Response(status_code=404)
+
 if os.path.exists(frontend_dir):
-    from fastapi.responses import FileResponse
-
-    @app.get("/physician", include_in_schema=False)
-    @app.get("/physician/", include_in_schema=False)
-    @app.get("/physician/{full_path:path}", include_in_schema=False)
-    async def serve_physician_portal(full_path: str = ""):
-        physician_file = os.path.join(frontend_dir, "physician.html")
-        if os.path.exists(physician_file):
-            return FileResponse(physician_file)
-        return FileResponse(os.path.join(frontend_dir, "index.html"))
-
-    @app.get("/diagnostics", include_in_schema=False)
-    @app.get("/diagnostics/", include_in_schema=False)
-    async def serve_diagnostics_page():
-        diag_file = os.path.join(frontend_dir, "diagnostics.html")
-        if os.path.exists(diag_file):
-            return FileResponse(diag_file)
-        return FileResponse(os.path.join(frontend_dir, "index.html"))
-
-    @app.get("/", include_in_schema=False)
-    async def serve_patient_kiosk():
-        return FileResponse(os.path.join(frontend_dir, "index.html"))
-
-    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+    try:
+        app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
+    except Exception:
+        pass
 
 if __name__ == "__main__":
     import uvicorn
