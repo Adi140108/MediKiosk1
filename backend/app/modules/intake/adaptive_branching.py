@@ -83,13 +83,18 @@ class AdaptiveBranchingEngine:
 
         # 2. Determine symptom pathway
         pathway_key = None
-        if "head" in complaint or "migraine" in complaint:
+        head_keywords = ["head", "migraine", "सिर", "सर", "दर्द", "ತಲೆ", "தலை", "తల", "തല", "মাথা", "માથા", "ਸਿਰ"]
+        abdo_keywords = ["stomach", "abdo", "belly", "gastric", "पेट", "होट्टे", "ಹೊಟ್ಟೆ", "வயிறு", "కడుపు", "വയർ", "પેટ", "ਪੇਟ", "পেট"]
+        chest_keywords = ["chest", "heart", "सीने", "छाती", "हृदय", "ಎದೆ", "மார்", "గుండె", "ఛాతీ", "നെഞ്ച്", "বুক", "છાતી", "ਛਾਤੀ"]
+        joint_keywords = ["joint", "knee", "back", "bone", "spine", "जोड़", "घुटने", "कमर", "पीठ", "ಕೀಲು", "ಮೊಣಕಾಲು", "மூட்டு", "కీలు", "మోకాలు", "സന്ധി", "হাঁটু", "સાંધા", "ਜੋੜ"]
+
+        if any(k in complaint for k in head_keywords):
             pathway_key = "headache"
-        elif "stomach" in complaint or "abdo" in complaint or "belly" in complaint:
+        elif any(k in complaint for k in abdo_keywords):
             pathway_key = "abdominal_pain"
-        elif "chest" in complaint or "heart" in complaint:
+        elif any(k in complaint for k in chest_keywords):
             pathway_key = "chest_pain"
-        elif "joint" in complaint or "knee" in complaint or "back" in complaint or "bone" in complaint:
+        elif any(k in complaint for k in joint_keywords):
             pathway_key = "joint_pain"
 
         if pathway_key and pathway_key in SYMPTOM_PATHWAYS:

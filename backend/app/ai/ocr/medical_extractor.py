@@ -217,21 +217,74 @@ class MedicalDocumentExtractor:
                 confidence=0.95
             ))
 
-        # Common lab values: Hb / Hemoglobin, Glucose, Creatinine, Cholesterol, HbA1c
-        for test_pattern, test_name in [
-            (r'\b(?:Hemoglobin|Hb)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(g/dL|gm/dl)?\b', "Hemoglobin"),
-            (r'\b(?:Fasting\s*Glucose|FBS|Blood\s*Sugar)[:\s]*([0-9]{2,3}(?:\.[0-9]+)?)\s*(mg/dL)?\b', "Fasting Glucose"),
-            (r'\b(?:HbA1c|A1C)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(%|percent)?\b', "HbA1c"),
-            (r'\b(?:Serum\s*Creatinine|Creatinine)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(mg/dL)?\b', "Serum Creatinine"),
-            (r'\b(?:Total\s*Cholesterol|Cholesterol)[:\s]*([0-9]{2,3}(?:\.[0-9]+)?)\s*(mg/dL)?\b', "Total Cholesterol")
-        ]:
+        # SpO2 regex: SpO2: 98%
+        spo2_match = re.search(r'\b(?:SpO2|Oxygen\s*Saturation)[:\s]*([0-9]{2,3})\s*%\b', raw_text, re.IGNORECASE)
+        if spo2_match:
+            vitals["spo2"] = f"{spo2_match.group(1)}%"
+            facts.append(ExtractedClinicalFact(
+                fact="Vital: SpO2",
+                value=vitals["spo2"],
+                category="vital",
+                source_document=filename,
+                page=page,
+                source_text=spo2_match.group(0),
+                confidence=0.95
+            ))
+
+        # Comprehensive Laboratory Tests Directory
+        lab_patterns = [
+            (r'\b(?:Hemoglobin|Hb|HGB)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(g/dL|gm/dl|g/l)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Hemoglobin", "12.0 - 16.0 g/dL"),
+            (r'\b(?:Total\s*Leukocyte\s*Count|TLC|WBC(?:\s*Count)?)[:\s]*([0-9,]{3,6}(?:\.[0-9]+)?)\s*(/cumm|cells/mcL|/uL|/mm3|x10\^3/uL)?(?:\s*\(?([0-9,\.\s\-–]+)\)?)?\b', "Total Leukocyte Count (WBC)", "4,000 - 11,000 /cumm"),
+            (r'\b(?:Platelet\s*Count|Platelets|PLT)[:\s]*([0-9,\.]+(?:\s*(?:Lakhs?|lacs?|k))?)\s*(/cumm|cells/mcL|/uL|/mm3|x10\^3/uL)?(?:\s*\(?([0-9,\.\s\-–]+)\)?)?\b', "Platelet Count", "1.5 - 4.5 Lakhs/cumm"),
+            (r'\b(?:RBC(?:\s*Count)?|Red\s*Blood\s*Cells)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(mil/uL|million/cumm|x10\^6/uL)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "RBC Count", "4.5 - 5.5 mil/uL"),
+            (r'\b(?:Packed\s*Cell\s*Volume|PCV|Hematocrit|HCT)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(%|percent)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Packed Cell Volume (PCV)", "36 - 48 %"),
+            (r'\b(?:Neutrophils|Polymorphs)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(%|percent)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Neutrophils", "40 - 70 %"),
+            (r'\b(?:Lymphocytes)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(%|percent)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Lymphocytes", "20 - 40 %"),
+            (r'\b(?:Eosinophils)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(%|percent)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Eosinophils", "1 - 6 %"),
+            (r'\b(?:Monocytes)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(%|percent)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Monocytes", "2 - 8 %"),
+            (r'\b(?:ESR|Erythrocyte\s*Sedimentation\s*Rate)[:\s]*([0-9]{1,3})\s*(mm/hr|mm)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "ESR", "0 - 20 mm/hr"),
+            (r'\b(?:Fasting\s*Blood\s*Sugar|FBS|Fasting\s*Glucose)[:\s]*([0-9]{2,3}(?:\.[0-9]+)?)\s*(mg/dL|mg/dl)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Fasting Blood Sugar (FBS)", "70 - 100 mg/dL"),
+            (r'\b(?:Post\s*Prandial\s*(?:Blood\s*Sugar|Glucose)|PPBS)[:\s]*([0-9]{2,3}(?:\.[0-9]+)?)\s*(mg/dL|mg/dl)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Post Prandial Glucose (PPBS)", "< 140 mg/dL"),
+            (r'\b(?:Random\s*Blood\s*Sugar|RBS|Blood\s*Glucose)[:\s]*([0-9]{2,3}(?:\.[0-9]+)?)\s*(mg/dL|mg/dl)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Random Blood Sugar (RBS)", "70 - 140 mg/dL"),
+            (r'\b(?:HbA1c|Glycated\s*Hemoglobin|A1C)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(%|percent)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "HbA1c", "< 5.7 % (Normal)"),
+            (r'\b(?:Serum\s*Creatinine|Creatinine|S\.Creatinine)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(mg/dL|mg/dl)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Serum Creatinine", "0.6 - 1.2 mg/dL"),
+            (r'\b(?:Blood\s*Urea|BUN|Urea)[:\s]*([0-9]{1,3}(?:\.[0-9]+)?)\s*(mg/dL|mg/dl)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Blood Urea / BUN", "15 - 40 mg/dL"),
+            (r'\b(?:Serum\s*Uric\s*Acid|Uric\s*Acid)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(mg/dL|mg/dl)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Uric Acid", "3.5 - 7.2 mg/dL"),
+            (r'\b(?:Serum\s*Sodium|Sodium|Na\+)[:\s]*([0-9]{2,3}(?:\.[0-9]+)?)\s*(mEq/L|mmol/L)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Serum Sodium (Na+)", "135 - 145 mEq/L"),
+            (r'\b(?:Serum\s*Potassium|Potassium|K\+)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(mEq/L|mmol/L)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Serum Potassium (K+)", "3.5 - 5.0 mEq/L"),
+            (r'\b(?:Total\s*Bilirubin|Bilirubin\s*Total)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(mg/dL|mg/dl)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Total Bilirubin", "0.2 - 1.2 mg/dL"),
+            (r'\b(?:Direct\s*Bilirubin|Bilirubin\s*Direct)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(mg/dL|mg/dl)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Direct Bilirubin", "0.0 - 0.3 mg/dL"),
+            (r'\b(?:SGOT|AST|Aspartate\s*Aminotransferase)[:\s]*([0-9]{1,3}(?:\.[0-9]+)?)\s*(U/L|IU/L)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "SGOT (AST)", "5 - 40 U/L"),
+            (r'\b(?:SGPT|ALT|Alanine\s*Aminotransferase)[:\s]*([0-9]{1,3}(?:\.[0-9]+)?)\s*(U/L|IU/L)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "SGPT (ALT)", "7 - 56 U/L"),
+            (r'\b(?:Alkaline\s*Phosphatase|ALP)[:\s]*([0-9]{1,4}(?:\.[0-9]+)?)\s*(U/L|IU/L)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Alkaline Phosphatase (ALP)", "44 - 147 U/L"),
+            (r'\b(?:Total\s*Cholesterol|Cholesterol\s*Total)[:\s]*([0-9]{2,3}(?:\.[0-9]+)?)\s*(mg/dL|mg/dl)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Total Cholesterol", "< 200 mg/dL"),
+            (r'\b(?:Serum\s*Triglycerides|Triglycerides|TGL)[:\s]*([0-9]{2,3}(?:\.[0-9]+)?)\s*(mg/dL|mg/dl)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "Triglycerides", "< 150 mg/dL"),
+            (r'\b(?:HDL\s*Cholesterol|HDL)[:\s]*([0-9]{2,3}(?:\.[0-9]+)?)\s*(mg/dL|mg/dl)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "HDL Cholesterol (Good)", "> 40 mg/dL"),
+            (r'\b(?:LDL\s*Cholesterol|LDL)[:\s]*([0-9]{2,3}(?:\.[0-9]+)?)\s*(mg/dL|mg/dl)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "LDL Cholesterol", "< 100 mg/dL"),
+            (r'\b(?:TSH|Thyroid\s*Stimulating\s*Hormone)[:\s]*([0-9]{1,2}(?:\.[0-9]+)?)\s*(uIU/mL|uIU/ml|mIU/L)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "TSH", "0.4 - 4.5 uIU/mL"),
+            (r'\b(?:C-Reactive\s*Protein|CRP|hs-CRP)[:\s]*([0-9]{1,3}(?:\.[0-9]+)?)\s*(mg/L|mg/dl)?(?:\s*\(?([0-9\.\s\-–]+)\)?)?\b', "C-Reactive Protein (CRP)", "< 5.0 mg/L"),
+            (r'\b(?:Serum\s*Urine\s*Protein|Urine\s*Albumin)[:\s]*([A-Za-z0-9\+\-]+)\b', "Urine Albumin", "Nil / Negative"),
+            (r'\b(?:Urine\s*Sugar|Urine\s*Glucose)[:\s]*([A-Za-z0-9\+\-]+)\b', "Urine Sugar", "Nil / Negative"),
+            (r'\b(?:Pus\s*Cells)[:\s]*([0-9\-]+)\s*(?:/hpf|/HPF)?\b', "Urine Pus Cells", "0 - 5 /HPF")
+        ]
+
+        already_matched_tests = set()
+        for test_pattern, test_name, default_ref in lab_patterns:
             m = re.search(test_pattern, raw_text, re.IGNORECASE)
             if m:
                 val = m.group(1)
                 unit = m.group(2) or ""
-                labs.append({"test": test_name, "value": val, "unit": unit})
+                ref_range = (m.group(3) if len(m.groups()) >= 3 and m.group(3) else default_ref)
+                already_matched_tests.add(test_name)
+                labs.append({
+                    "test": test_name,
+                    "value": val,
+                    "unit": unit,
+                    "reference_range": ref_range,
+                    "source_text": m.group(0)
+                })
                 facts.append(ExtractedClinicalFact(
-                    fact=test_name,
+                    fact=f"Lab: {test_name}",
                     value=f"{val} {unit}".strip(),
                     category="lab_value",
                     source_document=filename,
@@ -241,14 +294,14 @@ class MedicalDocumentExtractor:
                 ))
 
         # Rx / Medication patterns: Tab X 500mg, Cap Y 20mg
-        for rx_match in re.finditer(r'\b(?:Tab|Tablet|Cap|Capsule|Syp|Injection)\s+([A-Za-z0-9\-]+)\s+([0-9]+(?:\.[0-9]+)?\s*(?:mg|mcg|ml|g)?)\s*(OD|BD|TDS|QID|SOS|HS)?\b', raw_text, re.IGNORECASE):
+        for rx_match in re.finditer(r'\b(?:Tab|Tablet|Cap|Capsule|Syp|Syrup|Injection|Inj)\.?\s+([A-Za-z0-9\-]+)\s+([0-9]+(?:\.[0-9]+)?\s*(?:mg|mcg|ml|g)?)\s*(OD|BD|TDS|QID|SOS|HS|once\s*daily|twice\s*daily)?\b', raw_text, re.IGNORECASE):
             drug_name = rx_match.group(1)
             dosage = rx_match.group(2) or ""
             freq = rx_match.group(3) or ""
             meds.append({"name": drug_name, "dosage": dosage, "frequency": freq})
             facts.append(ExtractedClinicalFact(
                 fact=f"Medication: {drug_name}",
-                value=f"{dosage} {freq}".strip(),
+                value=f"{dosage} {freq}".strip() or "Prescribed",
                 category="medication",
                 source_document=filename,
                 page=page,
@@ -256,8 +309,28 @@ class MedicalDocumentExtractor:
                 confidence=0.90
             ))
 
+        # Diagnoses & Conditions: Diagnosis: X, Impression: Y
+        diag_patterns = [
+            r'\b(?:Diagnosis|Impression|Assessment|Clinical\s*Condition)[:\s]+([^\n\r\.\;]{3,80})',
+            r'\b(?:Known\s*case\s*of|History\s*of|H/O)[:\s]+([^\n\r\.\;]{3,80})'
+        ]
+        for dp in diag_patterns:
+            for dm in re.finditer(dp, raw_text, re.IGNORECASE):
+                cond_text = dm.group(1).strip()
+                if cond_text and len(cond_text) > 3 and cond_text not in conditions:
+                    conditions.append(cond_text)
+                    facts.append(ExtractedClinicalFact(
+                        fact="Diagnosis / Impression",
+                        value=cond_text,
+                        category="condition",
+                        source_document=filename,
+                        page=page,
+                        source_text=dm.group(0),
+                        confidence=0.90
+                    ))
+
         return StructuredMedicalDocument(
-            document_type="Medical Prescription / Lab Report",
+            document_type="Medical Prescription / Clinical Lab Report",
             raw_text=raw_text,
             overall_confidence=round(confidence, 2),
             facts=facts,

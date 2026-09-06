@@ -205,42 +205,68 @@ const SpeechManager = {
     const voices = this.synth.getVoices();
     if (!voices || voices.length === 0) return null;
 
-    const locale = this.langLocaleMap[targetLang] || 'en-IN';
-    const targetLangCode = (targetLang || 'en').toLowerCase();
-    
-    // 1. Search for exact language match that is female or neutral
-    const langMatches = voices.filter(v => {
+    const langCode = (targetLang || 'en').toLowerCase().trim();
+    const locale = this.langLocaleMap[langCode] || `${langCode}-IN`;
+
+    // High quality named voices per language
+    const preferredVoicesByLang = {
+      hi: ['swara', 'madhur', 'google हिन्दी', 'hindi', 'hi-in'],
+      kn: ['sapna', 'gagan', 'google ಕನ್ನಡ', 'kannada', 'kn-in'],
+      ta: ['pallavi', 'valluvar', 'google தமிழ்', 'tamil', 'ta-in'],
+      te: ['shruti', 'mohan', 'google తెలుగు', 'telugu', 'te-in'],
+      ml: ['sobhana', 'midhun', 'google മലയാളം', 'malayalam', 'ml-in'],
+      mr: ['aarohi', 'manohar', 'google मराठी', 'marathi', 'mr-in'],
+      bn: ['tanishaa', 'bashkar', 'google বাংলা', 'bengali', 'bangla', 'bn-in'],
+      gu: ['dhwani', 'niranjan', 'google ગુજરાતી', 'gujarati', 'gu-in'],
+      pa: ['ojas', 'google ਪੰਜਾਬੀ', 'punjabi', 'pa-in'],
+      en: ['neerja', 'heera', 'priya', 'aditi', 'google english (india)', 'en-in']
+    };
+
+    const preferredKeywords = preferredVoicesByLang[langCode] || preferredVoicesByLang['en'];
+
+    // 1. Check for exact language match (locale or prefix)
+    const langVoices = voices.filter(v => {
       const vLang = (v.lang || '').replace('_', '-').toLowerCase();
-      return vLang.startsWith(locale.toLowerCase()) || vLang.startsWith(targetLangCode);
+      return vLang === locale.toLowerCase() || vLang.startsWith(langCode);
     });
 
-    if (langMatches.length > 0) {
-      const femaleLangMatch = langMatches.find(v => {
-        const nameLow = v.name.toLowerCase();
-        const isMale = nameLow.includes('male') || nameLow.includes('guy') || nameLow.includes('david') || nameLow.includes('ravi') || nameLow.includes('mark') || nameLow.includes('george') || nameLow.includes('prabhat');
-        return !isMale;
+    if (langVoices.length > 0) {
+      // 1a. Check for preferred natural/neural female voice for this exact language
+      for (const kw of preferredKeywords) {
+        const found = langVoices.find(v => v.name.toLowerCase().includes(kw));
+        if (found) return found;
+      }
+      // 1b. Check for any natural / online / Google voice in this language
+      const naturalVoice = langVoices.find(v => {
+        const name = v.name.toLowerCase();
+        return name.includes('natural') || name.includes('google') || name.includes('online') || name.includes('neural');
       });
-      if (femaleLangMatch) return femaleLangMatch;
-      return langMatches[0];
+      if (naturalVoice) return naturalVoice;
+
+      // 1c. Any non-male voice in this language
+      const femaleVoice = langVoices.find(v => {
+        const name = v.name.toLowerCase();
+        return !name.includes('male') && !name.includes('david') && !name.includes('mark') && !name.includes('george');
+      });
+      if (femaleVoice) return femaleVoice;
+
+      return langVoices[0];
     }
 
-    // 2. Search for named Indian female voices (Microsoft Neerja, Heera, Swara, Aditi, Priya, Kalpana, etc.)
-    const indianFemaleNames = ['neerja', 'heera', 'swara', 'aditi', 'priya', 'shashi', 'veena', 'anjali', 'kavya', 'kalpana', 'geeta', 'sunita', 'alka', 'deepa', 'divya', 'sneha'];
-    const namedMatch = voices.find(v => {
-      const nameLow = v.name.toLowerCase();
-      return indianFemaleNames.some(fn => nameLow.includes(fn));
-    });
-    if (namedMatch) return namedMatch;
+    // 2. If target is English, find best Indian English female voice
+    if (langCode === 'en') {
+      const enInVoice = voices.find(v => {
+        const vLang = (v.lang || '').toLowerCase();
+        const vName = v.name.toLowerCase();
+        return (vLang.includes('en-in') || vName.includes('india')) && (vName.includes('neerja') || vName.includes('heera') || vName.includes('natural') || !vName.includes('male'));
+      });
+      if (enInVoice) return enInVoice;
+    }
 
-    // 3. Fallback to any Indian English or general female voice
-    const anyIndian = voices.find(v => (v.lang || '').toLowerCase().includes('-in'));
-    if (anyIndian) return anyIndian;
-
-    const anyFemale = voices.find(v => {
-      const nameLow = v.name.toLowerCase();
-      return nameLow.includes('female') || nameLow.includes('zira') || nameLow.includes('samantha') || nameLow.includes('woman');
-    });
-    return anyFemale || voices[0];
+    // 3. IMPORTANT: For non-English languages, if no exact voice object is loaded in browser,
+    // return null so browser falls back to its native synthesizer for utterance.lang!
+    // Never force an English voice onto Hindi, Kannada, Tamil, etc.
+    return null;
   },
 
   guidanceMapByLang: {
@@ -432,8 +458,8 @@ const SpeechManager = {
     const targetLang = lang || this.currentLanguage || 'en';
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = this.langLocaleMap[targetLang] || 'en-IN';
-    utterance.rate = 0.86;  // Gentle, reassuring pace for patients
-    utterance.pitch = 1.10; // Warm, natural Indian female pitch
+    utterance.rate = 0.92;  // Natural, clear conversational pace
+    utterance.pitch = 1.0;  // Balanced, natural tone
 
     const assignedVoice = this.getIndianFemaleVoice(targetLang);
     if (assignedVoice) {

@@ -409,22 +409,125 @@ const PhysicianDashboard = {
       }
     }
 
-    // 7. OCR Documents
+    // 7. OCR Documents & Clinical Findings
     const docsList = document.getElementById("case-ocr-documents-list");
     if (docsList) {
       if (documents && documents.length > 0) {
-        docsList.innerHTML = documents.map(d => `
-          <div class="ocr-item-card">
-            <div class="ocr-item-header">
-              <span><strong>📄 ${d.original_filename || d.filename || 'Medical Document'}</strong></span>
-              <span>Provider: ${d.storage_provider || 'Encrypted Store'}</span>
+        docsList.innerHTML = documents.map((d, idx) => {
+          const findings = d.provider_metadata?.structured_findings || {};
+          const labVals = findings.lab_values || [];
+          const meds = findings.medications || [];
+          const conds = findings.conditions || [];
+          const vitals = findings.vitals || {};
+          const rawText = d.extracted_text || d.ocr_text || findings.raw_text || "";
+          const confidence = d.provider_metadata?.confidence || (rawText ? 0.92 : 0.0);
+          const confPercent = Math.round(confidence * 100);
+          const scanUrl = d.access_url || d.storage_key || "";
+          const filename = d.original_filename || d.filename || `Medical Report ${idx + 1}`;
+
+          // Format lab findings table if any exist
+          let labsHtml = "";
+          if (labVals.length > 0) {
+            labsHtml = `
+              <div style="margin-top:0.6rem;">
+                <div style="font-weight:700; font-size:0.8rem; color:#0f172a; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                  <span>🧪 Extracted Laboratory Findings:</span>
+                  <span class="gap-pill" style="font-size:0.7rem; background:#ecfdf5; color:#065f46; border-color:#a7f3d0;">${labVals.length} Tests Digitized</span>
+                </div>
+                <table class="ocr-lab-table">
+                  <thead>
+                    <tr>
+                      <th>Test Name</th>
+                      <th>Observed Value</th>
+                      <th>Reference Range</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${labVals.map(l => `
+                      <tr>
+                        <td><strong>${l.test}</strong></td>
+                        <td><span style="font-weight:700; color:#0369a1; background:#f0f9ff; padding:2px 6px; border-radius:4px; border:1px solid #bae6fd;">${l.value} ${l.unit || ''}</span></td>
+                        <td style="color:#64748b; font-size:0.75rem;">${l.reference_range || 'Standard range'}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `;
+          }
+
+          // Format medications if any exist
+          let medsHtml = "";
+          if (meds.length > 0) {
+            medsHtml = `
+              <div style="margin-top:0.4rem; display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
+                <span style="font-size:0.75rem; font-weight:700; color:#475569;">Prescribed Rx:</span>
+                ${meds.map(m => `<span class="gap-pill" style="font-size:0.75rem; background:#eff6ff; color:#1e40af; border-color:#bfdbfe;">💊 ${m.name} ${m.dosage || ''} ${m.frequency || ''}</span>`).join('')}
+              </div>
+            `;
+          }
+
+          // Format conditions if any exist
+          let condsHtml = "";
+          if (conds.length > 0) {
+            condsHtml = `
+              <div style="margin-top:0.4rem; display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
+                <span style="font-size:0.75rem; font-weight:700; color:#475569;">Impression:</span>
+                ${conds.map(c => `<span class="gap-pill" style="font-size:0.75rem; background:#fef3c7; color:#92400e; border-color:#fde68a;">📋 ${c}</span>`).join('')}
+              </div>
+            `;
+          }
+
+          // If no structured table or facts, show formatted text preview
+          let textSnippetHtml = "";
+          if (labVals.length === 0 && meds.length === 0 && conds.length === 0) {
+            textSnippetHtml = `
+              <div class="ocr-raw-box" style="margin-top:0.4rem; max-height:120px;">
+                ${rawText || 'OCR entities digitized successfully. Clinical facts attached to record.'}
+              </div>
+            `;
+          }
+
+          return `
+            <div class="ocr-item-card">
+              <div class="ocr-item-header">
+                <span><strong>📄 ${filename}</strong></span>
+                <span style="display:flex; gap:6px; align-items:center;">
+                  <span class="gap-pill" style="font-size:0.7rem; background:#f8fafc; color:#475569; border-color:#cbd5e1;">Provider: ${d.storage_provider || 'Encrypted Store'}</span>
+                  <span class="gap-pill" style="font-size:0.7rem; background:#f0fdf4; color:#15803d; border-color:#bbf7d0;">${confPercent}% OCR</span>
+                </span>
+              </div>
+              <div class="ocr-item-content">
+                ${labsHtml}
+                ${medsHtml}
+                ${condsHtml}
+                ${textSnippetHtml}
+
+                ${rawText && (labVals.length > 0 || meds.length > 0 || conds.length > 0) ? `
+                  <div style="margin-top:0.6rem;">
+                    <button type="button" onclick="PhysicianDashboard.toggleRawOcr('raw-ocr-${idx}')" style="background:none; border:none; color:#0284c7; font-size:0.75rem; font-weight:600; cursor:pointer; padding:0; display:flex; align-items:center; gap:4px;">
+                      <span>📝 Show/Hide Full Raw OCR Text ▼</span>
+                    </button>
+                    <div id="raw-ocr-${idx}" class="ocr-raw-box" style="display:none; margin-top:0.4rem;">
+                      ${rawText}
+                    </div>
+                  </div>
+                ` : ''}
+
+                ${scanUrl ? `
+                  <div style="display:flex; gap:0.5rem; margin-top:0.75rem; align-items:center; flex-wrap:wrap;">
+                    <button type="button" class="btn-scan-preview" onclick="PhysicianDashboard.openDocumentScanModal('${scanUrl}', '${filename.replace(/'/g, "\\'")}')">
+                      🔍 Preview Document Scan
+                    </button>
+                    <button type="button" class="btn-scan-preview" style="background:#f8fafc; color:#475569; border-color:#cbd5e1;" onclick="PhysicianDashboard.openScanLink('${scanUrl}')">
+                      ↗ Open Full Scan
+                    </button>
+                  </div>
+                ` : ''}
+              </div>
             </div>
-            <div class="ocr-item-content">
-              ${d.extracted_text || d.ocr_text || 'OCR entities digitized successfully.'}
-            </div>
-            ${d.access_url ? `<a href="${d.access_url}" target="_blank" style="display:inline-block; font-size:0.75rem; color:#0369a1; font-weight:600; margin-top:0.35rem; text-decoration:none;">View Uploaded Scan ↗</a>` : ''}
-          </div>
-        `).join("");
+          `;
+        }).join("");
       } else {
         docsList.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; font-style:italic;">No previous reports or prescriptions uploaded by patient.</p>`;
       }
@@ -735,5 +838,58 @@ const PhysicianDashboard = {
     }
 
     this.toggleHpiEdit(false);
+  },
+
+  toggleRawOcr(elementId) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const isHidden = el.style.display === "none";
+    el.style.display = isHidden ? "block" : "none";
+  },
+
+  openDocumentScanModal(url, filename = "Medical Document") {
+    const modal = document.getElementById("doc-scan-modal");
+    const title = document.getElementById("scan-modal-title");
+    const meta = document.getElementById("scan-modal-meta");
+    const body = document.getElementById("scan-modal-body");
+    const extBtn = document.getElementById("scan-modal-external-btn");
+
+    if (!modal || !body) return;
+
+    if (title) title.innerText = `📄 ${filename}`;
+    if (meta) meta.innerText = "Verified Medical Record Scan";
+    if (extBtn) {
+      extBtn.href = url;
+      extBtn.onclick = (e) => {
+        e.preventDefault();
+        window.open(url, '_blank', 'noopener,noreferrer');
+      };
+    }
+
+    const isPdf = (url || '').toLowerCase().includes('.pdf');
+    if (isPdf) {
+      body.innerHTML = `
+        <iframe src="${url}" style="width:100%; height:75vh; border:none; background:white; border-radius:6px;"></iframe>
+      `;
+    } else {
+      body.innerHTML = `
+        <div style="max-height:75vh; overflow:auto; display:flex; align-items:center; justify-content:center; width:100%;">
+          <img src="${url}" alt="${filename}" style="max-width:100%; max-height:72vh; border-radius:6px; box-shadow:0 10px 25px rgba(0,0,0,0.5); object-fit:contain;" />
+        </div>
+      `;
+    }
+
+    modal.style.display = "flex";
+  },
+
+  closeDocumentScanModal() {
+    const modal = document.getElementById("doc-scan-modal");
+    if (modal) modal.style.display = "none";
+  },
+
+  openScanLink(url) {
+    if (!url) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 };
+

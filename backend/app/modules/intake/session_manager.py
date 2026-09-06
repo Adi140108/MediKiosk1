@@ -9,6 +9,7 @@ from app.db.repositories.intake_repository import IntakeRepository
 from app.modules.intake.adaptive_branching import AdaptiveBranchingEngine
 from app.modules.intake.socratic_engine import SocraticEngine
 from app.modules.intake.live_summary import LiveSummaryGenerator
+from app.modules.intake.multilingual_questions import get_localized_question
 from app.ai.gemma.client import GemmaClient
 
 logger = logging.getLogger("medikiosk.intake.session_manager")
@@ -30,7 +31,7 @@ class IntakeSessionManager:
 
     def start_session(self, session_id: str, patient_id: str, language: str = "en") -> QuestionItem:
         """
-        Initializes context state and issues the initial Broad Socratic question.
+        Initializes context state and issues the initial Broad Socratic question in patient's language.
         """
         context = PatientContextState(
             socratic_stage=SocraticStage.BROAD,
@@ -38,10 +39,16 @@ class IntakeSessionManager:
         )
         self.repo.save_context_state(session_id, context)
 
+        q_text = get_localized_question(
+            "initial_chief_complaint",
+            target_lang=language,
+            default_text="What is the main health concern or symptom bringing you here today?"
+        )
+
         first_question = QuestionItem(
             question_id=f"q_{session_id}_1",
             session_id=session_id,
-            question="What is the main health concern or symptom bringing you here today?",
+            question=q_text,
             objective="Identify chief complaint",
             question_framework=QuestionFramework.SOCRATIC,
             socratic_stage=SocraticStage.BROAD,
@@ -116,10 +123,14 @@ class IntakeSessionManager:
         self.repo.save_context_state(session_id, context)
 
         next_q_num = ans_count + 1
+        cand_id = candidate.get("id", str(next_q_num))
+        default_q = candidate.get("question", "Could you provide more details about this?")
+        localized_q = get_localized_question(cand_id, target_lang=language, default_text=default_q)
+
         next_question = QuestionItem(
-            question_id=f"q_{session_id}_{candidate.get('id', next_q_num)}",
+            question_id=f"q_{session_id}_{cand_id}",
             session_id=session_id,
-            question=candidate.get("question", "Could you provide more details about this?"),
+            question=localized_q,
             objective=candidate.get("objective", "Clarify details"),
             question_framework=QuestionFramework.AYURVEDIC if candidate.get("category") == "AYURVEDIC" else QuestionFramework.SOCRATIC,
             socratic_stage=stage,

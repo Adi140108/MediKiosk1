@@ -146,3 +146,36 @@ def test_ayurvedic_patient_friendly_language():
     q_mala = ayur.generate_patient_friendly_question("MALA")
     assert "(Mala)" in q_mala["question"]
     assert "bowel" in q_mala["question"].lower()
+
+# Multilingual Socratic Questioning in Indian Languages
+@pytest.mark.asyncio
+async def test_multilingual_socratic_questioning():
+    mgr = IntakeSessionManager()
+
+    # Hindi
+    q_hi = mgr.start_session("sess_hi_01", "pat_hi", language="hi")
+    assert "स्वास्थ्य" in q_hi.question or "समस्या" in q_hi.question or "लक्षण" in q_hi.question
+
+    # Kannada
+    q_kn = mgr.start_session("sess_kn_01", "pat_kn", language="kn")
+    assert "ಆರೋಗ್ಯ" in q_kn.question or "ರೋಗಲಕ್ಷಣ" in q_kn.question
+
+    # Tamil
+    q_ta = mgr.start_session("sess_ta_01", "pat_ta", language="ta")
+    assert "உடல்நல" in q_ta.question or "அறிகுறி" in q_ta.question
+
+    # Telugu
+    q_te = mgr.start_session("sess_te_01", "pat_te", language="te")
+    assert "ఆరోగ్య" in q_te.question or "లక్షణం" in q_te.question
+
+    # Test candidate question localization in Hindi
+    next_q, _, _ = await mgr.process_answer_and_get_next(
+        session_id="sess_hi_01",
+        question_id=q_hi.question_id,
+        answer_text="सिर में बहुत तेज दर्द है",
+        language="hi"
+    )
+    assert next_q is not None
+    # Check that localized Hindi question is returned
+    assert "सिर" in next_q.question or "दर्द" in next_q.question
+
