@@ -69,6 +69,11 @@ const PatientIntake = {
   },
 
   goToStep(stepNum) {
+    if (this.autoAdvanceTimer) {
+      clearTimeout(this.autoAdvanceTimer);
+      this.autoAdvanceTimer = null;
+    }
+
     if (typeof SpeechManager !== "undefined" && SpeechManager.stopAllAudio) {
       SpeechManager.stopAllAudio();
     }
@@ -129,6 +134,11 @@ const PatientIntake = {
   },
 
   selectLanguage(lang) {
+    if (this.autoAdvanceTimer) {
+      clearTimeout(this.autoAdvanceTimer);
+      this.autoAdvanceTimer = null;
+    }
+
     this.language = lang;
     I18n.setLanguage(lang);
     SpeechManager.setLanguage(lang);
@@ -156,6 +166,13 @@ const PatientIntake = {
     };
     const confirmMsg = nativeLangConfirm[lang] || `Language selected: ${lang}`;
     SpeechManager.speakText(confirmMsg, lang);
+
+    // Auto-advance seamlessly to Step 3 (Consent) after 1.2s so patient flow is frictionless
+    this.autoAdvanceTimer = setTimeout(() => {
+      if (this.currentStep === 2) {
+        this.goToStep(3);
+      }
+    }, 1200);
   },
 
   handleConsentNext() {

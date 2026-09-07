@@ -170,6 +170,16 @@ h1, h2, h3, .font-serif {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.lang-pill-indicator:hover {
+  background: #d1fae5;
+  border-color: #34d399;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .nav-tabs {
@@ -617,6 +627,22 @@ h1, h2, h3, .font-serif {
 @keyframes pulseRecording {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.04); }
+}
+
+.mic-countdown-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(220, 38, 38, 0.15);
+  color: #991b1b;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  margin-left: 6px;
+  animation: pulseRecording 1s infinite ease-in-out;
+  letter-spacing: 0.02em;
 }
 
 .pulse-audio {

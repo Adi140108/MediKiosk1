@@ -91,6 +91,38 @@ const SpeechManager = {
     }
   },
 
+  countdownInterval: null,
+  silenceTimer: null,
+  autoSilenceMs: 4000,
+  remainingSeconds: 4,
+  hasReceivedSpeechInSession: false,
+  isRecognitionActive: false,
+
+  clearSilenceTimer() {
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer);
+      this.silenceTimer = null;
+    }
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+    }
+    this.remainingSeconds = 0;
+  },
+
+  updateListeningUI(seconds) {
+    if (!this.isListening || this.hasReceivedSpeechInSession) return;
+    const micBtn = document.getElementById('btn-mic-toggle');
+    const waveEl = document.getElementById('audio-wave-bars');
+    const statusEl = document.getElementById('mic-status-label');
+
+    if (micBtn) micBtn.classList.add('recording');
+    if (waveEl) waveEl.style.display = 'flex';
+    if (statusEl) {
+      statusEl.innerHTML = `🎙️ Listening... <span class="mic-countdown-pill" style="font-size:0.75rem; background:rgba(220,38,38,0.15); color:#991b1b; padding:2px 7px; border-radius:10px; font-weight:700; border:1px solid rgba(220,38,38,0.3); margin-left:4px;">${seconds}s</span>`;
+    }
+  },
+
   setState(newState, detail = '') {
     this.state = newState;
     const micBtn = document.getElementById('btn-mic-toggle');
@@ -100,13 +132,11 @@ const SpeechManager = {
     if (statusEl) {
       switch (newState) {
         case SpeechState.LISTENING:
-          statusEl.innerText = "🎙️ Listening... (speak clearly)";
-          if (micBtn) micBtn.classList.add('recording');
-          if (waveEl) waveEl.style.display = 'flex';
+          this.updateListeningUI(this.remainingSeconds || 4);
           break;
         case SpeechState.PROCESSING:
         case SpeechState.TRANSCRIBING:
-          statusEl.innerText = "⏳ Processing audio & transcribing...";
+          statusEl.innerText = detail || "⏳ Processing audio & transcribing...";
           if (waveEl) waveEl.style.display = 'none';
           break;
         case SpeechState.SUCCESS:
@@ -121,7 +151,7 @@ const SpeechManager = {
           break;
         case SpeechState.IDLE:
         default:
-          statusEl.innerText = (typeof I18n !== 'undefined' && I18n.t) ? I18n.t('mic_speak_btn') : "🎤 Speak Answer";
+          statusEl.innerText = detail || ((typeof I18n !== 'undefined' && I18n.t) ? I18n.t('mic_speak_btn') : "🎤 Speak Answer");
           if (micBtn) micBtn.classList.remove('recording');
           if (waveEl) waveEl.style.display = 'none';
           break;
@@ -129,58 +159,73 @@ const SpeechManager = {
     }
   },
 
-  silenceTimer: null,
-  autoSilenceMs: 4000,
-  hasReceivedSpeechInSession: false,
-
-  clearSilenceTimer() {
-    if (this.silenceTimer) {
-      clearTimeout(this.silenceTimer);
-      this.silenceTimer = null;
-    }
-  },
-
   setupRecognition() {
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRec) {
       this.recognition = new SpeechRec();
-      this.recognition.continuous = false;
+      this.recognition.continuous = true;
       this.recognition.interimResults = true;
 
       this.recognition.onstart = () => {
         this.isListening = true;
+        this.isRecognitionActive = true;
         this.playBeep('start');
         this.setState(SpeechState.LISTENING);
       };
 
       this.recognition.onresult = (event) => {
-        this.hasReceivedSpeechInSession = true;
-        this.clearSilenceTimer();
-
         let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
+        for (let i = 0; i < event.results.length; ++i) {
           transcript += event.results[i][0].transcript;
         }
-        const answerInput = document.getElementById('patient-answer-input');
-        if (answerInput && transcript) {
-          answerInput.value = transcript;
+
+        if (transcript.trim().length > 0) {
+          this.hasReceivedSpeechInSession = true;
+          this.clearSilenceTimer();
+
+          const answerInput = document.getElementById('patient-answer-input');
+          if (answerInput) {
+            answerInput.value = transcript;
+          }
+          this.setState(SpeechState.TRANSCRIBING, `🎙️ Transcribing: "${transcript.slice(-35)}"`);
         }
-        this.setState(SpeechState.TRANSCRIBING);
       };
 
       this.recognition.onerror = (event) => {
+        if (event.error === 'no-speech') {
+          // If 4s countdown is still running and no speech captured yet, keep listening session alive
+          if (this.isListening && !this.hasReceivedSpeechInSession && this.remainingSeconds > 0) {
+            try {
+              if (!this.isRecognitionActive) this.recognition.start();
+            } catch(e) {}
+            return;
+          }
+        }
+
+        if (event.error !== 'aborted') {
+          console.warn('Speech recognition notice:', event.error);
+          if (event.error !== 'no-speech') {
+            this.playBeep('error');
+            this.setState(SpeechState.ERROR, `Speech note (${event.error})`);
+          } else {
+            this.setState(SpeechState.IDLE, "Microphone paused (tap to speak)");
+          }
+        }
         this.clearSilenceTimer();
         this.isListening = false;
-        if (event.error !== 'no-speech' && event.error !== 'aborted') {
-          console.warn('Speech recognition error:', event.error);
-          this.playBeep('error');
-          this.setState(SpeechState.ERROR, `Speech error (${event.error})`);
-        } else {
-          this.setState(SpeechState.IDLE);
-        }
+        this.isRecognitionActive = false;
       };
 
       this.recognition.onend = () => {
+        this.isRecognitionActive = false;
+        // If the browser prematurely ended while the 4s countdown is still active without speech, restart it
+        if (this.isListening && !this.hasReceivedSpeechInSession && this.remainingSeconds > 0) {
+          try {
+            this.recognition.start();
+            return;
+          } catch(e) {}
+        }
+
         this.clearSilenceTimer();
         this.isListening = false;
         this.playBeep('stop');
@@ -188,7 +233,7 @@ const SpeechManager = {
         if (answerInput && answerInput.value.trim().length > 0) {
           this.setState(SpeechState.SUCCESS);
         } else {
-          this.setState(SpeechState.IDLE);
+          this.setState(SpeechState.IDLE, "Microphone paused (tap to speak)");
         }
       };
     }
@@ -203,44 +248,58 @@ const SpeechManager = {
 
   startListeningWithSilenceTimeout(silenceMs = 4000) {
     if (!this.recognition) return;
-    this.autoSilenceMs = silenceMs || 4000;
-    this.hasReceivedSpeechInSession = false;
     this.clearSilenceTimer();
 
-    // If speech synthesis is speaking, do not overlap recognition
-    if (this.isSpeaking && this.synth) {
+    // If speech synthesis is currently speaking, wait or don't overlap
+    if (this.isSpeaking && (this.synth || this.currentAudio)) {
       return;
     }
 
-    try {
-      if (this.isListening) {
-        try { this.recognition.stop(); } catch(e) {}
-      }
-      this.recognition.lang = this.langLocaleMap[this.currentLanguage] || 'en-IN';
-      this.recognition.start();
+    this.autoSilenceMs = silenceMs || 4000;
+    this.remainingSeconds = Math.round(this.autoSilenceMs / 1000);
+    this.hasReceivedSpeechInSession = false;
+    this.isListening = true;
 
-      // Start 4-second silence detection timer
-      this.silenceTimer = setTimeout(() => {
-        if (this.isListening && !this.hasReceivedSpeechInSession) {
-          console.log("No voice response detected in 4s. Auto-stopping mic.");
-          this.stopListening(true);
-        }
-      }, this.autoSilenceMs);
+    try {
+      this.recognition.lang = this.langLocaleMap[this.currentLanguage] || 'en-IN';
+      if (!this.isRecognitionActive) {
+        this.recognition.start();
+      }
     } catch (err) {
       console.debug("Speech recognition start note:", err);
     }
+
+    this.updateListeningUI(this.remainingSeconds);
+
+    // Live 1-second interval countdown for small countdown badge
+    this.countdownInterval = setInterval(() => {
+      this.remainingSeconds -= 1;
+      if (this.remainingSeconds > 0) {
+        this.updateListeningUI(this.remainingSeconds);
+      } else {
+        // 4 seconds elapsed with no speech detected -> turn off mic
+        this.clearSilenceTimer();
+        if (this.isListening && !this.hasReceivedSpeechInSession) {
+          console.log("No voice response detected in 4s. Auto-stopping microphone.");
+          this.stopListening(true);
+        }
+      }
+    }, 1000);
   },
 
   stopListening(isSilenceTimeout = false) {
     this.clearSilenceTimer();
-    if (this.recognition && this.isListening) {
+    this.isListening = false;
+    this.isRecognitionActive = false;
+    if (this.recognition) {
       try {
         this.recognition.stop();
       } catch (e) {}
     }
-    this.isListening = false;
     if (isSilenceTimeout) {
       this.setState(SpeechState.IDLE, "Microphone paused (tap to speak)");
+    } else {
+      this.setState(SpeechState.IDLE);
     }
   },
 
