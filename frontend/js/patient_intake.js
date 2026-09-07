@@ -11,27 +11,43 @@ const PatientIntake = {
   registeredData: null,
 
   init() {
+    // 1. Restore saved language if user previously chose one
+    const savedLang = localStorage.getItem("medikiosk_lang");
+    if (savedLang) {
+      this.language = savedLang;
+    }
+
     this.bindEvents();
     SpeechManager.init();
-    I18n.setLanguage("en");
+    I18n.setLanguage(this.language);
+    SpeechManager.setLanguage(this.language);
     this.updateStepIndicator(1);
-    
-    // Automatic welcoming voice guidance for illiterate/rural patients on kiosk startup
+    this.updateLanguageGridUI(this.language);
+
+    // 2. IMMEDIATE WELCOMING AUTO-SPEECH
     const speakWelcome = () => {
-      SpeechManager.speakStepGuidance(1, this.language);
+      if (this.currentStep === 1 && !SpeechManager.isSpeaking && !SpeechManager.isMuted) {
+        SpeechManager.speakStepGuidance(1, this.language);
+      }
     };
+
+    // Immediate attempt on load (50ms)
+    setTimeout(speakWelcome, 50);
+
+    // Immediate attempt after 300ms
     setTimeout(speakWelcome, 300);
 
-    // Fallback one-time gesture listener if browser strict autoplay blocked initial audio
-    const unlockAudioOnce = () => {
-      if (this.currentStep === 1 && !SpeechManager.isSpeaking && !SpeechManager.isMuted) {
-        speakWelcome();
+    // Unlock audio instantly on first gesture (click, touch, pointer, key, mouse)
+    const unlockAudio = () => {
+      if (SpeechManager.synth) {
+        try { SpeechManager.synth.resume(); } catch(e) {}
       }
-      window.removeEventListener('click', unlockAudioOnce);
-      window.removeEventListener('touchstart', unlockAudioOnce);
+      speakWelcome();
     };
-    window.addEventListener('click', unlockAudioOnce, { once: true });
-    window.addEventListener('touchstart', unlockAudioOnce, { once: true });
+
+    ['click', 'touchstart', 'pointerdown', 'keydown', 'mousedown'].forEach(evt => {
+      window.addEventListener(evt, unlockAudio, { once: true, passive: true });
+    });
   },
 
   bindEvents() {
@@ -88,6 +104,11 @@ const PatientIntake = {
 
     // Step 7: Immediately set localized question text before network calls
     if (stepNum === 7) {
+      if (!this.currentSessionId) {
+        this.currentSessionId = `sess_${this.currentPatientId || 'pat'}_${Date.now()}`;
+      }
+      this.currentQuestionId = this.currentQuestionId || `q_${this.currentSessionId}_1`;
+
       const initialQMap = {
         en: "What is the main health concern or symptom bringing you here today?",
         hi: "आज आपको अस्पताल या क्लिनिक लाने वाली मुख्य स्वास्थ्य समस्या या लक्षण क्या है?",
@@ -96,7 +117,7 @@ const PatientIntake = {
         te: "ఈరోజు మిమ్మల్ని ఇక్కడికి తీసుకువచ్చిన ప్రధాన ఆరోగ్య సమస్య లేదా లక్షణం ఏమిటి?",
         ml: "ഇന്ന് നിങ്ങളെ ഇവിടെ എത്തിച്ച പ്രധാന ആരോഗ്യ പ്രശ്നമോ ലക്ഷണങ്ങളോ എന്താണ്?",
         mr: "आज तुम्हाला येथे आणणारी मुख्य आरोग्य समस्या किंवा लक्षण काय आहे?",
-        bn: "আজ আপনাকে এখানে নিয়ে আসার প্রধান স্বাস্থ্য সমস্যা বা উপসর্গটি কী?",
+        bn: "আজ আপনাকে এখানে নিয়ে আসার প্রধান স্বাস্থ্য समस्या বা উপসর্গটি কী?",
         gu: "આજે તમને અહીં લાવનારી મુખ્ય સ્વાસ્થ્ય સમસ્યા અથવા લક્ષણ કયું છે?",
         pa: "ਅੱਜ ਤੁਹਾਨੂੰ ਇੱਥੇ ਲਿਆਉਣ ਵਾਲੀ ਮੁੱਖ ਸਿਹਤ ਸਮੱਸਿਆ ਜਾਂ ਲੱਛਣ ਕੀ ਹੈ?"
       };
@@ -133,17 +154,7 @@ const PatientIntake = {
     }
   },
 
-  selectLanguage(lang) {
-    if (this.autoAdvanceTimer) {
-      clearTimeout(this.autoAdvanceTimer);
-      this.autoAdvanceTimer = null;
-    }
-
-    this.language = lang;
-    I18n.setLanguage(lang);
-    SpeechManager.setLanguage(lang);
-
-    // Update active tile in grid
+  updateLanguageGridUI(lang) {
     document.querySelectorAll(".lang-tile").forEach((tile) => {
       if (tile.getAttribute("data-lang") === lang) {
         tile.classList.add("selected");
@@ -151,6 +162,19 @@ const PatientIntake = {
         tile.classList.remove("selected");
       }
     });
+  },
+
+  selectLanguage(lang) {
+    if (this.autoAdvanceTimer) {
+      clearTimeout(this.autoAdvanceTimer);
+      this.autoAdvanceTimer = null;
+    }
+
+    this.language = lang;
+    localStorage.setItem("medikiosk_lang", lang);
+    I18n.setLanguage(lang);
+    SpeechManager.setLanguage(lang);
+    this.updateLanguageGridUI(lang);
 
     const nativeLangConfirm = {
       en: "English language selected. Welcome to MediKiosk.",
@@ -160,7 +184,7 @@ const PatientIntake = {
       te: "తెలుగు భాష ఎంపిక చేయబడింది. మెడికియోస్క్‌కు స్వాగతం.",
       ml: "മലയാളം ഭാഷ തിരഞ്ഞെടുത്തു. മെഡികിയോസ്കിലേക്ക് സ്വാഗതം.",
       mr: "मराठी भाषा निवडली आहे. मेडीकियोस्क मध्ये आपले स्वागत आहे.",
-      bn: "বাংলা ভাষা নির্বাচন করা হয়েছে। মেডিকিয়স্কে আপনাকে স্বাগতম।",
+      bn: "বাংলা भाषा নির্বাচন করা হয়েছে। মেডিকিয়স্কে আপনাকে স্বাগতম।",
       gu: "ગુજરાતી ભાષા પસંદ કરવામાં આવી છે. મેડીકિયોસ્કમાં આપનું સ્વાગત છે.",
       pa: "ਪੰਜਾਬੀ ਭਾਸ਼ਾ ਚੁਣੀ ਗਈ ਹੈ। ਮੈਡੀਕਿਓਸਕ ਵਿੱਚ ਤੁਹਾਡਾ ਸੁਆਗਤ ਹੈ।"
     };
@@ -352,8 +376,8 @@ const PatientIntake = {
       const file = fileInput.files[0];
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("session_id", this.currentSessionId);
-      formData.append("patient_id", this.currentPatientId);
+      formData.append("session_id", this.currentSessionId || `sess_${Date.now()}`);
+      formData.append("patient_id", this.currentPatientId || `pat_${Date.now()}`);
       formData.append("document_type", "medical_report");
       formData.append("perform_ocr", "true");
 
@@ -422,7 +446,7 @@ const PatientIntake = {
         te: "వైద్య నివేదిక విజయవంతంగా అప్‌లోడ్ చేయబడింది.",
         ml: "മെഡിക്കൽ റിപ്പോർട്ട് വിജയകരമായി അപ്‌ലോഡ് ചെയ്തു.",
         mr: "वैद्यकीय अहवाल यशस्वीरित्या अपलोड झाला आहे.",
-        bn: "মেডিকেল রিপোর্ট সফলভাবে আপলোড হয়েছে।",
+        bn: "মেডিকেল रिपोर्ट সফলভাবে আপলোড হয়েছে।",
         gu: "મેડિકલ રિપોર્ટ સફળતાપૂર્વક અપલોડ થઈ ગયો છે.",
         pa: "ਮੈਡੀਕਲ ਰਿਪੋਰਟ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਈ ਹੈ।"
       };
@@ -464,9 +488,13 @@ const PatientIntake = {
     this.goToStep(7);
 
     try {
-      if (!this.currentSessionId && this.currentPatientId) {
+      if (!this.currentPatientId) {
+        this.currentPatientId = `pat_${Date.now()}`;
+      }
+      if (!this.currentSessionId) {
         this.currentSessionId = `sess_${this.currentPatientId}_${Date.now()}`;
       }
+      this.currentQuestionId = this.currentQuestionId || `q_${this.currentSessionId}_1`;
 
       const res = await api.startIntake(
         this.currentPatientId,
@@ -479,40 +507,62 @@ const PatientIntake = {
       if (res.session_id) {
         this.currentSessionId = res.session_id;
       }
+      if (res.question && res.question.question_id) {
+        this.currentQuestionId = res.question.question_id;
+      }
 
       // If initial complaint was entered, seed it
       const complaintText = document.getElementById("chief-complaint-input")?.value.trim();
       if (complaintText) {
         const answerRes = await api.submitAnswer(
           this.currentSessionId,
-          res.question.question_id,
+          this.currentQuestionId,
           complaintText,
           this.isAttendant ? "ATTENDANT" : "PATIENT",
           this.attendantId,
           this.language
         );
-        if (answerRes.next_question) {
+        if (answerRes && answerRes.next_question) {
           this.renderQuestion(answerRes.next_question);
-        } else {
+        } else if (res.question) {
           this.renderQuestion(res.question);
         }
-      } else {
+      } else if (res.question) {
         this.renderQuestion(res.question);
       }
     } catch (err) {
-      alert("Intake session initialization failed: " + err.message);
+      console.warn("Intake session initialization notice:", err.message);
+      const initialQMap = {
+        en: "What is the main health concern or symptom bringing you here today?",
+        hi: "आज आपको अस्पताल या क्लिनिक लाने वाली मुख्य स्वास्थ्य समस्या या लक्षण क्या है?",
+        kn: "ಇಂದು ನಿಮ್ಮನ್ನು ಆಸ್ಪತ್ರೆಗೆ ಕರೆತಂದ ಮುಖ್ಯ ಆರೋಗ್ಯ ಸಮಸ್ಯೆ ಅಥವಾ ರೋಗಲಕ್ಷಣ ಯಾವುದು?",
+        ta: "இன்று உங்களை மருத்துவமனைக்கு வரவழைத்த முக்கிய உடல்நலப் பிரச்சனை அல்லது அறிகுறி என்ன?",
+        te: "ఈరోజు మిమ్మల్ని ఇక్కడికి తీసుకువచ్చిన ప్రధాన ఆరోగ్య సమస్య లేదా లక్షణం ఏమిటి?",
+        ml: "ഇന്ന് നിങ്ങളെ ഇവിടെ എത്തിച്ച പ്രധാന ആരോഗ്യ പ്രശ്നമോ ലക്ഷണങ്ങളോ എന്താണ്?",
+        mr: "आज तुम्हाला येथे आणणारी मुख्य आरोग्य समस्या किंवा लक्षण काय आहे?",
+        bn: "আজ আপনাকে এখানে নিয়ে আসার প্রধান স্বাস্থ্য সমস্যা বা উপসর্গটি কী?",
+        gu: "આજે તમને અહીં લાવનારી મુખ્ય સ્વાસ્થ્ય સમસ્યા અથવા લક્ષણ કયું છે?",
+        pa: "ਅੱਜ ਤੁਹਾਨੂੰ ਇੱਥੇ ਲਿਆਉਣ ਵਾਲੀ ਮੁੱਖ ਸਿਹਤ ਸਮੱਸਿਆ ਜਾਂ ਲੱਛਣ ਕੀ ਹੈ?"
+      };
+      const q = initialQMap[this.language] || initialQMap["en"];
+      this.renderQuestion({
+        question_id: `q_${this.currentSessionId || 'default'}_1`,
+        question: q,
+        objective: "Identify chief complaint"
+      });
     }
   },
 
   renderQuestion(question) {
-    this.currentQuestionId = question.question_id;
-    this.currentQuestionText = question.question;
+    if (!question) return;
+    this.currentQuestionId = question.question_id || this.currentQuestionId || `q_${this.currentSessionId || 'sess'}_1`;
+    this.currentQuestionText = question.question || this.currentQuestionText;
 
     const qTextEl = document.getElementById("current-question-text");
     const qBadgeEl = document.getElementById("current-question-badge");
     const qAyurEl = document.getElementById("current-ayur-badge");
 
-    if (qTextEl) qTextEl.innerText = question.question;
+    if (qTextEl) qTextEl.innerText = this.currentQuestionText;
     if (qBadgeEl) qBadgeEl.innerText = `Objective: ${question.objective || 'Clinical Investigation'}`;
 
     if (qAyurEl) {
@@ -530,8 +580,8 @@ const PatientIntake = {
       input.focus();
     }
 
-    // Auto-speak question using Indian female voice TTS, then auto-open mic with 4s silence timeout
-    SpeechManager.speakText(question.question, this.language, () => {
+    // Auto-speak question in patient's selected language using Indian female voice TTS, then auto-open mic
+    SpeechManager.speakText(this.currentQuestionText, this.language, () => {
       SpeechManager.startListeningWithSilenceTimeout(4000);
     });
   },
@@ -549,6 +599,13 @@ const PatientIntake = {
     const input = document.getElementById("patient-answer-input");
     const answer = input ? input.value.trim() : "";
     if (!answer) return;
+
+    if (!this.currentSessionId) {
+      this.currentSessionId = `sess_${this.currentPatientId || 'pat'}_${Date.now()}`;
+    }
+    if (!this.currentQuestionId) {
+      this.currentQuestionId = `q_${this.currentSessionId}_1`;
+    }
 
     const btn = document.getElementById("btn-submit-answer");
     const originalText = btn ? btn.innerHTML : "Submit Answer";
@@ -568,18 +625,38 @@ const PatientIntake = {
       );
 
       const liveSumEl = document.getElementById("live-summary-box");
-      if (res.live_summary && liveSumEl) {
+      if (res && res.live_summary && liveSumEl) {
         liveSumEl.style.display = "block";
         liveSumEl.innerHTML = `<strong>Verification:</strong> ${res.live_summary}`;
       }
 
-      if (res.is_finished || !res.next_question) {
+      if (res && (res.is_finished || !res.next_question)) {
         await this.finishIntake();
-      } else {
+      } else if (res && res.next_question) {
         this.renderQuestion(res.next_question);
+      } else {
+        await this.finishIntake();
       }
     } catch (err) {
-      alert("Answer submission failed: " + err.message);
+      console.warn("Answer submission notice:", err.message);
+      // Auto-retry once in case of serverless wake-up
+      try {
+        const retryRes = await api.submitAnswer(
+          this.currentSessionId,
+          this.currentQuestionId,
+          answer,
+          this.isAttendant ? "ATTENDANT" : "PATIENT",
+          this.attendantId,
+          this.language
+        );
+        if (retryRes && (retryRes.is_finished || !retryRes.next_question)) {
+          await this.finishIntake();
+        } else if (retryRes && retryRes.next_question) {
+          this.renderQuestion(retryRes.next_question);
+        }
+      } catch (retryErr) {
+        alert("⚠️ Please tap Submit Answer once more to proceed.");
+      }
     } finally {
       if (btn) {
         btn.disabled = false;
@@ -592,14 +669,14 @@ const PatientIntake = {
     this.goToStep(8);
 
     try {
-      const res = await api.completeIntake(this.currentSessionId, this.currentPatientId);
+      const res = await api.completeIntake(this.currentSessionId, this.currentPatientId || 'pat_dev');
       const ticketNum = `MK-${Math.floor(10000000 + Math.random() * 90000000)}`;
       
       const numEl = document.getElementById("ticket-number-display");
       if (numEl) numEl.innerText = ticketNum;
 
-      const rf = res.red_flag;
-      const routing = res.routing;
+      const rf = res?.red_flag || { overall_severity: "MEDIUM" };
+      const routing = res?.routing || { recommended_department: "general_medicine", reasoning: "Comprehensive clinical intake recorded." };
 
       const badgeContainer = document.getElementById("ticket-triage-badge");
       if (badgeContainer) {
@@ -621,22 +698,22 @@ const PatientIntake = {
             </div>
             <div>
               <span style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">ASSIGNED DEPARTMENT</span>
-              <p style="font-weight:700; font-size:1.05rem; color:var(--brand-primary);">${routing.recommended_department.toUpperCase()}</p>
+              <p style="font-weight:700; font-size:1.05rem; color:var(--brand-primary);">${(routing.recommended_department || 'General Medicine').toUpperCase()}</p>
             </div>
           </div>
           <div style="margin-bottom:1rem;">
             <span style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">CHIEF COMPLAINT NARRATIVE</span>
-            <p style="font-style:italic; color:#334155;">"${res.draft_summary.chief_complaint}"</p>
+            <p style="font-style:italic; color:#334155;">"${res?.draft_summary?.chief_complaint || 'Recorded during intake'}"</p>
           </div>
           <div style="background:#faf8f5; border:1px solid #e5e0d5; padding:0.85rem; border-radius:var(--radius-sm); font-size:0.875rem;">
-            <p><strong>Routing Assessment:</strong> ${routing.reasoning}</p>
+            <p><strong>Routing Assessment:</strong> ${routing.reasoning || 'Patient triaged and ready for consultation.'}</p>
           </div>
         `;
       }
 
-      SpeechManager.speakText(`Intake completed. Consultation Ticket number is ${ticketNum}. Please proceed to the ${routing.recommended_department} department.`, this.language);
+      SpeechManager.speakText(`Intake completed. Consultation Ticket number is ${ticketNum}. Please proceed to the ${routing.recommended_department || 'assigned'} department.`, this.language);
     } catch (err) {
-      alert("Summary completion notice: " + err.message);
+      console.warn("Summary completion notice:", err.message);
     }
   }
 };

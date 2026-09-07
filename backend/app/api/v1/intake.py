@@ -37,11 +37,11 @@ class StartIntakeRequest(BaseModel):
 
 class SubmitAnswerRequest(BaseModel):
     session_id: str
-    question_id: str
+    question_id: Optional[str] = "initial_chief_complaint"
     answer: str
-    source_type: SourceType = SourceType.PATIENT
+    source_type: Optional[SourceType] = SourceType.PATIENT
     attendant_id: Optional[str] = None
-    language: str = "en"
+    language: Optional[str] = "en"
 
 class CompleteIntakeRequest(BaseModel):
     session_id: str
@@ -58,7 +58,7 @@ def start_intake_session(req: StartIntakeRequest):
     first_q = intake_service.start_intake(
         session_id=session_id,
         patient_id=req.patient_id,
-        language=req.language
+        language=req.language or "en"
     )
     return {
         "session_id": session_id,
@@ -68,13 +68,17 @@ def start_intake_session(req: StartIntakeRequest):
 
 @router.post("/answer")
 async def submit_intake_answer(req: SubmitAnswerRequest):
+    qid = req.question_id or "initial_chief_complaint"
+    lang = req.language or "en"
+    stype = req.source_type or SourceType.PATIENT
+
     next_q, is_finished, live_summary = await intake_service.submit_answer(
         session_id=req.session_id,
-        question_id=req.question_id,
+        question_id=qid,
         answer=req.answer,
-        source_type=req.source_type,
+        source_type=stype,
         attendant_id=req.attendant_id,
-        language=req.language
+        language=lang
     )
 
     return {

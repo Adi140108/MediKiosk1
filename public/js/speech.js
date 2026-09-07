@@ -596,36 +596,36 @@ const SpeechManager = {
     const targetLang = (lang || this.currentLanguage || 'en').toLowerCase().trim();
     const assignedVoice = this.getIndianFemaleVoice(targetLang);
 
-    // Option A: If browser has a dedicated matching native voice (or English)
-    if (this.synth && (assignedVoice || targetLang === 'en')) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = this.langLocaleMap[targetLang] || 'en-IN';
-      utterance.rate = 0.92;
-      utterance.pitch = 1.0;
-      if (assignedVoice) {
-        utterance.voice = assignedVoice;
-      }
-
-      this.updateButtonStates('playing');
-
-      utterance.onend = () => {
-        this.isSpeaking = false;
-        this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
-        if (typeof onEndCallback === 'function') {
-          onEndCallback();
-        }
-      };
-
-      utterance.onerror = () => {
-        this.isSpeaking = false;
-        this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
-        if (typeof onEndCallback === 'function') {
-          onEndCallback();
-        }
-      };
-
-      this.isSpeaking = true;
+    // Option A: Native Browser SpeechSynthesis with Indian locale
+    if (this.synth) {
       try {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = this.langLocaleMap[targetLang] || 'en-IN';
+        utterance.rate = 0.92;
+        utterance.pitch = 1.0;
+        if (assignedVoice) {
+          utterance.voice = assignedVoice;
+        }
+
+        this.updateButtonStates('playing');
+
+        utterance.onend = () => {
+          this.isSpeaking = false;
+          this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
+          if (typeof onEndCallback === 'function') {
+            onEndCallback();
+          }
+        };
+
+        utterance.onerror = (e) => {
+          console.warn("Browser SpeechSynthesis notice:", e);
+          this.isSpeaking = false;
+          this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
+          // Try server audio stream as fallback if native synth errored
+          this._playServerAudioStream(text, targetLang, onEndCallback);
+        };
+
+        this.isSpeaking = true;
         this.synth.speak(utterance);
         return;
       } catch (err) {
@@ -633,7 +633,11 @@ const SpeechManager = {
       }
     }
 
-    // Option B: High-clarity Streaming Server TTS for all 10 Indian languages
+    // Option B: Server TTS stream fallback
+    this._playServerAudioStream(text, targetLang, onEndCallback);
+  },
+
+  _playServerAudioStream(text, targetLang, onEndCallback) {
     try {
       this.updateButtonStates('playing');
       this.isSpeaking = true;
