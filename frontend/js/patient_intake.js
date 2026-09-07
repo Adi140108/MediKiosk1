@@ -334,7 +334,19 @@ const PatientIntake = {
 
     const btn = document.getElementById("btn-upload-doc");
     btn.disabled = true;
-    btn.innerText = "Analyzing & Extracting OCR...";
+    btn.innerText = "1/3 Uploading & Storing Document...";
+
+    const ocrDiv = document.getElementById("doc-ocr-result");
+    if (ocrDiv) {
+      ocrDiv.innerHTML = `
+        <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:var(--radius-md); padding:1rem; margin-top:1rem;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="spinner" style="display:inline-block;">⏳</span>
+            <p style="font-weight:600; color:#334155; font-size:0.95rem;">Uploading to secure cloud vault...</p>
+          </div>
+        </div>
+      `;
+    }
 
     try {
       const file = fileInput.files[0];
@@ -346,27 +358,65 @@ const PatientIntake = {
       formData.append("perform_ocr", "true");
 
       const res = await api.uploadDocument(formData);
-      const ocrDiv = document.getElementById("doc-ocr-result");
+      
+      // Document is securely stored in cloud and metadata recorded (<400ms)
       if (ocrDiv) {
-        const textSnippet = res.ocr?.extracted_text || 'Structured entities and clinical findings digitized successfully.';
         ocrDiv.innerHTML = `
-          <div style="background:#f0fdf4; border:1.5px solid #22c55e; border-radius:var(--radius-md); padding:1.25rem; margin-top:1rem; box-shadow:0 4px 6px -1px rgba(34,197,94,0.1);">
+          <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:var(--radius-md); padding:1.15rem; margin-top:1rem;">
             <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:1.4rem;">✅</span>
-              <p style="font-weight:700; color:#15803d; font-size:1.05rem;">Document Successfully Uploaded & Digitized!</p>
+              <span style="font-size:1.3rem;">✅</span>
+              <p style="font-weight:700; color:#15803d; font-size:1rem;">Document Stored ✓ — Running Background OCR</p>
             </div>
-            <p style="font-size:0.875rem; color:#166534; margin-top:0.4rem; line-height:1.4;">
-              Your medical document was securely attached to your clinical consultation record.
+            <p style="font-size:0.85rem; color:#166534; margin-top:0.35rem;">
+              Your document is securely encrypted and attached to your clinical consultation record.
             </p>
-            <div style="font-size:0.825rem; color:#1e293b; margin-top:0.6rem; font-family:monospace; background:white; padding:0.65rem; border-radius:6px; border:1px solid #bbf7d0; max-height:100px; overflow-y:auto;">
-              ${textSnippet}
+            <div id="ocr-polling-status" style="font-size:0.8rem; color:#475569; margin-top:0.5rem; display:flex; align-items:center; gap:6px;">
+              <span class="spinner">⏳</span> Digitizing laboratory values and clinical entities in background...
             </div>
           </div>
         `;
       }
+
+      btn.innerText = "2/3 Document Stored ✓";
+
+      // Non-blocking status polling with 800ms intervals
+      const docId = res.document_id;
+      let attempts = 0;
+      const pollOcr = async () => {
+        attempts++;
+        try {
+          const statusRes = await api.getDocumentStatus(docId);
+          if (statusRes.ocr_status === "COMPLETED") {
+            const pollStatusEl = document.getElementById("ocr-polling-status");
+            if (pollStatusEl) {
+              const textSnippet = statusRes.extracted_text_preview || 'Clinical entities digitized successfully.';
+              pollStatusEl.innerHTML = `
+                <div style="width:100%;">
+                  <span style="color:#15803d; font-weight:700;">✓ OCR Digitization Complete</span>
+                  <div style="font-size:0.8rem; color:#1e293b; margin-top:0.4rem; font-family:monospace; background:white; padding:0.5rem; border-radius:6px; border:1px solid #bbf7d0; max-height:80px; overflow-y:auto;">
+                    ${textSnippet}
+                  </div>
+                </div>
+              `;
+            }
+            return true;
+          } else if (statusRes.ocr_status === "FAILED") {
+            const pollStatusEl = document.getElementById("ocr-polling-status");
+            if (pollStatusEl) {
+              pollStatusEl.innerHTML = `<span style="color:#64748b;">(Original document safely attached for physician review)</span>`;
+            }
+            return true;
+          }
+        } catch (e) {
+          console.warn("OCR polling notice:", e.message);
+        }
+        return false;
+      };
+
+      // Speak native confirmation
       const nativeDocSuccess = {
-        en: "Medical report uploaded and digitized successfully.",
-        hi: "मेडिकल रिपोर्ट सफलतापूर्वक अपलोड और डिजिटाइज़ कर दी गई है।",
+        en: "Medical report uploaded and stored successfully. Proceeding to consultation.",
+        hi: "मेडिकल रिपोर्ट सफलतापूर्वक अपलोड और सुरक्षित कर दी गई है।",
         kn: "ವೈದ್ಯಕೀಯ ವರದಿ ಯಶಸ್ವಿಯಾಗಿ ಅಪ್‌ಲೋಡ್ ಆಗಿದೆ.",
         ta: "மருத்துவ அறிக்கை வெற்றிகரமாக பதிவேற்றப்பட்டது.",
         te: "వైద్య నివేదిక విజయవంతంగా అప్‌లోడ్ చేయబడింది.",
@@ -378,15 +428,28 @@ const PatientIntake = {
       };
       const docMsg = nativeDocSuccess[this.language] || nativeDocSuccess["en"];
       SpeechManager.speakText(docMsg, this.language);
-      setTimeout(() => this.startSocraticIntake(), 1600);
+
+      // Fast auto-advance to consultation after 1.5s while background task finishes
+      setTimeout(() => {
+        this.startSocraticIntake();
+      }, 1500);
+
+      // Background poll in parallel
+      const pollInterval = setInterval(async () => {
+        const done = await pollOcr();
+        if (done || attempts >= 8) {
+          clearInterval(pollInterval);
+        }
+      }, 800);
+
     } catch (err) {
-      console.warn("Document OCR notice:", err.message);
+      console.warn("Document upload error:", err.message);
       const ocrDiv = document.getElementById("doc-ocr-result");
       if (ocrDiv) {
         ocrDiv.innerHTML = `
-          <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:var(--radius-md); padding:1rem; margin-top:1rem;">
-            <p style="font-weight:700; color:#166534;">✓ Document Record Created</p>
-            <p style="font-size:0.85rem; color:#14532d; margin-top:0.25rem;">Document attached to consultation session.</p>
+          <div style="background:#fef2f2; border:1px solid #fca5a5; border-radius:var(--radius-md); padding:1rem; margin-top:1rem;">
+            <p style="font-weight:700; color:#991b1b;">⚠️ Upload Notice</p>
+            <p style="font-size:0.85rem; color:#7f1d1d; margin-top:0.25rem;">We could not upload this file, but you can continue with your voice consultation.</p>
           </div>
         `;
       }
@@ -488,7 +551,11 @@ const PatientIntake = {
     if (!answer) return;
 
     const btn = document.getElementById("btn-submit-answer");
-    btn.disabled = true;
+    const originalText = btn ? btn.innerHTML : "Submit Answer";
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `<span style="margin-right:6px;">⏳</span> Recording answer...`;
+    }
 
     try {
       const res = await api.submitAnswer(
@@ -514,7 +581,10 @@ const PatientIntake = {
     } catch (err) {
       alert("Answer submission failed: " + err.message);
     } finally {
-      btn.disabled = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
     }
   },
 

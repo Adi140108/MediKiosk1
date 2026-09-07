@@ -68,17 +68,20 @@ class IntakeSessionManager:
         language: str = "en"
     ) -> Tuple[Optional[QuestionItem], bool, Optional[str]]:
         """
+        Ultra-fast critical path:
         1. Stores answer with full source attribution
-        2. Updates patient context state
-        3. Dynamically selects next question or concludes intake
+        2. Updates patient context state in-memory
+        3. Deterministically selects next question or concludes intake
+        4. Saves single unified state
         Returns: (next_question_item, is_finished, live_summary_text_if_any)
         """
         context = self.repo.get_context_state(session_id) or PatientContextState()
         existing_questions = self.repo.get_questions_by_session(session_id)
+        existing_answers = self.repo.get_answers_by_session(session_id)
         current_q = next((q for q in existing_questions if q.question_id == question_id), None)
 
         # 1. Store Answer
-        ans_count = len(self.repo.get_answers_by_session(session_id)) + 1
+        ans_count = len(existing_answers) + 1
         answer_item = AnswerItem(
             answer_id=f"a_{session_id}_{ans_count}",
             question_id=question_id,
@@ -96,10 +99,10 @@ class IntakeSessionManager:
         self._update_context_from_answer(context, current_q, answer_text)
         context.question_count = ans_count + 1
 
-        # 3. Check for periodic live summary checkpoint (e.g., at question 3 and 6)
+        # 3. Periodic deterministic live summary checkpoint (at question 3 and 6)
         live_summary_text = None
         if ans_count in [3, 6]:
-            answers = self.repo.get_answers_by_session(session_id)
+            answers = existing_answers + [answer_item]
             sum_item = await self.live_summary.generate_checkpoint_summary(session_id, context, answers)
             self.repo.save_live_summary(sum_item)
             live_summary_text = sum_item.summary_text

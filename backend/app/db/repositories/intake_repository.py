@@ -11,8 +11,13 @@ class IntakeRepository(BaseRepository):
         return question
 
     def get_questions_by_session(self, session_id: str) -> List[QuestionItem]:
-        all_q = self.list_docs("questions")
-        session_q = [q for q in all_q if q.get("session_id") == session_id]
+        # Fast in-memory filter first
+        mem_q = self._in_memory_db.get("questions", {})
+        session_q = [q for q in mem_q.values() if q.get("session_id") == session_id]
+        if not session_q and not self._is_test_mode():
+            all_q = self.list_docs("questions")
+            session_q = [q for q in all_q if q.get("session_id") == session_id]
+
         seen = {}
         for q in session_q:
             qid = q.get("question_id")
@@ -29,8 +34,13 @@ class IntakeRepository(BaseRepository):
         return answer
 
     def get_answers_by_session(self, session_id: str) -> List[AnswerItem]:
-        all_a = self.list_docs("answers")
-        session_a = [a for a in all_a if a.get("session_id") == session_id]
+        # Fast in-memory filter first
+        mem_a = self._in_memory_db.get("answers", {})
+        session_a = [a for a in mem_a.values() if a.get("session_id") == session_id]
+        if not session_a and not self._is_test_mode():
+            all_a = self.list_docs("answers")
+            session_a = [a for a in all_a if a.get("session_id") == session_id]
+
         seen = {}
         for a in session_a:
             aid = a.get("answer_id") or a.get("question_id")
@@ -57,8 +67,12 @@ class IntakeRepository(BaseRepository):
         return summary
 
     def get_live_summaries(self, session_id: str) -> List[LiveSummaryItem]:
-        all_s = self.list_docs("live_summaries")
-        session_s = [s for s in all_s if s.get("session_id") == session_id]
+        mem_s = self._in_memory_db.get("live_summaries", {})
+        session_s = [s for s in mem_s.values() if s.get("session_id") == session_id]
+        if not session_s and not self._is_test_mode():
+            all_s = self.list_docs("live_summaries")
+            session_s = [s for s in all_s if s.get("session_id") == session_id]
+
         session_s.sort(key=lambda x: x.get("checkpoint_sequence", 0))
         return [LiveSummaryItem.model_validate(s) for s in session_s]
 
@@ -67,8 +81,12 @@ class IntakeRepository(BaseRepository):
         return summary
 
     def get_draft_summary_by_session(self, session_id: str) -> Optional[ClinicalDraftSummary]:
-        all_s = self.list_docs("clinical_summaries")
-        matching = [s for s in all_s if s.get("session_id") == session_id]
+        mem_s = self._in_memory_db.get("clinical_summaries", {})
+        matching = [s for s in mem_s.values() if s.get("session_id") == session_id]
+        if not matching and not self._is_test_mode():
+            all_s = self.list_docs("clinical_summaries")
+            matching = [s for s in all_s if s.get("session_id") == session_id]
+
         if matching:
             return ClinicalDraftSummary.model_validate(matching[-1])
         return None
@@ -88,8 +106,12 @@ class IntakeRepository(BaseRepository):
         return routing
 
     def get_routing_by_session(self, session_id: str) -> Optional[RoutingRecommendation]:
-        all_r = self.list_docs("routing_recommendations")
-        matching = [r for r in all_r if r.get("session_id") == session_id]
+        mem_r = self._in_memory_db.get("routing_recommendations", {})
+        matching = [r for r in mem_r.values() if r.get("session_id") == session_id]
+        if not matching and not self._is_test_mode():
+            all_r = self.list_docs("routing_recommendations")
+            matching = [r for r in all_r if r.get("session_id") == session_id]
+
         if matching:
             return RoutingRecommendation.model_validate(matching[-1])
         return None

@@ -1,11 +1,12 @@
 import os
 import base64
 import logging
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, Request
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
+from app.core.telemetry import telemetry
 from app.api.v1 import (
     auth_router,
     patients_router,
@@ -13,7 +14,8 @@ from app.api.v1 import (
     intake_router,
     physician_router,
     speech_router,
-    health_router
+    health_router,
+    diagnostics_router
 )
 from app.templates.embedded_assets import (
     INDEX_HTML,
@@ -42,6 +44,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Performance Telemetry & Latency Instrumentation Middleware
+@app.middleware("http")
+async def performance_telemetry_middleware(request: Request, call_next):
+    endpoint = request.url.path
+    method = request.method
+    telemetry.start_request(endpoint=endpoint, method=method)
+    
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        return response
+    finally:
+        trace = telemetry.end_request(status_code=status_code)
+        if trace and 'response' in locals():
+            response.headers["X-Response-Time-Ms"] = str(trace["total_duration_ms"])
+            if trace["database_duration_ms"] > 0:
+                response.headers["X-DB-Time-Ms"] = str(trace["database_duration_ms"])
+            if trace["storage_duration_ms"] > 0:
+                response.headers["X-Storage-Time-Ms"] = str(trace["storage_duration_ms"])
+            if trace["ocr_duration_ms"] > 0:
+                response.headers["X-OCR-Time-Ms"] = str(trace["ocr_duration_ms"])
+            if trace["ai_duration_ms"] > 0:
+                response.headers["X-AI-Time-Ms"] = str(trace["ai_duration_ms"])
+
 # Include API Routers
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(patients_router, prefix="/api/v1")
@@ -50,6 +77,7 @@ app.include_router(intake_router, prefix="/api/v1")
 app.include_router(physician_router, prefix="/api/v1")
 app.include_router(speech_router, prefix="/api/v1")
 app.include_router(health_router, prefix="/api/v1")
+app.include_router(diagnostics_router, prefix="/api/v1")
 
 # Helper to read from disk if available (for live local edits) else fallback to embedded assets
 def get_html_content(filename: str, fallback_content: str) -> str:

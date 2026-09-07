@@ -3,8 +3,6 @@ import os
 import shutil
 import logging
 from typing import Tuple, List, Optional
-from PIL import Image
-import pytesseract
 from app.core.config import settings
 from app.ai.ocr.base import BaseOCREngine
 from app.ai.ocr.preprocessing import generate_preprocessing_variants, evaluate_ocr_quality
@@ -13,23 +11,37 @@ logger = logging.getLogger("medikiosk.ocr.tesseract")
 
 class TesseractOCREngine(BaseOCREngine):
     """
-    Production-grade Tesseract OCR engine with multi-strategy image evaluation,
-    auto-discovery of Windows/Linux binaries, and cloned/local tessdata pack integration.
+    Production-grade Tesseract OCR engine with lazy binary discovery,
+    multi-strategy image evaluation, and cloned/local tessdata pack integration.
     """
     def __init__(self, languages: str = "eng"):
         self.preferred_languages = languages
+        self._is_configured = False
+        self.available_languages: List[str] = []
+        self.active_lang_string: str = "eng"
+
+    def _ensure_configured(self):
+        if self._is_configured:
+            return
         self._configure_binary_and_tessdata()
         self.available_languages = self._detect_installed_languages()
         self.active_lang_string = self._build_lang_string()
+        self._is_configured = True
 
     def _configure_binary_and_tessdata(self):
         """Auto-discovers Tesseract binary executable and local tessdata directory."""
+        try:
+            import pytesseract
+        except ImportError:
+            logger.warning("pytesseract is not installed")
+            return
+
         # 1. Binary discovery
         if settings.TESSERACT_CMD_PATH and os.path.exists(settings.TESSERACT_CMD_PATH):
             pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_CMD_PATH
             logger.info("Using configured Tesseract binary: %s", settings.TESSERACT_CMD_PATH)
         else:
-            # Check standard Windows paths
+            # Check standard paths
             candidate_paths = [
                 r"C:\Program Files\Tesseract-OCR\tesseract.exe",
                 r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
@@ -65,6 +77,7 @@ class TesseractOCREngine(BaseOCREngine):
 
         # 2. Query Tesseract binary if available
         try:
+            import pytesseract
             installed = pytesseract.get_languages(config='')
             logger.info("Tesseract installed languages via binary: %s", installed)
             return installed
@@ -73,7 +86,6 @@ class TesseractOCREngine(BaseOCREngine):
             return ["eng"]
 
     def _build_lang_string(self) -> str:
-        # Check which of eng, hin, kan, tam, tel, mal, mar, ben, guj, pan are present
         target_langs = ["eng", "hin", "kan", "tam", "tel", "mal", "mar", "ben", "guj", "pan"]
         matched = [l for l in target_langs if l in self.available_languages]
         return "+".join(matched) if matched else "eng"
@@ -83,6 +95,12 @@ class TesseractOCREngine(BaseOCREngine):
         Runs multi-strategy OCR across image preprocessing variants.
         Selects the variant with the highest combined quality score.
         """
+        self._ensure_configured()
+        try:
+            import pytesseract
+        except ImportError:
+            return "", 0.0
+
         variants = generate_preprocessing_variants(image_bytes)
         best_text = ""
         best_conf = 0.0

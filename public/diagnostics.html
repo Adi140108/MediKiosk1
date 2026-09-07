@@ -354,6 +354,65 @@
             </div>
         </div>
 
+        <!-- 5. Live Performance Telemetry Subsystem -->
+        <div class="diag-card" style="margin-bottom: 24px;">
+            <div class="diag-card-header">
+                <span class="diag-card-title">⚡ Subsystem Latency Telemetry (GET /api/v1/diagnostics/performance)</span>
+                <span id="perfTraceCount" class="diag-row-val" style="color:var(--diag-green)">Traces: 0 recorded</span>
+            </div>
+            <div class="diag-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                <div class="diag-row" style="flex-direction:column; align-items:flex-start; gap:4px; padding:12px;">
+                    <span class="diag-row-key">Avg Total Latency</span>
+                    <span id="avgTotalMs" class="diag-row-val" style="font-size:18px; color:var(--diag-blue)">-- ms</span>
+                </div>
+                <div class="diag-row" style="flex-direction:column; align-items:flex-start; gap:4px; padding:12px;">
+                    <span class="diag-row-key">Avg Database</span>
+                    <span id="avgDbMs" class="diag-row-val" style="font-size:18px; color:var(--diag-green)">-- ms</span>
+                </div>
+                <div class="diag-row" style="flex-direction:column; align-items:flex-start; gap:4px; padding:12px;">
+                    <span class="diag-row-key">Avg Storage</span>
+                    <span id="avgStorageMs" class="diag-row-val" style="font-size:18px; color:var(--diag-purple)">-- ms</span>
+                </div>
+                <div class="diag-row" style="flex-direction:column; align-items:flex-start; gap:4px; padding:12px;">
+                    <span class="diag-row-key">Avg OCR</span>
+                    <span id="avgOcrMs" class="diag-row-val" style="font-size:18px; color:var(--diag-amber)">-- ms</span>
+                </div>
+                <div class="diag-row" style="flex-direction:column; align-items:flex-start; gap:4px; padding:12px;">
+                    <span class="diag-row-key">Avg AI Inference</span>
+                    <span id="avgAiMs" class="diag-row-val" style="font-size:18px; color:#38bdf8">-- ms</span>
+                </div>
+                <div class="diag-row" style="flex-direction:column; align-items:flex-start; gap:4px; padding:12px;">
+                    <span class="diag-row-key">Avg Translation</span>
+                    <span id="avgTransMs" class="diag-row-val" style="font-size:18px; color:#f472b6">-- ms</span>
+                </div>
+            </div>
+
+            <div>
+                <span style="font-size:12px; font-weight:700; color:var(--diag-text-muted); text-transform:uppercase; letter-spacing:0.5px;">Recent Request Telemetry Traces</span>
+                <div style="overflow-x:auto; margin-top:8px;">
+                    <table style="width:100%; border-collapse:collapse; font-size:12px; font-family:'JetBrains Mono', monospace; text-align:left;">
+                        <thead>
+                            <tr style="border-bottom:1px solid var(--diag-border); color:var(--diag-text-muted);">
+                                <th style="padding:6px 8px;">Method</th>
+                                <th style="padding:6px 8px;">Path</th>
+                                <th style="padding:6px 8px;">Status</th>
+                                <th style="padding:6px 8px;">Total</th>
+                                <th style="padding:6px 8px;">DB</th>
+                                <th style="padding:6px 8px;">Storage</th>
+                                <th style="padding:6px 8px;">OCR</th>
+                                <th style="padding:6px 8px;">AI</th>
+                            </tr>
+                        </thead>
+                        <tbody id="traceTableBody">
+                            <tr>
+                                <td colspan="8" style="padding:12px 8px; color:var(--diag-text-muted); text-align:center;">No recent traces recorded yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Raw JSON Response Inspector -->
         <div class="diag-card" style="margin-bottom: 32px;">
             <div class="diag-card-header">
@@ -368,6 +427,7 @@
         </footer>
     </div>
 
+    <script src="/js/api.js"></script>
     <script>
         async function loadAllHealthData() {
             const out = document.getElementById('rawJsonOut');
@@ -398,6 +458,45 @@
                 }
             } catch (err) {
                 out.innerText = `Network Error: ${err.message}`;
+            }
+
+            // Also load performance telemetry
+            await loadPerformanceData();
+        }
+
+        async function loadPerformanceData() {
+            try {
+                const res = await fetch('/api/v1/diagnostics/performance');
+                if (!res.ok) return;
+                const perf = await res.json();
+                
+                if (perf.summary) {
+                    document.getElementById('avgTotalMs').innerText = `${perf.summary.avg_total_duration_ms} ms`;
+                    document.getElementById('avgDbMs').innerText = `${perf.summary.avg_database_duration_ms} ms`;
+                    document.getElementById('avgStorageMs').innerText = `${perf.summary.avg_storage_duration_ms} ms`;
+                    document.getElementById('avgOcrMs').innerText = `${perf.summary.avg_ocr_duration_ms} ms`;
+                    document.getElementById('avgAiMs').innerText = `${perf.summary.avg_ai_duration_ms} ms`;
+                    document.getElementById('avgTransMs').innerText = `${perf.summary.avg_translation_duration_ms} ms`;
+                    document.getElementById('perfTraceCount').innerText = `Traces: ${perf.summary.total_requests_tracked} recorded`;
+                }
+
+                const tbody = document.getElementById('traceTableBody');
+                if (tbody && perf.recent_traces && perf.recent_traces.length > 0) {
+                    tbody.innerHTML = perf.recent_traces.slice(0, 10).map(t => `
+                        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                            <td style="padding:6px 8px; font-weight:700; color:${t.method === 'GET' ? 'var(--diag-blue)' : 'var(--diag-green)'}">${t.method}</td>
+                            <td style="padding:6px 8px; color:var(--diag-text);">${t.path}</td>
+                            <td style="padding:6px 8px; color:${t.status_code < 400 ? 'var(--diag-green)' : 'var(--diag-red)'}">${t.status_code}</td>
+                            <td style="padding:6px 8px; color:#ffffff; font-weight:700;">${t.total_duration_ms}ms</td>
+                            <td style="padding:6px 8px; color:var(--diag-text-muted);">${t.database_duration_ms}ms</td>
+                            <td style="padding:6px 8px; color:var(--diag-text-muted);">${t.storage_duration_ms}ms</td>
+                            <td style="padding:6px 8px; color:var(--diag-text-muted);">${t.ocr_duration_ms}ms</td>
+                            <td style="padding:6px 8px; color:var(--diag-text-muted);">${t.ai_duration_ms}ms</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) {
+                console.warn('Performance diagnostics notice:', err.message);
             }
         }
 
