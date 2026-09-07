@@ -56,6 +56,10 @@ const PatientIntake = {
   },
 
   goToStep(stepNum) {
+    if (typeof SpeechManager !== "undefined" && SpeechManager.stopAllAudio) {
+      SpeechManager.stopAllAudio();
+    }
+
     for (let i = 1; i <= 8; i++) {
       const el = document.getElementById(`kiosk-step-${i}`);
       if (el) el.style.display = i === stepNum ? "block" : "none";
@@ -416,19 +420,24 @@ const PatientIntake = {
       input.focus();
     }
 
-    // Auto-speak question using Indian female voice TTS
-    SpeechManager.speakText(question.question, this.language);
+    // Auto-speak question using Indian female voice TTS, then auto-open mic with 4s silence timeout
+    SpeechManager.speakText(question.question, this.language, () => {
+      SpeechManager.startListeningWithSilenceTimeout(4000);
+    });
   },
 
   speakCurrentQuestion() {
     if (this.currentQuestionText) {
-      SpeechManager.toggleSpeak(this.currentQuestionText, this.language);
+      SpeechManager.speakText(this.currentQuestionText, this.language, () => {
+        SpeechManager.startListeningWithSilenceTimeout(4000);
+      });
     }
   },
 
   async handleAnswerSubmit() {
+    SpeechManager.stopListening();
     const input = document.getElementById("patient-answer-input");
-    const answer = input.value.trim();
+    const answer = input ? input.value.trim() : "";
     if (!answer) return;
 
     const btn = document.getElementById("btn-submit-answer");

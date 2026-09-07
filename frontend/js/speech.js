@@ -129,6 +129,17 @@ const SpeechManager = {
     }
   },
 
+  silenceTimer: null,
+  autoSilenceMs: 4000,
+  hasReceivedSpeechInSession: false,
+
+  clearSilenceTimer() {
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer);
+      this.silenceTimer = null;
+    }
+  },
+
   setupRecognition() {
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRec) {
@@ -143,6 +154,9 @@ const SpeechManager = {
       };
 
       this.recognition.onresult = (event) => {
+        this.hasReceivedSpeechInSession = true;
+        this.clearSilenceTimer();
+
         let transcript = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           transcript += event.results[i][0].transcript;
@@ -155,13 +169,19 @@ const SpeechManager = {
       };
 
       this.recognition.onerror = (event) => {
-        console.warn('Speech recognition error:', event.error);
+        this.clearSilenceTimer();
         this.isListening = false;
-        this.playBeep('error');
-        this.setState(SpeechState.ERROR, `Speech error (${event.error})`);
+        if (event.error !== 'no-speech' && event.error !== 'aborted') {
+          console.warn('Speech recognition error:', event.error);
+          this.playBeep('error');
+          this.setState(SpeechState.ERROR, `Speech error (${event.error})`);
+        } else {
+          this.setState(SpeechState.IDLE);
+        }
       };
 
       this.recognition.onend = () => {
+        this.clearSilenceTimer();
         this.isListening = false;
         this.playBeep('stop');
         const answerInput = document.getElementById('patient-answer-input');
@@ -181,6 +201,49 @@ const SpeechManager = {
     }
   },
 
+  startListeningWithSilenceTimeout(silenceMs = 4000) {
+    if (!this.recognition) return;
+    this.autoSilenceMs = silenceMs || 4000;
+    this.hasReceivedSpeechInSession = false;
+    this.clearSilenceTimer();
+
+    // If speech synthesis is speaking, do not overlap recognition
+    if (this.isSpeaking && this.synth) {
+      return;
+    }
+
+    try {
+      if (this.isListening) {
+        try { this.recognition.stop(); } catch(e) {}
+      }
+      this.recognition.lang = this.langLocaleMap[this.currentLanguage] || 'en-IN';
+      this.recognition.start();
+
+      // Start 4-second silence detection timer
+      this.silenceTimer = setTimeout(() => {
+        if (this.isListening && !this.hasReceivedSpeechInSession) {
+          console.log("No voice response detected in 4s. Auto-stopping mic.");
+          this.stopListening(true);
+        }
+      }, this.autoSilenceMs);
+    } catch (err) {
+      console.debug("Speech recognition start note:", err);
+    }
+  },
+
+  stopListening(isSilenceTimeout = false) {
+    this.clearSilenceTimer();
+    if (this.recognition && this.isListening) {
+      try {
+        this.recognition.stop();
+      } catch (e) {}
+    }
+    this.isListening = false;
+    if (isSilenceTimeout) {
+      this.setState(SpeechState.IDLE, "Microphone paused (tap to speak)");
+    }
+  },
+
   toggleListening() {
     if (!this.recognition) {
       alert('Speech recognition is not supported in this browser. Please type your answer.');
@@ -188,15 +251,9 @@ const SpeechManager = {
     }
 
     if (this.isListening) {
-      this.recognition.stop();
+      this.stopListening();
     } else {
-      try {
-        this.recognition.lang = this.langLocaleMap[this.currentLanguage] || 'en-IN';
-        this.recognition.start();
-      } catch (err) {
-        console.error('Speech recognition start failed:', err);
-        this.setState(SpeechState.ERROR, "Microphone access failed.");
-      }
+      this.startListeningWithSilenceTimeout(4000);
     }
   },
 
@@ -438,17 +495,23 @@ const SpeechManager = {
   },
 
   stopAllAudio() {
+    this.clearSilenceTimer();
     if (this.synth) {
       this.synth.cancel();
     }
     this.isSpeaking = false;
+    this.stopListening();
     this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
   },
 
-  speakText(text, lang = null) {
-    if (!this.synth) return;
+  speakText(text, lang = null, onEndCallback = null) {
+    if (!this.synth) {
+      if (onEndCallback) setTimeout(onEndCallback, 300);
+      return;
+    }
     if (this.isMuted) {
       this.updateButtonStates('muted');
+      if (onEndCallback) setTimeout(onEndCallback, 300);
       return;
     }
 
@@ -471,11 +534,17 @@ const SpeechManager = {
     utterance.onend = () => {
       this.isSpeaking = false;
       this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
+      if (typeof onEndCallback === 'function') {
+        onEndCallback();
+      }
     };
 
     utterance.onerror = () => {
       this.isSpeaking = false;
       this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
+      if (typeof onEndCallback === 'function') {
+        onEndCallback();
+      }
     };
 
     this.isSpeaking = true;
