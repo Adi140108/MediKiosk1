@@ -12,8 +12,31 @@ class IntakeService:
         self.session_manager = session_manager or IntakeSessionManager()
         self.repo = self.session_manager.repo
 
-    def start_intake(self, session_id: str, patient_id: str, language: str = "en") -> QuestionItem:
-        return self.session_manager.start_session(session_id, patient_id, language)
+    def start_intake(
+        self,
+        session_id: str,
+        patient_id: str,
+        language: str = "en",
+        opd_mode: str = "GENERAL_OPD",
+        initial_chief_complaint: Optional[str] = None,
+        initial_pain_score: Optional[int] = None,
+        known_conditions: Optional[List[str]] = None,
+        medications: Optional[List[str]] = None,
+        past_medical_history: Optional[str] = None,
+        prescription_notes: Optional[str] = None
+    ) -> QuestionItem:
+        return self.session_manager.start_session(
+            session_id=session_id,
+            patient_id=patient_id,
+            language=language,
+            opd_mode=opd_mode,
+            initial_chief_complaint=initial_chief_complaint,
+            initial_pain_score=initial_pain_score,
+            known_conditions=known_conditions or [],
+            medications=medications or [],
+            past_medical_history=past_medical_history,
+            prescription_notes=prescription_notes
+        )
 
     async def submit_answer(
         self,

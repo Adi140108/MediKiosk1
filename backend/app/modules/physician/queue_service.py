@@ -29,7 +29,8 @@ class PhysicianQueueService:
         department: DepartmentId,
         search_query: Optional[str] = None,
         severity_filter: Optional[str] = None,
-        status_filter: Optional[str] = None
+        status_filter: Optional[str] = None,
+        opd_mode_filter: Optional[str] = None
     ) -> List[PriorityQueueItem]:
         sev = None
         if severity_filter:
@@ -47,7 +48,8 @@ class PhysicianQueueService:
             department_id=department,
             search_query=search_query,
             severity_filter=sev,
-            status_filter=stat
+            status_filter=stat,
+            opd_mode_filter=opd_mode_filter
         )
 
     def get_department_metrics(self, department_id: DepartmentId) -> DepartmentDashboardMetrics:
@@ -119,7 +121,8 @@ class PhysicianQueueService:
         department_id: DepartmentId,
         search_query: Optional[str] = None,
         severity_filter: Optional[RedFlagSeverity] = None,
-        status_filter: Optional[QueueStatus] = None
+        status_filter: Optional[QueueStatus] = None,
+        opd_mode_filter: Optional[str] = None
     ) -> List[PriorityQueueItem]:
         """
         Retrieves and sorts queue items for the chosen department according to the
@@ -145,6 +148,13 @@ class PhysicianQueueService:
 
         filtered = []
         for item in items:
+            if opd_mode_filter:
+                item_mode = (getattr(item, "opd_mode", "GENERAL_OPD") or "GENERAL_OPD").upper()
+                if "AYUSH" in opd_mode_filter.upper() and "AYUSH" not in item_mode:
+                    continue
+                if "GENERAL" in opd_mode_filter.upper() and "AYUSH" in item_mode:
+                    continue
+
             if status_filter:
                 if item.status != status_filter:
                     continue

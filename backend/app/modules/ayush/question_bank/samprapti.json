@@ -1,0 +1,22 @@
+{
+  "domain": "SAMPRAPTI",
+  "version": "2.0",
+  "questions": [
+    {
+      "question_id": "SAMP_PATHWAY_001",
+      "domain": "SAMPRAPTI",
+      "sub_domain": "DOSHA_DUSHYA_SAMMURCHANA",
+      "objective": "Identify disease progression speed and spreading pattern",
+      "patient_text": "Did your symptoms stay in one area or spread gradually to other parts of your body? (Samprapti)",
+      "ayurvedic_label": "Sanchaya / Prakopa / Prasara Avastha",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "Stayed localized in one place", "value": "samp_localized"},
+        {"label": "Spread to other areas over time", "value": "samp_spreading"},
+        {"label": "Comes and goes in waves", "value": "samp_fluctuating"}
+      ],
+      "feature_targets": ["progression_pattern"],
+      "priority": 1
+    }
+  ]
+}

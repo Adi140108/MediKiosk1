@@ -29,11 +29,91 @@ class IntakeSessionManager:
         self.live_summary = live_summary_gen or LiveSummaryGenerator()
         self.gemma = gemma_client or GemmaClient()
 
-    def start_session(self, session_id: str, patient_id: str, language: str = "en") -> QuestionItem:
+    def start_session(
+        self,
+        session_id: str,
+        patient_id: str,
+        language: str = "en",
+        opd_mode: str = "GENERAL_OPD",
+        initial_chief_complaint: Optional[str] = None,
+        initial_pain_score: Optional[int] = None,
+        known_conditions: Optional[List[str]] = None,
+        medications: Optional[List[str]] = None,
+        past_medical_history: Optional[str] = None,
+        prescription_notes: Optional[str] = None
+    ) -> QuestionItem:
         """
-        Initializes context state and issues the initial Broad Socratic question in patient's language.
+        Initializes context state with chief complaint, known chronic conditions,
+        current ongoing medications, past medical history, and previous prescription notes.
         """
+        conditions_list = [c for c in (known_conditions or []) if c and c.lower() != 'none']
+        meds_list = [m for m in (medications or []) if m]
+
+        if initial_chief_complaint and initial_chief_complaint.strip():
+            clean_complaint = initial_chief_complaint.strip()
+            context = PatientContextState(
+                opd_mode=opd_mode,
+                mode_at_intake=opd_mode,
+                chief_complaint=clean_complaint,
+                severity=initial_pain_score or 7,
+                known_conditions=conditions_list,
+                medications=meds_list,
+                past_medical_history=past_medical_history,
+                prescription_notes=prescription_notes,
+                socratic_stage=SocraticStage.CLARIFY,
+                question_count=1
+            )
+            self.repo.save_context_state(session_id, context)
+
+            # Build narrative for initial answer
+            answer_parts = [f"{clean_complaint} (Pain Score: {initial_pain_score or 7}/10)"]
+            if conditions_list:
+                answer_parts.append(f"Known Conditions: {', '.join(conditions_list)}")
+            if meds_list:
+                answer_parts.append(f"Daily Medications: {', '.join(meds_list)}")
+            if past_medical_history:
+                answer_parts.append(f"Past History / Allergies: {past_medical_history}")
+            if prescription_notes:
+                answer_parts.append(f"Previous Prescription Advice: {prescription_notes}")
+
+            # Store the implicit initial chief complaint answer for complete clinical traceability
+            initial_ans = AnswerItem(
+                answer_id=f"a_{session_id}_0",
+                question_id="initial_chief_complaint",
+                session_id=session_id,
+                question="Chief Health Complaint, Medical History & Medications",
+                answer=" | ".join(answer_parts),
+                source_type=SourceType.PATIENT,
+                language=language,
+                sequence=0
+            )
+            self.repo.save_answer(initial_ans)
+
+            # Select first clinical follow-up candidate dynamically based on the complaint
+            candidate = self.branching.select_next_question_candidate(context, asked_question_ids=["initial_chief_complaint"])
+            if candidate:
+                cand_id = candidate.get("id", "1")
+                default_q = candidate.get("question", "Could you describe when this started and how it feels?")
+                localized_q = get_localized_question(cand_id, target_lang=language, default_text=default_q)
+
+                first_question = QuestionItem(
+                    question_id=f"q_{session_id}_{cand_id}",
+                    session_id=session_id,
+                    question=localized_q,
+                    objective=candidate.get("objective", "Clarify symptom details"),
+                    question_framework=QuestionFramework.AYURVEDIC if candidate.get("category") == "AYURVEDIC" else QuestionFramework.SOCRATIC,
+                    socratic_stage=SocraticStage.CLARIFY,
+                    ayurvedic_domain=candidate.get("ayurvedic_domain"),
+                    language=language,
+                    sequence=1
+                )
+                self.repo.save_question(first_question)
+                return first_question
+
+        # Fallback if no initial complaint was provided
         context = PatientContextState(
+            opd_mode=opd_mode,
+            mode_at_intake=opd_mode,
             socratic_stage=SocraticStage.BROAD,
             question_count=1
         )

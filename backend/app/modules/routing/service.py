@@ -40,6 +40,23 @@ class RoutingService:
             dept_scores
         ) = analyze_symptoms_for_department(full_text, patient_age)
 
+        opd_mode_str = str(getattr(context, "opd_mode", "GENERAL_OPD")).upper()
+        if "AYUSH" in opd_mode_str:
+            # Map allopathic triage recommendation to corresponding AYUSH clinical specialty
+            ayush_mapping = {
+                DepartmentId.GASTROENTEROLOGY: DepartmentId.KAYACHIKITSA,
+                DepartmentId.GENERAL_MEDICINE: DepartmentId.KAYACHIKITSA,
+                DepartmentId.NEUROLOGY: DepartmentId.SHALAKYA,
+                DepartmentId.ENT: DepartmentId.SHALAKYA,
+                DepartmentId.OPHTHALMOLOGY: DepartmentId.SHALAKYA,
+                DepartmentId.ORTHOPEDICS: DepartmentId.SHALYA,
+                DepartmentId.PEDIATRICS: DepartmentId.KAUMARABHRITYA,
+                DepartmentId.DERMATOLOGY: DepartmentId.AGADATANTRA,
+                DepartmentId.PSYCHIATRY: DepartmentId.SWASTHAVRITTA,
+            }
+            dept = ayush_mapping.get(dept, DepartmentId.AYUSH)
+            reasoning = f"[🌿 AYUSH OPD MODE] Routed to {dept.value.upper()} for Ayurvedic evaluation, Agni/Prakriti assessment, and holistic treatment."
+
         # Critical red flag recommendation adjustment
         if red_flag_result and red_flag_result.overall_severity == RedFlagSeverity.CRITICAL:
             reasoning = f"[🚨 CRITICAL RED FLAG DETECTED] Priority Emergency/Specialty Review: {reasoning}"

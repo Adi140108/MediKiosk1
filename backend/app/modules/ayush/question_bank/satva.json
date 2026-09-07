@@ -1,0 +1,21 @@
+{
+  "domain": "SATVA",
+  "version": "2.0",
+  "questions": [
+    {
+      "question_id": "SATVA_RES_001",
+      "domain": "SATVA",
+      "objective": "Assess psychological resilience, stress tolerance, and emotional stability",
+      "patient_text": "How do you usually handle stress, illness, or painful situations? (Satva)",
+      "ayurvedic_label": "Satva Pariksha",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "Very resilient — Stay calm, focused, patient, and adhere well to treatment (Pravara)", "value": "satva_high", "satva_grade": "PRAVARA", "satva_score": 3},
+        {"label": "Moderate — Manage with some effort, feel occasional stress but recover reasonably (Madhyama)", "value": "satva_medium", "satva_grade": "MADHYAMA", "satva_score": 2},
+        {"label": "Sensitive — Get easily overwhelmed, anxious, or lose confidence during illness/stress (Avara)", "value": "satva_low", "satva_grade": "AVARA", "satva_score": 1}
+      ],
+      "feature_targets": ["stress_resilience", "emotional_stability"],
+      "priority": 1
+    }
+  ]
+}

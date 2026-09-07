@@ -10,13 +10,18 @@ class QuestionPriorityTier(IntEnum):
     LIFESTYLE_CONTEXT = 6     # Daily routine, stress
     SUFFICIENT_STOP = 7       # Finished
 
-def calculate_candidate_priority(candidate: Dict[str, Any]) -> int:
+def calculate_candidate_priority(candidate: Dict[str, Any], opd_mode: str = "GENERAL_OPD") -> int:
     """
-    Ranks candidate question objectives according to clinical safety and intake hierarchy.
+    Ranks candidate question objectives according to clinical safety, intake hierarchy, and OPD mode.
     """
     category = candidate.get("category", "")
     if category == "RED_FLAG":
         return QuestionPriorityTier.RED_FLAG_SAFETY
+
+    # In AYUSH OPD mode, prioritize Ayurvedic questions directly after emergency red flags
+    if "AYUSH" in (opd_mode or "").upper() and (category == "AYURVEDIC" or candidate.get("ayurvedic_domain")):
+        return QuestionPriorityTier.RED_FLAG_SAFETY + 1  # Tier 2 (before general questions)
+
     if category == "CHIEF_COMPLAINT" or candidate.get("objective") in ["Determine location", "Determine onset", "Determine duration"]:
         return QuestionPriorityTier.CHIEF_COMPLAINT
     if candidate.get("objective") in ["Determine character", "Determine severity", "Determine radiation"]:

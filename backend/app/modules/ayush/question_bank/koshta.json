@@ -1,0 +1,36 @@
+{
+  "domain": "KOSHTA",
+  "version": "2.0",
+  "questions": [
+    {
+      "question_id": "KOSH_BOWEL_001",
+      "domain": "KOSHTA",
+      "objective": "Assess bowel pattern, frequency, and stool consistency",
+      "patient_text": "How would you describe your bowel movements most days? (Koshta)",
+      "ayurvedic_label": "Koshta Pariksha",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "Soft or loose stools, 2 to 3 times a day easily", "value": "bowel_soft_frequent", "koshta_class": "MRIDU"},
+        {"label": "Formed, regular stool once or twice daily without straining", "value": "bowel_regular", "koshta_class": "MADHYAMA"},
+        {"label": "Hard, dry stools, tend to be constipated or strain frequently", "value": "bowel_hard_constipated", "koshta_class": "KRURA"}
+      ],
+      "feature_targets": ["bowel_frequency", "stool_consistency"],
+      "priority": 1
+    },
+    {
+      "question_id": "KOSH_LAX_002",
+      "domain": "KOSHTA",
+      "objective": "Assess bowel responsiveness to mild food triggers (e.g. warm milk)",
+      "patient_text": "How easily does warm milk, fruits, or mild warm water induce bowel movement? (Koshta)",
+      "ayurvedic_label": "Mridu/Krura Response",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "Very easily — mild warm milk or fruit immediately causes bowel movement", "value": "easily_purged", "koshta_class": "MRIDU"},
+        {"label": "Normally — regular daily stimulus works fine", "value": "normal_stimulus", "koshta_class": "MADHYAMA"},
+        {"label": "Requires strong effort or strong laxatives to get relief", "value": "requires_strong_laxative", "koshta_class": "KRURA"}
+      ],
+      "feature_targets": ["laxative_sensitivity"],
+      "priority": 2
+    }
+  ]
+}

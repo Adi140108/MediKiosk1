@@ -1,0 +1,23 @@
+{
+  "domain": "NIDANA",
+  "version": "2.0",
+  "questions": [
+    {
+      "question_id": "NIDA_ETIOLOGY_001",
+      "domain": "NIDANA",
+      "sub_domain": "AHARA_VIHARA_ETIOLOGY",
+      "objective": "Identify reported dietary or routine factors preceding symptoms",
+      "patient_text": "Did you notice any specific food, late-night routine, or weather change before your symptoms started? (Nidana)",
+      "ayurvedic_label": "Hetu / Nidana Sevana",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "Heavy, cold, or fried food items", "value": "hetu_heavy_cold", "weights": {"KAPHA": 2, "AMA": 2}},
+        {"label": "Spicy, sour, or late meals", "value": "hetu_spicy_late", "weights": {"PITTA": 2, "AGNI": 1}},
+        {"label": "Irregular meal times, dry food, or lack of sleep", "value": "hetu_irregular_dry", "weights": {"VATA": 2, "AGNI": 2}},
+        {"label": "None obvious / Normal routine", "value": "hetu_none", "weights": {}}
+      ],
+      "feature_targets": ["reported_etiology_factors"],
+      "priority": 1
+    }
+  ]
+}

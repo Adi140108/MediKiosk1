@@ -14,12 +14,19 @@ class FirestoreDocumentService(BaseRepository):
             BaseRepository._firestore_client = client
             BaseRepository._use_in_memory = False
 
-    def save_document_metadata(self, metadata: DocumentMetadata) -> Dict[str, Any]:
+    def save_document_metadata(self, metadata: Any) -> Dict[str, Any]:
         """
         Saves document metadata to Firestore (or in-memory dev store).
         """
-        doc_dict = metadata.to_dict()
-        doc_id = metadata.document_id
+        if hasattr(metadata, "to_dict"):
+            doc_dict = metadata.to_dict()
+            doc_id = metadata.document_id
+        elif isinstance(metadata, dict):
+            doc_dict = metadata
+            doc_id = metadata.get("document_id")
+        else:
+            doc_dict = metadata.model_dump() if hasattr(metadata, "model_dump") else dict(metadata)
+            doc_id = getattr(metadata, "document_id", doc_dict.get("document_id"))
         try:
             self.set_doc(self.COLLECTION, doc_id, doc_dict)
             logger.info("Saved metadata for document %s in storage/firestore", doc_id)

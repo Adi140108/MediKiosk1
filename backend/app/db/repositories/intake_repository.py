@@ -33,6 +33,16 @@ class IntakeRepository(BaseRepository):
         self.set_doc("answers", answer.answer_id, answer.model_dump())
         return answer
 
+    def update_answer_text(self, session_id: str, question_id: str, new_answer_text: str, edited_by: str = "physician") -> Optional[AnswerItem]:
+        answers = self.get_answers_by_session(session_id)
+        for ans in answers:
+            if ans.question_id == question_id or ans.answer_id == question_id:
+                ans.answer = new_answer_text
+                ans.source_type = SourceType.PHYSICIAN
+                self.save_answer(ans)
+                return ans
+        return None
+
     def get_answers_by_session(self, session_id: str) -> List[AnswerItem]:
         # Fast in-memory filter first
         mem_a = self._in_memory_db.get("answers", {})

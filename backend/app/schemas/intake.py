@@ -4,6 +4,10 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 from app.core.security import SourceType
 
+class OPDMode(str, Enum):
+    GENERAL_OPD = "GENERAL_OPD"
+    AYUSH_OPD = "AYUSH_OPD"
+
 class QuestionFramework(str, Enum):
     SOCRATIC = "SOCRATIC"
     AYURVEDIC = "AYURVEDIC"
@@ -63,6 +67,11 @@ class LiveSummaryItem(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class PatientContextState(BaseModel):
+    opd_mode: OPDMode = OPDMode.GENERAL_OPD
+    mode_at_intake: str = "GENERAL_OPD"
+    questionnaire_version: str = "v1.0"
+    assessment_version: str = "AYUSH_ASSESSMENT_V1"
+
     chief_complaint: Optional[str] = None
     location: Optional[str] = None
     onset: Optional[str] = None
@@ -76,12 +85,15 @@ class PatientContextState(BaseModel):
     known_conditions: List[str] = Field(default_factory=list)
     medications: List[str] = Field(default_factory=list)
     allergies: List[str] = Field(default_factory=list)
+    past_medical_history: Optional[str] = None
+    prescription_notes: Optional[str] = None
     family_history: List[str] = Field(default_factory=list)
     lifestyle: List[str] = Field(default_factory=list)
     vitals: Dict[str, str] = Field(default_factory=dict)
     
-    # Ayurvedic specific context
+    # Ayurvedic specific context & structured assessment
     ayurvedic_findings: Dict[str, Any] = Field(default_factory=dict)  # agni, mala, nidra, ahara, vihara, etc.
+    ayush_assessment: Dict[str, Any] = Field(default_factory=dict)
     
     # Information & Source Tracking (Provenance)
     provenance_map: Dict[str, str] = Field(default_factory=dict)  # fact_key -> "PATIENT" | "ATTENDANT" | "DOCUMENT" | "PHYSICIAN"

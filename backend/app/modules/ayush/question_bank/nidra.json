@@ -1,0 +1,22 @@
+{
+  "domain": "NIDRA",
+  "version": "2.0",
+  "questions": [
+    {
+      "question_id": "NIDRA_QUAL_001",
+      "domain": "NIDRA",
+      "objective": "Assess sleep latency, awakenings, and feeling refreshed",
+      "patient_text": "How is your current sleep pattern at night? (Nidra)",
+      "ayurvedic_label": "Nidra Pariksha",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "Good — Fall asleep within 15-20 minutes, sleep continuously, wake refreshed", "value": "sleep_good", "nidra_status": "SAMYAK_NIDRA"},
+        {"label": "Difficulty falling asleep / mind racing / light restless sleep", "value": "sleep_disturbed_vata", "nidra_status": "ANIDRA_VATA"},
+        {"label": "Waking up in the middle of night feeling hot or sweating", "value": "sleep_disturbed_pitta", "nidra_status": "ANIDRA_PITTA"},
+        {"label": "Excessive sleepiness, sleeping >9 hours, still feeling heavy/groggy", "value": "sleep_excessive_kapha", "nidra_status": "ATINIDRA_KAPHA"}
+      ],
+      "feature_targets": ["sleep_latency", "sleep_refreshment"],
+      "priority": 1
+    }
+  ]
+}

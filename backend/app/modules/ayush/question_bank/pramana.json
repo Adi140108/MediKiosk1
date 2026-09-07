@@ -1,0 +1,17 @@
+{
+  "domain": "PRAMANA",
+  "version": "2.0",
+  "questions": [
+    {
+      "question_id": "PRAM_MEASURE_001",
+      "domain": "PRAMANA",
+      "sub_domain": "ANTHROPOMETRY",
+      "objective": "Capture patient physical dimensions and stature proportion",
+      "patient_text": "What is your approximate height and weight? (Pramana / Physical Stature)",
+      "ayurvedic_label": "Deha Pramana / Anguli Pramana",
+      "answer_type": "text",
+      "feature_targets": ["height", "weight", "stature_proportion"],
+      "priority": 1
+    }
+  ]
+}

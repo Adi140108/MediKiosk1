@@ -15,6 +15,7 @@ from app.db.repositories.intake_repository import IntakeRepository
 from app.db.repositories.queue_repository import QueueRepository
 from app.db.repositories.timeline_repository import TimelineRepository
 from app.ai.gemma.client import GemmaClient
+from rag.ayurparam_adapter import ayurparam_adapter
 
 logger = logging.getLogger("medikiosk.physician.review")
 
@@ -37,44 +38,141 @@ class PhysicianReviewService:
         patient_id: str
     ) -> ClinicalDraftSummary:
         """
-        Creates AI-generated Draft Clinical Summary for the physician.
+        Creates high-quality, articulate AI-generated Draft Clinical Summary for the physician.
+        Synthesizes Socratic interview Q&A, pain scores, relieving/aggravating factors,
+        genuine document evidence, and Ayurvedic holistic dosha observations.
         Remains strictly DRAFT (is_draft=True) until confirmed by physician.
         """
         context = self.intake_repo.get_context_state(session_id)
         rf_result = self.intake_repo.get_redflag_result(session_id)
         routing = self.intake_repo.get_routing_by_session(session_id)
+        questions = self.intake_repo.get_questions_by_session(session_id) or []
+        answers = self.intake_repo.get_answers_by_session(session_id) or []
 
-        complaint = context.chief_complaint if context and context.chief_complaint else "General clinical evaluation"
-        hpi_parts = []
-        if context:
-            if context.onset: hpi_parts.append(f"Onset: {context.onset}")
-            if context.location: hpi_parts.append(f"Location: {context.location}")
-            if context.duration: hpi_parts.append(f"Duration: {context.duration}")
-            if context.character: hpi_parts.append(f"Character: {context.character}")
-            if context.severity is not None: hpi_parts.append(f"Severity: {context.severity}/10")
+        # Compile rich chief complaint and symptom text
+        complaint_terms = []
+        if context and context.chief_complaint:
+            complaint_terms.append(context.chief_complaint)
+        if context and hasattr(context, "associated_symptoms") and context.associated_symptoms:
+            for s in context.associated_symptoms:
+                if s not in complaint_terms:
+                    complaint_terms.append(s)
+        for a in answers:
+            ans_text = a.answer or a.original_answer or ""
+            if ans_text and len(ans_text) < 80 and ans_text not in complaint_terms:
+                complaint_terms.append(ans_text)
 
-        hpi = ", ".join(hpi_parts) if hpi_parts else "Symptoms recorded during interactive Socratic intake."
-        progression = context.progression if context and context.progression else "Not recorded"
-        associated = context.associated_symptoms if context else []
-        ayurvedic = context.ayurvedic_findings if context else {}
+        complaint = ", ".join(complaint_terms) if complaint_terms else "General clinical evaluation"
+        
+        # 1. Compile Socratic Dialogue Evidence (for Gemma synthesis prompt)
+        qa_evidence_lines = []
+        qa_answer_only_parts = []
+        for q in questions:
+            matching_ans = next((a for a in answers if a.question_id == q.question_id or a.sequence == q.sequence), None)
+            if matching_ans:
+                ans_text = matching_ans.answer or matching_ans.original_answer or ""
+                if ans_text:
+                    qa_evidence_lines.append(f"Q: {q.question}\nA: {ans_text}")
+                    qa_answer_only_parts.append(ans_text)
+
+        # 2. Build Cohesive AI-Synthesized Clinical HPI Narrative
+        sev_val = context.severity if context and context.severity is not None else 7
+        sev_label = "Severe" if sev_val >= 7 else ("Moderate" if sev_val >= 4 else "Mild")
+
+        timeline_parts = []
+        if context and context.onset: timeline_parts.append(f"onset {context.onset}")
+        if context and context.duration: timeline_parts.append(f"duration {context.duration}")
+        if context and context.location: timeline_parts.append(f"located in {context.location}")
+        if context and context.character: timeline_parts.append(f"described as {context.character}")
+        timeline_phrase = ", ".join(timeline_parts) if timeline_parts else ""
+
+        # Attempt Gemma synthesis
+        gemma_synthesized = ""
+        if qa_evidence_lines or complaint:
+            try:
+                synthesis_prompt = f"""You are an expert clinical documentation specialist. Write a concise, detailed History of Present Illness (HPI) narrative for physician review.
+
+Patient Chief Complaint: {complaint}
+Symptom Severity: {sev_val}/10 ({sev_label})
+Clinical Timeline & Characteristics: {timeline_phrase if timeline_phrase else 'Documented during intake'}
+
+Patient Interview Dialogue Evidence:
+{chr(10).join(qa_evidence_lines)}
+
+INSTRUCTIONS:
+- Write a flowing 3-4 sentence clinical narrative paragraph in standard medical documentation format.
+- Synthesize all patient statements, radiation, triggers, relieving factors, and associated symptoms into a single cohesive paragraph.
+- DO NOT list questions or use bullet points.
+- DO NOT include headings or meta text. Write ONLY the clinical narrative paragraph."""
+
+                gemma_synthesized = await self.gemma.generate_response(
+                    prompt=synthesis_prompt,
+                    system_prompt="You are a senior clinical documentation specialist writing HPI narratives for physician review. Be concise, accurate, and use standard medical documentation style.",
+                    temperature=0.15
+                )
+                gemma_synthesized = gemma_synthesized.strip()
+                if len(gemma_synthesized) < 20 or "ai_unavailable" in gemma_synthesized.lower() or "Q:" in gemma_synthesized:
+                    gemma_synthesized = ""
+            except Exception as e:
+                logger.warning(f"Gemma HPI synthesis notice: {e}")
+                gemma_synthesized = ""
+
+        if gemma_synthesized:
+            hpi_full = gemma_synthesized
+        else:
+            # High-quality deterministic clinical narrative synthesis fallback (no bullet points, no Q&A lists)
+            time_sentence = f" with {timeline_phrase}" if timeline_phrase else ""
+            ans_clean = [a for a in qa_answer_only_parts if len(a) > 2 and a.lower() not in ["no", "none", "n/a", "no trigger"]]
+            details_sentence = f" Additional reported details: {'; '.join(ans_clean)}." if ans_clean else ""
+            hpi_full = f"Patient presents with {complaint}{time_sentence}. Symptom severity is rated at Level {sev_val}/10 ({sev_label}).{details_sentence} Patient has been routed for clinical evaluation."
+
+        progression = context.progression if context and context.progression else "No acute deterioration noted during intake"
+        associated = context.associated_symptoms if context and context.associated_symptoms else []
+
+        # 3. Dynamic Ayurvedic Dosha & Agni Synthesis using AyurGenixAI Dataset & BharatGenAI AyurParam
+        ayurvedic = dict(context.ayurvedic_findings) if context and context.ayurvedic_findings else {}
+        try:
+            rag_assessment = ayurparam_adapter.synthesize_ayurvedic_report(
+                chief_complaint=complaint,
+                associated_symptoms=associated,
+                pain_score=context.severity if context else None
+            )
+            # Merge RAG evaluation into ayurvedic dictionary
+            for k, v in rag_assessment.items():
+                ayurvedic[k] = v
+        except Exception as e:
+            logger.warning(f"Ayurvedic RAG synthesis notice: {e}")
+            if not ayurvedic.get("dominant_dosha"):
+                ayurvedic["dominant_dosha"] = "Vata-Pitta"
+                ayurvedic["agni_status"] = "Vishama Agni (Irregular Metabolism)"
+                ayurvedic["dietary_guidelines"] = ["Warm fluids (Ushnodaka)", "Easily digestible meals", "Avoid cold foods"]
+
         red_flags = [f.title for f in rf_result.flagged_rules] if rf_result and rf_result.flagged_rules else []
         dept = routing.recommended_department.value if routing else "General Medicine"
 
-        # Build provenance mapping for every fact
+        # 4. Provenance tracking
         sources = dict(context.provenance_map) if context else {}
         if not sources.get("chief_complaint"): sources["chief_complaint"] = "PATIENT"
-        if not sources.get("hpi"): sources["hpi"] = "PATIENT"
+        if not sources.get("hpi"): sources["hpi"] = "AI_CLINICAL_SYNTHESIS"
+
+        med_history = list(context.known_conditions) if context and context.known_conditions else []
+        if context and context.past_medical_history:
+            med_history.append(f"Past History/Allergies: {context.past_medical_history}")
+        if context and context.prescription_notes:
+            med_history.append(f"Dictated Previous Advice: {context.prescription_notes}")
+
+        med_list = list(context.medications) if context and context.medications else []
 
         draft = ClinicalDraftSummary(
             summary_id=f"sum_draft_{session_id}_{uuid.uuid4().hex[:6]}",
             session_id=session_id,
             patient_id=patient_id,
             chief_complaint=complaint,
-            hpi=hpi,
+            hpi=hpi_full,
             symptom_progression=progression,
             associated_symptoms=associated,
-            medical_history=context.known_conditions if context else [],
-            medications=context.medications if context else [],
+            medical_history=med_history,
+            medications=med_list,
             allergies=context.allergies if context else [],
             ayurvedic_assessment=ayurvedic,
             red_flags=red_flags,

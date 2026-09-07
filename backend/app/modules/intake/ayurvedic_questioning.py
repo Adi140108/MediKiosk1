@@ -6,40 +6,25 @@ logger = logging.getLogger("medikiosk.intake.ayurveda")
 
 # Clinical correlation: maps symptoms to relevant Ayurvedic assessment domains
 SYMPTOM_AYURVEDIC_MAP = {
-    "headache": ["NIDRA", "MANASIKA", "VIHARA", "ANUPASHAYA"],
-    "head": ["NIDRA", "MANASIKA", "VIHARA"],
-    "migraine": ["NIDRA", "MANASIKA", "AHARA", "ANUPASHAYA"],
-    "सिर": ["NIDRA", "MANASIKA", "VIHARA"],
-    "ತಲೆ": ["NIDRA", "MANASIKA", "VIHARA"],
-    "தலை": ["NIDRA", "MANASIKA", "VIHARA"],
-    "stomach": ["AGNI", "AHARA", "MALA", "UPASHAYA"],
-    "abdomen": ["AGNI", "AHARA", "MALA", "UPASHAYA"],
-    "abdominal": ["AGNI", "AHARA", "MALA", "UPASHAYA"],
-    "acidity": ["AGNI", "AHARA", "ANUPASHAYA"],
-    "digestion": ["AGNI", "AHARA", "MALA"],
-    "पेट": ["AGNI", "AHARA", "MALA", "UPASHAYA"],
-    "ಹೊಟ್ಟೆ": ["AGNI", "AHARA", "MALA", "UPASHAYA"],
-    "வயிறு": ["AGNI", "AHARA", "MALA", "UPASHAYA"],
-    "chest": ["VIHARA", "MANASIKA", "NIDANA"],
-    "सीने": ["VIHARA", "MANASIKA", "NIDANA"],
-    "छाती": ["VIHARA", "MANASIKA", "NIDANA"],
-    "ಎದೆ": ["VIHARA", "MANASIKA", "NIDANA"],
-    "joint": ["VIHARA", "NIDANA", "UPASHAYA", "ANUPASHAYA"],
-    "knee": ["VIHARA", "UPASHAYA", "ANUPASHAYA"],
-    "back": ["VIHARA", "UPASHAYA", "ANUPASHAYA"],
-    "जोड़": ["VIHARA", "NIDANA", "UPASHAYA", "ANUPASHAYA"],
-    "घुटने": ["VIHARA", "UPASHAYA", "ANUPASHAYA"],
-    "ಕೀಲು": ["VIHARA", "UPASHAYA", "ANUPASHAYA"],
-    "skin": ["AHARA", "VIHARA", "NIDANA"],
-    "rash": ["AHARA", "VIHARA", "NIDANA"],
-    "fever": ["AGNI", "NIDANA", "UPASHAYA"],
-    "बुखार": ["AGNI", "NIDANA", "UPASHAYA"],
-    "ಜ್ವರ": ["AGNI", "NIDANA", "UPASHAYA"],
-    "காய்ச்சல்": ["AGNI", "NIDANA", "UPASHAYA"],
-    "cough": ["AHARA", "VIHARA", "NIDANA"],
-    "खांसी": ["AHARA", "VIHARA", "NIDANA"],
-    "ಕೆಮ್ಮು": ["AHARA", "VIHARA", "NIDANA"]
+    "headache": ["PRAKRITI", "NIDRA", "MANASIKA", "VIHARA", "ANUPASHAYA"],
+    "head": ["PRAKRITI", "NIDRA", "MANASIKA", "VIHARA"],
+    "migraine": ["PRAKRITI", "NIDRA", "MANASIKA", "AHARA", "ANUPASHAYA"],
+    "stomach": ["PRAKRITI", "AGNI", "KOSHTA", "AMA", "AHARA", "MALA", "UPASHAYA"],
+    "abdomen": ["PRAKRITI", "AGNI", "KOSHTA", "AMA", "AHARA", "MALA", "UPASHAYA"],
+    "abdominal": ["PRAKRITI", "AGNI", "KOSHTA", "AMA", "AHARA", "MALA", "UPASHAYA"],
+    "acidity": ["PRAKRITI", "AGNI", "AMA", "AHARA", "ANUPASHAYA"],
+    "digestion": ["PRAKRITI", "AGNI", "KOSHTA", "AMA", "AHARA", "MALA"],
+    "chest": ["PRAKRITI", "VIHARA", "MANASIKA", "NIDANA"],
+    "joint": ["PRAKRITI", "VIHARA", "NIDANA", "UPASHAYA", "ANUPASHAYA"],
+    "knee": ["PRAKRITI", "VIHARA", "UPASHAYA", "ANUPASHAYA"],
+    "back": ["PRAKRITI", "VIHARA", "UPASHAYA", "ANUPASHAYA"],
+    "skin": ["PRAKRITI", "AHARA", "VIHARA", "NIDANA"],
+    "rash": ["PRAKRITI", "AHARA", "VIHARA", "NIDANA"],
+    "fever": ["PRAKRITI", "AGNI", "AMA", "NIDANA", "UPASHAYA"],
+    "cough": ["PRAKRITI", "AHARA", "VIHARA", "NIDANA"]
 }
+
+DEFAULT_AYURVEDIC_DOMAINS = ["PRAKRITI", "AGNI", "KOSHTA", "AMA", "NIDRA", "SATVA", "AHARA", "VIHARA"]
 
 class AyurvedicQuestionEngine:
     """
@@ -50,16 +35,19 @@ class AyurvedicQuestionEngine:
         complaint_lower = (chief_complaint or "").lower()
         all_text = complaint_lower + " " + " ".join([s.lower() for s in associated_symptoms])
 
-        matched_domains = set()
+        matched_domains = []
         for keyword, domains in SYMPTOM_AYURVEDIC_MAP.items():
             if keyword in all_text:
-                matched_domains.update(domains)
+                for d in domains:
+                    if d not in matched_domains:
+                        matched_domains.append(d)
 
-        if not matched_domains:
-            # Default general domains
-            matched_domains = {"AGNI", "NIDRA", "AHARA"}
+        # Include default core AYUSH domains to ensure thorough 26-domain coverage
+        for d in DEFAULT_AYURVEDIC_DOMAINS:
+            if d not in matched_domains:
+                matched_domains.append(d)
 
-        return list(matched_domains)
+        return matched_domains
 
     def generate_patient_friendly_question(self, domain: str) -> Dict[str, Any]:
         """

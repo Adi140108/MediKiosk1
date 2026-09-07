@@ -81,45 +81,66 @@ class AdaptiveBranchingEngine:
 
         candidates: List[Dict[str, Any]] = []
 
-        # 2. Determine symptom pathway
-        pathway_key = None
-        head_keywords = ["head", "migraine", "सिर", "सर", "दर्द", "ತಲೆ", "தலை", "తల", "തല", "মাথা", "માથા", "ਸਿਰ"]
-        abdo_keywords = ["stomach", "abdo", "belly", "gastric", "पेट", "होट्टे", "ಹೊಟ್ಟೆ", "வயிறு", "కడుపు", "വയർ", "પેટ", "ਪੇਟ", "পেট"]
-        chest_keywords = ["chest", "heart", "सीने", "छाती", "हृदय", "ಎದೆ", "மார்", "గుండె", "ఛాతీ", "നെഞ്ച്", "বুক", "છાતી", "ਛਾਤੀ"]
-        joint_keywords = ["joint", "knee", "back", "bone", "spine", "जोड़", "घुटने", "कमर", "पीठ", "ಕೀಲು", "ಮೊಣಕಾಲು", "மூட்டு", "కీలు", "మోకాలు", "സന്ധി", "হাঁটু", "સાંધા", "ਜੋੜ"]
+        # 2. Determine symptom pathways (support multi-symptom like chest + joint)
+        head_keywords = [
+            "headache", "head ache", "head pain", "migraine", "सिरदर्द", "सरदर्द", "सिर दर्द", "सर दर्द", "सिर", "माथा", "कपाल",
+            "तलेनोवु", "ತಲೆನೋವು", "ತಲೆ", "தலைவலி", "தலை", "తలనొప్పి", "తల", "തലവേദന", "തല", "মাথাব্যথা", "মাথা", "માથાનો દુખાવો", "માથું", "ਸਿਰ ਦਰਦ", "ਸਿਰ", "head"
+        ]
+        chest_keywords = [
+            "chest", "heart", "cardio", "सीने", "छाती", "हृदय", "सीना", "दिल", "एदे", "ಎದೆ", "ಎದೆನೋವು",
+            "மார்", "மார்பு", "மார்புவலி", "గుండె", "ఛాతీ", "ఛాతీనొప్పి", "നെഞ്ച്", "നെഞ്ചുവേദന",
+            "বুক", "বুকে ব্যথা", "છાતી", "છાતીમાં", "ਛਾਤੀ"
+        ]
+        joint_keywords = [
+            "joint", "knee", "back", "bone", "spine", "arthritis", "जोड़", "घुटने", "कमर", "पीठ", "हड्डी", "कंधा",
+            "ಕೀಲು", "ಮೊಣಕಾಲು", "ಬೆನ್ನು", "ಮೂಳೆ", "ಕೀಲುನೋವು", "மூட்டு", "மூட்டுவலி", "முழங்கால்", "முதுகு",
+            "కీలు", "మోకాలు", "వెన్ను", "కీళ్లనొప్పి", "സന്ധി", "മുട്ട്", "സന്ധിവേദന", "হাঁটু", "জয়েন্ট",
+            "સાંધા", "ઘૂંટણ", "સાંધાનો દુખાવો", "ਜੋੜ", "ਗੋਡੇ"
+        ]
+        abdo_keywords = [
+            "stomach", "abdo", "abdomen", "belly", "gastric", "acidity", "पेट", "आमाशय", "जठर", "होट्टे",
+            "ಹೊಟ್ಟೆ", "ಹೊಟ್ಟೆನೋವು", "വയிறு", "வயிற்றுவலி", "కడుపు", "కడుపునొప్పి", "വയർ", "വയറുവേദന",
+            "પેટ", "પેટનો દુખાવો", "ਪੇਟ", "ਪੇਟ ਦਰਦ", "পেট", "পেটে ব্যথা"
+        ]
 
+        matched_pathways: List[str] = []
+        if any(k in complaint for k in chest_keywords):
+            matched_pathways.append("chest_pain")
+        if any(k in complaint for k in joint_keywords):
+            matched_pathways.append("joint_pain")
+        if any(k in complaint for k in abdo_keywords):
+            matched_pathways.append("abdominal_pain")
         if any(k in complaint for k in head_keywords):
-            pathway_key = "headache"
-        elif any(k in complaint for k in abdo_keywords):
-            pathway_key = "abdominal_pain"
-        elif any(k in complaint for k in chest_keywords):
-            pathway_key = "chest_pain"
-        elif any(k in complaint for k in joint_keywords):
-            pathway_key = "joint_pain"
+            matched_pathways.append("headache")
 
-        if pathway_key and pathway_key in SYMPTOM_PATHWAYS:
-            for item in SYMPTOM_PATHWAYS[pathway_key]:
-                field = item.get("field")
-                # Do not ask if we already know this field or question was already asked
-                if field and getattr(context, field, None) and item["id"] in asked_question_ids:
-                    continue
-                if item["id"] not in asked_question_ids:
-                    candidates.append(item)
+        for pathway_key in matched_pathways:
+            if pathway_key in SYMPTOM_PATHWAYS:
+                for item in SYMPTOM_PATHWAYS[pathway_key]:
+                    field = item.get("field")
+                    if field and getattr(context, field, None) and item["id"] in asked_question_ids:
+                        continue
+                    if item["id"] not in asked_question_ids:
+                        candidates.append(item)
 
-        # 3. Add relevant Ayurvedic candidates
-        relevant_domains = self.ayurvedic.get_relevant_domains(context.chief_complaint or "", context.associated_symptoms)
-        for domain in relevant_domains:
-            q_id = f"ayur_{domain.lower()}"
-            if q_id not in asked_question_ids:
-                ayur_item = self.ayurvedic.generate_patient_friendly_question(domain)
-                candidates.append({
-                    "id": q_id,
-                    "objective": ayur_item["objective"],
-                    "category": "AYURVEDIC",
-                    "ayurvedic_domain": ayur_item["ayurvedic_domain"],
-                    "display_label": ayur_item["display_label"],
-                    "question": ayur_item["question"]
-                })
+        # 3. Add relevant Ayurvedic candidates ONLY if kiosk is in AYUSH OPD mode
+        mode_str = str(getattr(context, "opd_mode", "GENERAL_OPD")).upper()
+        if "AYUSH" in mode_str:
+            relevant_domains = self.ayurvedic.get_relevant_domains(context.chief_complaint or "", context.associated_symptoms)
+            for domain in relevant_domains:
+                q_id = f"ayur_{domain.lower()}"
+                if q_id not in asked_question_ids:
+                    ayur_item = self.ayurvedic.generate_patient_friendly_question(domain)
+                    candidates.append({
+                        "id": q_id,
+                        "objective": ayur_item["objective"],
+                        "category": "AYURVEDIC",
+                        "ayurvedic_domain": ayur_item["ayurvedic_domain"],
+                        "display_label": ayur_item["display_label"],
+                        "question": ayur_item["question"]
+                    })
+        else:
+            # Strictly exclude any Ayurvedic candidates in GENERAL OPD mode
+            candidates = [c for c in candidates if c.get("category") != "AYURVEDIC" and not c.get("ayurvedic_domain")]
 
         # 4. Fallback general clinical questions if no candidate from pathway
         if not candidates:
@@ -142,6 +163,6 @@ class AdaptiveBranchingEngine:
             context.is_sufficient = True
             return None
 
-        # 5. Sort candidates by Priority Tier (Red Flag > Chief Complaint > Character > Ayurvedic > Lifestyle)
-        candidates.sort(key=calculate_candidate_priority)
+        # 5. Sort candidates by Priority Tier
+        candidates.sort(key=lambda c: calculate_candidate_priority(c, opd_mode=mode_str))
         return candidates[0]

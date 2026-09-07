@@ -1,0 +1,54 @@
+{
+  "domain": "AGNI",
+  "version": "2.0",
+  "questions": [
+    {
+      "question_id": "AGNI_REG_001",
+      "domain": "AGNI",
+      "objective": "Determine hunger regularity and digestive timing",
+      "patient_text": "How regular is your hunger during the day? (Agni)",
+      "ayurvedic_label": "Kshudha Pariksha",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "Very regular — I feel hungry at exact fixed meal times", "value": "hunger_regular", "agni_indicator": "SAMA"},
+        {"label": "Irregular — Some days very hungry, other days no hunger at all", "value": "hunger_variable", "agni_indicator": "VISHAMA"},
+        {"label": "Very intense — Sharp hunger, get burning or headache if meal is delayed", "value": "hunger_sharp", "agni_indicator": "TIKSHNA"},
+        {"label": "Sluggish — Rarely feel hungry even after many hours", "value": "hunger_dull", "agni_indicator": "MANDA"}
+      ],
+      "feature_targets": ["hunger_regularity", "agni_state"],
+      "priority": 1
+    },
+    {
+      "question_id": "AGNI_POST_002",
+      "domain": "AGNI",
+      "objective": "Assess post-meal abdominal symptoms and digestion time",
+      "patient_text": "How does your stomach usually feel after eating a normal meal? (Agni)",
+      "ayurvedic_label": "Jirna Lakshana",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "Comfortable and light after 2 to 3 hours", "value": "post_meal_light", "agni_indicator": "SAMA"},
+        {"label": "Bloated, gassy, or abdominal tightness", "value": "post_meal_bloating", "agni_indicator": "VISHAMA"},
+        {"label": "Acidity, heartburn, or sour belching", "value": "post_meal_burning", "agni_indicator": "TIKSHNA"},
+        {"label": "Heavy, sluggish, or feeling food remains in stomach for hours", "value": "post_meal_heaviness", "agni_indicator": "MANDA"}
+      ],
+      "feature_targets": ["post_meal_comfort", "digestion_efficiency"],
+      "priority": 2
+    },
+    {
+      "question_id": "AGNI_TOL_003",
+      "domain": "AGNI",
+      "objective": "Assess tolerance to heavy, oily, or cold food",
+      "patient_text": "How well do you digest heavy or fried meals? (Agni)",
+      "ayurvedic_label": "Guru Ahara Jarana",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "Digest fine without discomfort", "value": "tolerates_heavy", "agni_indicator": "SAMA"},
+        {"label": "Tolerate well, but get hungry again quickly", "value": "rapid_digestion", "agni_indicator": "TIKSHNA"},
+        {"label": "Causes bloating, gas, or loose stools", "value": "heavy_causes_gas", "agni_indicator": "VISHAMA"},
+        {"label": "Causes severe heaviness, nausea, or loss of appetite next day", "value": "heavy_causes_indigestion", "agni_indicator": "MANDA"}
+      ],
+      "feature_targets": ["food_tolerance"],
+      "priority": 3
+    }
+  ]
+}

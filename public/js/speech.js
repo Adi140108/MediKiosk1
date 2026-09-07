@@ -36,12 +36,28 @@ const SpeechManager = {
   init() {
     this.setupRecognition();
     if (this.synth) {
+      try { this.synth.resume(); } catch(e) {}
       if (this.synth.onvoiceschanged !== undefined) {
         this.synth.onvoiceschanged = () => {
           this.voicesLoaded = true;
         };
       }
     }
+  },
+
+  resumeAudioAndSpeak(stepNum, lang) {
+    if (this.isMuted) return;
+    try {
+      if (this.synth) {
+        this.synth.cancel();
+        this.synth.resume();
+      }
+      const ctx = this.getAudioContext();
+      if (ctx && ctx.state === 'suspended') {
+        ctx.resume();
+      }
+    } catch(e) {}
+    this.speakStepGuidance(stepNum, lang);
   },
 
   getAudioContext() {
@@ -93,12 +109,19 @@ const SpeechManager = {
 
   countdownInterval: null,
   silenceTimer: null,
+  activeTargetInputId: null,
+  activeTargetBtnId: null,
   autoSilenceMs: 4000,
   remainingSeconds: 4,
   hasReceivedSpeechInSession: false,
   isRecognitionActive: false,
+  lastTranscript: "",
 
   clearSilenceTimer() {
+    this.clearAllTimers();
+  },
+
+  clearAllTimers() {
     if (this.silenceTimer) {
       clearTimeout(this.silenceTimer);
       this.silenceTimer = null;
@@ -107,20 +130,123 @@ const SpeechManager = {
       clearInterval(this.countdownInterval);
       this.countdownInterval = null;
     }
-    this.remainingSeconds = 0;
   },
 
-  updateListeningUI(seconds) {
-    if (!this.isListening || this.hasReceivedSpeechInSession) return;
+  updateMicBadge(seconds, isPostSpeech = false) {
     const micBtn = document.getElementById('btn-mic-toggle');
     const waveEl = document.getElementById('audio-wave-bars');
     const statusEl = document.getElementById('mic-status-label');
 
-    if (micBtn) micBtn.classList.add('recording');
-    if (waveEl) waveEl.style.display = 'flex';
-    if (statusEl) {
-      statusEl.innerHTML = `🎙️ Listening... <span class="mic-countdown-pill" style="font-size:0.75rem; background:rgba(220,38,38,0.15); color:#991b1b; padding:2px 7px; border-radius:10px; font-weight:700; border:1px solid rgba(220,38,38,0.3); margin-left:4px;">${seconds}s</span>`;
+    if (this.isListening) {
+      if (micBtn) micBtn.classList.add('recording');
+      if (waveEl) waveEl.style.display = 'flex';
     }
+
+    if (statusEl) {
+      if (isPostSpeech || (this.hasReceivedSpeechInSession && this.lastTranscript)) {
+        const preview = this.lastTranscript ? `"${this.lastTranscript.slice(-25)}"` : 'Voice captured';
+        statusEl.innerHTML = `🎙️ ${preview} <span class="mic-countdown-pill" style="font-size:0.75rem; background:rgba(220,38,38,0.18); color:#991b1b; padding:2px 8px; border-radius:12px; font-weight:700; border:1px solid rgba(220,38,38,0.35); margin-left:6px;">closing in ${seconds}s</span>`;
+      } else {
+        statusEl.innerHTML = `🎙️ Listening... <span class="mic-countdown-pill" style="font-size:0.75rem; background:rgba(220,38,38,0.18); color:#991b1b; padding:2px 8px; border-radius:12px; font-weight:700; border:1px solid rgba(220,38,38,0.35); margin-left:6px;">${seconds}s</span>`;
+      }
+    }
+  },
+
+  // Called whenever user speaks a word / interim transcript arrives (4-second trailing silence)
+  resetTrailingSilenceTimer(seconds = 4) {
+    this.clearAllTimers();
+    this.remainingSeconds = seconds;
+    this.updateMicBadge(this.remainingSeconds, true);
+
+    this.countdownInterval = setInterval(() => {
+      this.remainingSeconds -= 1;
+      if (this.remainingSeconds > 0) {
+        this.updateMicBadge(this.remainingSeconds, true);
+      } else {
+        // Patient finished speaking and paused for 4 consecutive seconds -> auto-close mic!
+        console.log("Trailing 4s silence elapsed after speaking. Auto-stopping microphone.");
+        this.clearAllTimers();
+        this.finishListeningAndClose();
+      }
+    }, 1000);
+  },
+
+  // Called when mic is first opened (initial 4-second silence detection before any speech)
+  startInitialSilenceTimer(seconds = 4) {
+    this.clearAllTimers();
+    this.remainingSeconds = seconds;
+    this.hasReceivedSpeechInSession = false;
+    this.updateMicBadge(this.remainingSeconds, false);
+
+    this.countdownInterval = setInterval(() => {
+      this.remainingSeconds -= 1;
+      if (this.remainingSeconds > 0) {
+        this.updateMicBadge(this.remainingSeconds, false);
+      } else {
+        // Initial 4 seconds elapsed with no speech detected -> turn off mic
+        console.log("No speech detected within initial 4s window. Auto-stopping microphone.");
+        this.clearAllTimers();
+        this.stopListening(true);
+      }
+    }, 1000);
+  },
+
+  _finishGuard: false,
+
+  finishListeningAndClose() {
+    // Guard against double-invocation (timer → stop() → onend → finishListeningAndClose again)
+    if (this._finishGuard) return;
+    this._finishGuard = true;
+
+    this.clearAllTimers();
+    this.isListening = false;
+    this.isRecognitionActive = false;
+
+    // CRITICAL: Commit lastTranscript to the correct target input BEFORE stopping recognition.
+    // Chrome may discard the last interim result when .stop() is called programmatically,
+    // so onresult may never fire for the final transcript. This ensures we don't lose text.
+    if (this.lastTranscript && this.lastTranscript.trim().length > 0) {
+      const targetId = this.activeTargetInputId || 'patient-answer-input';
+      const targetInput = document.getElementById(targetId);
+      if (targetInput) {
+        targetInput.value = this.lastTranscript.trim();
+        targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+        console.log(`[SpeechManager] Committed transcript to #${targetId}: "${this.lastTranscript.trim().slice(0, 50)}..."`);
+      }
+    }
+
+    if (this.recognition) {
+      try { this.recognition.stop(); } catch(e) {}
+    }
+    this.playBeep('stop');
+
+    const micBtn = document.getElementById('btn-mic-toggle');
+    const waveEl = document.getElementById('audio-wave-bars');
+    const statusEl = document.getElementById('mic-status-label');
+
+    if (micBtn) micBtn.classList.remove('recording');
+    if (waveEl) waveEl.style.display = 'none';
+    if (this.activeTargetBtnId) {
+      const customBtn = document.getElementById(this.activeTargetBtnId);
+      if (customBtn) customBtn.classList.remove('recording');
+    }
+
+    // Check the CORRECT target input for text, not just patient-answer-input
+    const targetId = this.activeTargetInputId || 'patient-answer-input';
+    const targetInput = document.getElementById(targetId);
+    const hasText = targetInput && targetInput.value.trim().length > 0;
+
+    if (statusEl) {
+      if (hasText) {
+        statusEl.innerHTML = `✓ Voice captured. Review or submit below.`;
+      } else {
+        statusEl.innerText = (typeof I18n !== 'undefined' && I18n.t) ? I18n.t('mic_speak_btn') : "🎤 Speak Answer";
+      }
+    }
+    this.state = hasText ? SpeechState.SUCCESS : SpeechState.IDLE;
+
+    // Reset guard after a short delay to allow future sessions
+    setTimeout(() => { this._finishGuard = false; }, 200);
   },
 
   setState(newState, detail = '') {
@@ -132,7 +258,7 @@ const SpeechManager = {
     if (statusEl) {
       switch (newState) {
         case SpeechState.LISTENING:
-          this.updateListeningUI(this.remainingSeconds || 4);
+          this.updateMicBadge(this.remainingSeconds || 4, this.hasReceivedSpeechInSession);
           break;
         case SpeechState.PROCESSING:
         case SpeechState.TRANSCRIBING:
@@ -140,7 +266,7 @@ const SpeechManager = {
           if (waveEl) waveEl.style.display = 'none';
           break;
         case SpeechState.SUCCESS:
-          statusEl.innerText = "✓ Voice captured. Review or submit below.";
+          statusEl.innerText = detail || "✓ Voice captured. Review or submit below.";
           if (micBtn) micBtn.classList.remove('recording');
           if (waveEl) waveEl.style.display = 'none';
           break;
@@ -179,15 +305,26 @@ const SpeechManager = {
           transcript += event.results[i][0].transcript;
         }
 
-        if (transcript.trim().length > 0) {
+        const trimmed = transcript.trim();
+        if (trimmed.length > 0) {
           this.hasReceivedSpeechInSession = true;
-          this.clearSilenceTimer();
+          this.lastTranscript = trimmed;
 
-          const answerInput = document.getElementById('patient-answer-input');
-          if (answerInput) {
-            answerInput.value = transcript;
+          const targetId = this.activeTargetInputId || 'patient-answer-input';
+          const targetInput = document.getElementById(targetId);
+          if (targetInput) {
+            targetInput.value = trimmed;
+            targetInput.dispatchEvent(new Event('input', { bubbles: true }));
           }
-          this.setState(SpeechState.TRANSCRIBING, `🎙️ Transcribing: "${transcript.slice(-35)}"`);
+
+          // Restart 4-second trailing silence countdown whenever patient speaks / pauses
+          this.resetTrailingSilenceTimer(4);
+        }
+      };
+
+      this.recognition.onspeechend = () => {
+        if (this.isListening && this.hasReceivedSpeechInSession) {
+          this.resetTrailingSilenceTimer(4);
         }
       };
 
@@ -211,14 +348,20 @@ const SpeechManager = {
             this.setState(SpeechState.IDLE, "Microphone paused (tap to speak)");
           }
         }
-        this.clearSilenceTimer();
+        this.clearAllTimers();
         this.isListening = false;
         this.isRecognitionActive = false;
       };
 
       this.recognition.onend = () => {
         this.isRecognitionActive = false;
-        // If the browser prematurely ended while the 4s countdown is still active without speech, restart it
+        // If the browser prematurely ended while we already captured speech, finalize and close cleanly
+        if (this.hasReceivedSpeechInSession) {
+          this.finishListeningAndClose();
+          return;
+        }
+
+        // If the browser prematurely ended while the initial 4s countdown is still active without speech, restart it
         if (this.isListening && !this.hasReceivedSpeechInSession && this.remainingSeconds > 0) {
           try {
             this.recognition.start();
@@ -226,10 +369,11 @@ const SpeechManager = {
           } catch(e) {}
         }
 
-        this.clearSilenceTimer();
+        this.clearAllTimers();
         this.isListening = false;
         this.playBeep('stop');
-        const answerInput = document.getElementById('patient-answer-input');
+        const fallbackTargetId = this.activeTargetInputId || 'patient-answer-input';
+        const answerInput = document.getElementById(fallbackTargetId);
         if (answerInput && answerInput.value.trim().length > 0) {
           this.setState(SpeechState.SUCCESS);
         } else {
@@ -248,16 +392,15 @@ const SpeechManager = {
 
   startListeningWithSilenceTimeout(silenceMs = 4000) {
     if (!this.recognition) return;
-    this.clearSilenceTimer();
+    this.clearAllTimers();
 
     // If speech synthesis is currently speaking, wait or don't overlap
     if (this.isSpeaking && (this.synth || this.currentAudio)) {
       return;
     }
 
-    this.autoSilenceMs = silenceMs || 4000;
-    this.remainingSeconds = Math.round(this.autoSilenceMs / 1000);
     this.hasReceivedSpeechInSession = false;
+    this.lastTranscript = "";
     this.isListening = true;
 
     try {
@@ -269,26 +412,12 @@ const SpeechManager = {
       console.debug("Speech recognition start note:", err);
     }
 
-    this.updateListeningUI(this.remainingSeconds);
-
-    // Live 1-second interval countdown for small countdown badge
-    this.countdownInterval = setInterval(() => {
-      this.remainingSeconds -= 1;
-      if (this.remainingSeconds > 0) {
-        this.updateListeningUI(this.remainingSeconds);
-      } else {
-        // 4 seconds elapsed with no speech detected -> turn off mic
-        this.clearSilenceTimer();
-        if (this.isListening && !this.hasReceivedSpeechInSession) {
-          console.log("No voice response detected in 4s. Auto-stopping microphone.");
-          this.stopListening(true);
-        }
-      }
-    }, 1000);
+    const seconds = Math.round((silenceMs || 4000) / 1000);
+    this.startInitialSilenceTimer(seconds);
   },
 
   stopListening(isSilenceTimeout = false) {
-    this.clearSilenceTimer();
+    this.clearAllTimers();
     this.isListening = false;
     this.isRecognitionActive = false;
     if (this.recognition) {
@@ -296,11 +425,51 @@ const SpeechManager = {
         this.recognition.stop();
       } catch (e) {}
     }
+    const micBtn = document.getElementById('btn-mic-toggle');
+    const waveEl = document.getElementById('audio-wave-bars');
+    if (micBtn) micBtn.classList.remove('recording');
+    if (waveEl) waveEl.style.display = 'none';
+    if (this.activeTargetBtnId) {
+      const customBtn = document.getElementById(this.activeTargetBtnId);
+      if (customBtn) customBtn.classList.remove('recording');
+    }
+
     if (isSilenceTimeout) {
       this.setState(SpeechState.IDLE, "Microphone paused (tap to speak)");
     } else {
-      this.setState(SpeechState.IDLE);
+      const answerInput = document.getElementById('patient-answer-input');
+      if (answerInput && answerInput.value.trim().length > 0) {
+        this.setState(SpeechState.SUCCESS, "✓ Voice captured. Review or submit below.");
+      } else {
+        this.setState(SpeechState.IDLE);
+      }
     }
+  },
+
+    toggleListeningForInput(targetInputId, targetBtnId, lang = null) {
+    if (!this.recognition) {
+      alert('Speech recognition is not supported in this browser. Please type directly.');
+      return;
+    }
+    if (this.isListening && this.activeTargetInputId === targetInputId) {
+      this.stopListening(false);
+      this.activeTargetInputId = null;
+      this.activeTargetBtnId = null;
+      if (targetBtnId) {
+        const btn = document.getElementById(targetBtnId);
+        if (btn) btn.classList.remove('recording');
+      }
+      return;
+    }
+    this.stopAllAudio();
+    this.activeTargetInputId = targetInputId;
+    this.activeTargetBtnId = targetBtnId;
+    if (targetBtnId) {
+      const btn = document.getElementById(targetBtnId);
+      if (btn) btn.classList.add('recording');
+    }
+    if (lang) this.setLanguage(lang);
+    this.startListeningWithSilenceTimeout(4000);
   },
 
   toggleListening() {
@@ -310,8 +479,11 @@ const SpeechManager = {
     }
 
     if (this.isListening) {
-      this.stopListening();
+      this.stopListening(false);
     } else {
+      // Set target to the patient answer input (Step 7 interview)
+      this.activeTargetInputId = 'patient-answer-input';
+      this.activeTargetBtnId = 'btn-mic-toggle';
       this.startListeningWithSilenceTimeout(4000);
     }
   },
@@ -552,7 +724,7 @@ const SpeechManager = {
   },
 
   stopAllAudio() {
-    this.clearSilenceTimer();
+    this.clearAllTimers();
     if (this.synth) {
       try { this.synth.cancel(); } catch(e) {}
     }
@@ -596,21 +768,27 @@ const SpeechManager = {
     const targetLang = (lang || this.currentLanguage || 'en').toLowerCase().trim();
     const assignedVoice = this.getIndianFemaleVoice(targetLang);
 
-    // Option A: Native Browser SpeechSynthesis with Indian locale
-    if (this.synth) {
+    // Option A: If browser has a dedicated natural voice installed for this language, use it
+    if (this.synth && assignedVoice && (targetLang === 'en' || targetLang === 'hi')) {
       try {
+        this.synth.resume();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = this.langLocaleMap[targetLang] || 'en-IN';
         utterance.rate = 0.92;
         utterance.pitch = 1.0;
-        if (assignedVoice) {
-          utterance.voice = assignedVoice;
-        }
+        utterance.voice = assignedVoice;
 
-        this.updateButtonStates('playing');
+        utterance.onstart = () => {
+          this.isSpeaking = true;
+          this.updateButtonStates('playing');
+        };
 
         utterance.onend = () => {
           this.isSpeaking = false;
+          if (this._speechWatchdog) {
+            clearInterval(this._speechWatchdog);
+            this._speechWatchdog = null;
+          }
           this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
           if (typeof onEndCallback === 'function') {
             onEndCallback();
@@ -620,20 +798,40 @@ const SpeechManager = {
         utterance.onerror = (e) => {
           console.warn("Browser SpeechSynthesis notice:", e);
           this.isSpeaking = false;
+          if (this._speechWatchdog) {
+            clearInterval(this._speechWatchdog);
+            this._speechWatchdog = null;
+          }
           this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
-          // Try server audio stream as fallback if native synth errored
-          this._playServerAudioStream(text, targetLang, onEndCallback);
+          if (e.error !== 'interrupted' && e.error !== 'canceled') {
+            this._playServerAudioStream(text, targetLang, onEndCallback);
+          } else if (typeof onEndCallback === 'function') {
+            onEndCallback();
+          }
         };
 
         this.isSpeaking = true;
+        this.updateButtonStates('playing');
         this.synth.speak(utterance);
+
+        // Chrome watchdog to prevent audio suspension mid-speech
+        if (this._speechWatchdog) clearInterval(this._speechWatchdog);
+        this._speechWatchdog = setInterval(() => {
+          if (this.synth && this.synth.speaking) {
+            try { this.synth.resume(); } catch(e) {}
+          } else {
+            clearInterval(this._speechWatchdog);
+            this._speechWatchdog = null;
+          }
+        }, 3500);
+
         return;
       } catch (err) {
         console.warn("Browser speech error, falling back to server TTS stream:", err);
       }
     }
 
-    // Option B: Server TTS stream fallback
+    // Option B: Server Indic Neural TTS (Kannada, Tamil, Telugu, Malayalam, Marathi, Bengali, Gujarati, Punjabi, Hindi, English)
     this._playServerAudioStream(text, targetLang, onEndCallback);
   },
 
@@ -684,3 +882,8 @@ const SpeechManager = {
     }
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.SpeechManager = SpeechManager;
+  window.SpeechState = SpeechState;
+}

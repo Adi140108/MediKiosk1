@@ -1,4 +1,4 @@
-const DEFAULT_DEPARTMENTS = [
+const GENERAL_DEPARTMENTS = [
   { id: "general-medicine", display_name: "General Medicine", icon: "🩺", description: "Primary care, acute viral illnesses, non-specific fevers and multisystem initial evaluations." },
   { id: "cardiology", display_name: "Cardiology", icon: "🫀", description: "Chest pain, palpitations, hypertension, ischemic workup and cardiovascular risk assessments." },
   { id: "pulmonology", display_name: "Pulmonology", icon: "🫁", description: "Respiratory distress, persistent cough, dyspnea, asthma and chronic airway disorders." },
@@ -11,9 +11,22 @@ const DEFAULT_DEPARTMENTS = [
   { id: "ent", display_name: "ENT", icon: "👂", description: "Ear discharge, hearing changes, vertigo, acute epistaxis and throat infections." },
   { id: "ophthalmology", display_name: "Ophthalmology", icon: "👁", description: "Visual disturbances, acute eye trauma, red eye and ocular pressure emergencies." },
   { id: "psychiatry", display_name: "Psychiatry", icon: "🧩", description: "Acute distress, behavioral emergencies, psychiatric triage and mood disorders." },
-  { id: "ayush", display_name: "AYUSH / Integrative", icon: "🌿", description: "Ayurvedic clinical constitution, dosha assessment and integrative outpatient care." },
   { id: "unspecified", display_name: "Triage & Float Queue", icon: "🏥", description: "Ambiguous symptoms, multi-system red flags, and float cases awaiting department routing." }
 ];
+
+const AYUSH_DEPARTMENTS = [
+  { id: "ayush", display_name: "AYUSH / Ayurveda Main OPD", icon: "🌿", description: "Ayurvedic general outpatient care, Prakriti constitution assessment and holistic triage." },
+  { id: "kayachikitsa", display_name: "Kayachikitsa (Internal Medicine)", icon: "🍵", description: "Agni, Dhatu, Ama, systemic illnesses, digestive and metabolic disorders." },
+  { id: "panchakarma", display_name: "Panchakarma (Detox & Purification)", icon: "🪔", description: "Shodhana therapy, Vamana, Virechana, Basti, Nasya and bio-cleansing evaluations." },
+  { id: "shalya", display_name: "Shalya Tantra (General & Structural Care)", icon: "🗡️", description: "Musculoskeletal, joint pain, spinal care, and structural Ayurvedic management." },
+  { id: "shalakya", display_name: "Shalakya Tantra (ENT & Eye / Urdhvanga)", icon: "👁️", description: "Head, ear, nose, throat, and ocular disorders in Ayurveda." },
+  { id: "prasuti-stri", display_name: "Prasuti Tantra & Stree Roga", icon: "🌺", description: "Ayurvedic women's health, maternal wellness, and gynecological care." },
+  { id: "kaumarabhritya", display_name: "Kaumarabhritya (Pediatrics)", icon: "👶", description: "Balaroga, infant care, pediatric growth and immune health in Ayurveda." },
+  { id: "swasthavritta", display_name: "Swasthavritta & Yoga (Preventive Care)", icon: "🧘", description: "Dinacharya, Ritucharya, Ahara, Vihara, preventive health and lifestyle medicine." },
+  { id: "agadatantra", display_name: "Agada Tantra (Toxicology & Allergies)", icon: "🧪", description: "Environmental allergies, toxicities, skin hypersensitivities and insect bites." }
+];
+
+const DEFAULT_DEPARTMENTS = GENERAL_DEPARTMENTS;
 
 const PhysicianDashboard = {
   currentDepartment: null,
@@ -21,17 +34,91 @@ const PhysicianDashboard = {
   currentSessionId: null,
   currentPatientData: null,
   currentLanguage: "en",
+  opdMode: typeof localStorage !== 'undefined' ? (localStorage.getItem("medikiosk_active_mode") || "GENERAL_OPD") : "GENERAL_OPD",
   refreshTimer: null,
   originalRecommendedDept: null,
   originalRecommendedPriority: null,
+
+  getDeptIcon(deptId) {
+    const icons = {
+      "general-medicine": "🩺",
+      "cardiology": "🫀",
+      "pulmonology": "🫁",
+      "neurology": "🧠",
+      "gastroenterology": "🍽️",
+      "orthopedics": "🦴",
+      "pediatrics": "👶",
+      "emergency": "🚨",
+      "dermatology": "🧴",
+      "ent": "👂",
+      "ophthalmology": "👁",
+      "psychiatry": "🧩",
+      "ayush": "🌿",
+      "kayachikitsa": "🍵",
+      "panchakarma": "🪔",
+      "shalya": "🗡️",
+      "shalakya": "👁️",
+      "prasuti-stri": "🌺",
+      "kaumarabhritya": "👶",
+      "swasthavritta": "🧘",
+      "agadatantra": "🧪",
+      "unspecified": "🏥"
+    };
+    return icons[deptId] || "🩺";
+  },
 
   init() {
     this.bindEvents();
     if (typeof I18n !== "undefined") {
       I18n.setLanguage(this.currentLanguage);
     }
-    this.renderDepartmentGrid(DEFAULT_DEPARTMENTS);
+    this.updatePortalOpdModeUI();
     this.loadDepartmentSelection();
+  },
+
+  togglePortalOpdMode() {
+    this.opdMode = this.opdMode === "AYUSH_OPD" ? "GENERAL_OPD" : "AYUSH_OPD";
+    try {
+      localStorage.setItem("medikiosk_active_mode", this.opdMode);
+    } catch(e) {}
+    this.updatePortalOpdModeUI();
+    this.showDepartmentSelection();
+  },
+
+  updatePortalOpdModeUI() {
+    this.opdMode = (typeof localStorage !== 'undefined' ? (localStorage.getItem("medikiosk_active_mode") || "GENERAL_OPD") : "GENERAL_OPD");
+    const pill = document.getElementById("physician-opd-mode-pill");
+    const isAyush = this.opdMode.includes("AYUSH");
+    if (pill) {
+      if (isAyush) {
+        pill.innerHTML = "🌿 AYUSH OPD ⚙️";
+        pill.style.background = "#fefce8";
+        pill.style.borderColor = "#fde047";
+        pill.style.color = "#854d0e";
+      } else {
+        pill.innerHTML = "🏥 GENERAL OPD ⚙️";
+        pill.style.background = "#f0fdf4";
+        pill.style.borderColor = "#86efac";
+        pill.style.color = "#166534";
+      }
+    }
+    this.updateDepartmentDropdowns();
+  },
+
+  updateDepartmentDropdowns() {
+    const isAyush = (this.opdMode || "GENERAL_OPD").includes("AYUSH");
+    const deptList = isAyush ? AYUSH_DEPARTMENTS : GENERAL_DEPARTMENTS;
+
+    ["confirm-dept-select", "transfer-dept-select"].forEach((selectId) => {
+      const selectEl = document.getElementById(selectId);
+      if (selectEl) {
+        const currentVal = selectEl.value;
+        selectEl.innerHTML = deptList.map(d => `<option value="${d.id}">${d.icon || this.getDeptIcon(d.id)} ${d.display_name}</option>`).join("");
+        if (deptList.some(d => d.id === currentVal)) {
+          selectEl.value = currentVal;
+        }
+      }
+    });
   },
 
   changeLanguage(lang) {
@@ -47,6 +134,12 @@ const PhysicianDashboard = {
     if (this.currentPatientData && document.getElementById("physician-case-view")?.style.display === "block") {
       this.populateCaseInspector(this.currentPatientData);
     } else if (this.currentDepartment) {
+      const deptMeta = (typeof I18n !== "undefined" && I18n.getDepartmentInfo) ? I18n.getDepartmentInfo(this.currentDepartment) : null;
+      if (deptMeta?.name) {
+        this.currentDepartmentName = deptMeta.name;
+        const titleEl = document.getElementById("selected-dept-title");
+        if (titleEl) titleEl.innerHTML = `${this.getDeptIcon(this.currentDepartment)} ${deptMeta.name}`;
+      }
       this.loadQueue();
     } else {
       this.loadDepartmentSelection();
@@ -98,29 +191,43 @@ const PhysicianDashboard = {
       card.style.padding = "1.5rem";
       card.style.cursor = "pointer";
 
+      const deptMeta = (typeof I18n !== "undefined" && I18n.getDepartmentInfo) 
+        ? I18n.getDepartmentInfo(dept.id) 
+        : null;
+
+      const displayName = deptMeta?.name || dept.display_name || dept.name;
+      const displayDesc = deptMeta?.desc || dept.description || 'Clinical department review queue.';
+
       const badgeClass = dept.id === "unspecified" ? "lang-badge-fallback" : "lang-badge-ready";
-      const badgeLabel = dept.id === "unspecified" ? "TRIAGE QUEUE →" : "ACCESS QUEUE →";
+      const accessQueueLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("access_queue") : "ACCESS QUEUE →";
+      const badgeLabel = dept.id === "unspecified" ? (accessQueueLabel.replace("ACCESS", "TRIAGE")) : accessQueueLabel;
 
       card.innerHTML = `
-        <div style="font-size:2rem; margin-bottom:0.5rem;">${dept.icon || '🩺'}</div>
-        <span class="lang-tile-native" style="font-size:1.2rem;">${dept.display_name || dept.name}</span>
-        <p style="font-size:0.825rem; color:var(--text-muted); margin-top:0.25rem; line-height:1.4;">${dept.description || 'Clinical department review queue.'}</p>
+        <div style="font-size:2rem; margin-bottom:0.5rem;">${dept.icon || this.getDeptIcon(dept.id)}</div>
+        <span class="lang-tile-native" style="font-size:1.2rem;">${displayName}</span>
+        <p style="font-size:0.825rem; color:var(--text-muted); margin-top:0.25rem; line-height:1.4;">${displayDesc}</p>
         <span class="lang-tile-badge ${badgeClass}" style="margin-top:1rem;">${badgeLabel}</span>
       `;
-      card.addEventListener("click", () => this.selectDepartment(dept.id, dept.display_name || dept.name, dept.icon || '🩺'));
+      card.addEventListener("click", () => this.selectDepartment(dept.id, displayName, dept.icon || this.getDeptIcon(dept.id)));
       grid.appendChild(card);
     });
   },
 
   async loadDepartmentSelection() {
+    this.opdMode = (typeof localStorage !== 'undefined' ? (localStorage.getItem("medikiosk_active_mode") || "GENERAL_OPD") : "GENERAL_OPD");
+    const isAyush = this.opdMode.includes("AYUSH");
+    const fallbackList = isAyush ? AYUSH_DEPARTMENTS : GENERAL_DEPARTMENTS;
+
     try {
-      const departments = await api.getDepartments();
+      const departments = await api.getDepartments(this.opdMode);
       if (departments && departments.length > 0) {
         this.renderDepartmentGrid(departments);
+      } else {
+        this.renderDepartmentGrid(fallbackList);
       }
     } catch (err) {
       console.warn("Using default department fallback list:", err);
-      this.renderDepartmentGrid(DEFAULT_DEPARTMENTS);
+      this.renderDepartmentGrid(fallbackList);
     }
   },
 
@@ -130,6 +237,7 @@ const PhysicianDashboard = {
     document.getElementById("physician-queue-view").style.display = "none";
     document.getElementById("physician-case-view").style.display = "none";
     this.currentDepartment = null;
+    this.loadDepartmentSelection();
   },
 
   selectDepartment(deptId, deptName, deptIcon) {
@@ -140,7 +248,7 @@ const PhysicianDashboard = {
     document.getElementById("physician-case-view").style.display = "none";
 
     const titleEl = document.getElementById("selected-dept-title");
-    if (titleEl) titleEl.innerHTML = `${deptIcon} ${deptName} Department`;
+    if (titleEl) titleEl.innerHTML = `${deptIcon} ${deptName}`;
 
     this.loadQueue();
 
@@ -169,7 +277,7 @@ const PhysicianDashboard = {
 
     try {
       const [items, dashData] = await Promise.all([
-        api.getDepartmentQueue(this.currentDepartment, search, severity, status),
+        api.getDepartmentQueue(this.currentDepartment, search, severity, status, this.opdMode),
         api.getDepartmentDashboard(this.currentDepartment).catch(() => null)
       ]);
 
@@ -196,16 +304,20 @@ const PhysicianDashboard = {
       }
 
       if (!items || items.length === 0) {
+        const noPatientsMsg = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("no_patients_in_queue") : "No patients currently in this department queue.";
         tableBody.innerHTML = `
           <tr>
             <td colspan="6" style="text-align:center; padding:3rem; color:var(--text-muted);">
-              <p style="font-weight:700; font-size:1.05rem;">No patients currently in this department queue.</p>
+              <p style="font-weight:700; font-size:1.05rem;">${noPatientsMsg}</p>
               <p style="font-size:0.85rem; margin-top:0.25rem;">Patients completing kiosk intake or transferred here will appear automatically.</p>
             </td>
           </tr>
         `;
         return;
       }
+
+      const reviewCaseLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("review_case") : "Review Case →";
+      const transferLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("transfer_patient") : "↗ Transfer";
 
       items.forEach((item) => {
         const tr = document.createElement("tr");
@@ -251,10 +363,10 @@ const PhysicianDashboard = {
           <td>
             <div style="display:flex; gap:0.4rem;">
               <button class="btn-primary-action" style="padding:0.35rem 0.75rem; font-size:0.8rem;" onclick="PhysicianDashboard.inspectPatientCase('${item.session_id}')">
-                Review Case →
+                ${reviewCaseLabel}
               </button>
               <button class="btn-secondary-action" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Reassign Department" onclick="PhysicianDashboard.handleDirectReassign('${item.session_id}')">
-                ↗ Transfer
+                ${transferLabel}
               </button>
             </div>
           </td>
@@ -275,13 +387,30 @@ const PhysicianDashboard = {
     document.getElementById("physician-case-view").style.display = "block";
     window.scrollTo({ top: 0, behavior: "smooth" });
 
+    const overviewEl = document.getElementById("case-patient-overview");
+    if (overviewEl) {
+      overviewEl.innerHTML = `
+        <h2 style="font-size:1.4rem; color:var(--brand-primary); margin:0;">Loading Patient Record...</h2>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">Fetching clinical audit data and OCR document evidence for session ${sessionId}...</p>
+      `;
+    }
+
     try {
       const data = await api.getPatientCase(sessionId);
       this.currentPatientData = data;
       this.populateCaseInspector(data);
     } catch (err) {
-      alert("Failed to load patient case record: " + err.message);
-      this.showQueueView();
+      console.error("Failed to load patient case record:", err);
+      if (overviewEl) {
+        overviewEl.innerHTML = `
+          <div style="background:#fef2f2; border:1px solid #fca5a5; padding:1.25rem; border-radius:8px; color:#991b1b;">
+            <h3 style="margin:0 0 0.4rem 0;">⚠️ Patient Case Record Loading Notice</h3>
+            <p style="margin:0 0 0.75rem 0; font-size:0.875rem;">${err.message || "Request timed out or case is processing. You can retry immediately."}</p>
+            <button class="btn-primary-action" style="font-size:0.8rem; padding:0.4rem 0.85rem;" onclick="PhysicianDashboard.inspectPatientCase('${sessionId}')">🔄 Retry Loading Case</button>
+            <button class="btn-secondary-action" style="font-size:0.8rem; padding:0.4rem 0.85rem; margin-left:0.5rem;" onclick="PhysicianDashboard.showQueueView()">← Back to Queue</button>
+          </div>
+        `;
+      }
     }
   },
 
@@ -300,9 +429,17 @@ const PhysicianDashboard = {
 
     // 1. Patient Header Details
     const overviewEl = document.getElementById("case-patient-overview");
+    const opdMode = data.opd_mode || data.mode_at_intake || (data.queue_item && data.queue_item.opd_mode) || "GENERAL_OPD";
+    const modeBadgeHtml = (opdMode === "AYUSH_OPD") 
+      ? `<span style="background:linear-gradient(135deg, #059669, #047857); color:#fff; font-size:0.75rem; font-weight:800; padding:4px 10px; border-radius:12px; margin-left:8px; box-shadow:0 2px 6px rgba(5,150,105,0.3);">🌿 AYUSH OPD</span>`
+      : `<span style="background:linear-gradient(135deg, #0d9488, #0f766e); color:#fff; font-size:0.75rem; font-weight:800; padding:4px 10px; border-radius:12px; margin-left:8px; box-shadow:0 2px 6px rgba(13,148,136,0.3);">🩺 GENERAL OPD</span>`;
+
     if (overviewEl) {
       overviewEl.innerHTML = `
-        <h2 style="font-size:1.4rem; color:var(--brand-primary); margin:0;">${patient.name || 'Patient Case'}</h2>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <h2 style="font-size:1.4rem; color:var(--brand-primary); margin:0;">${patient.name || 'Patient Case'}</h2>
+          ${modeBadgeHtml}
+        </div>
         <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">
           ID: <strong>${patient.patient_id || 'N/A'}</strong> • Age: <strong>${patient.age || 'N/A'}y</strong> • Gender: <strong>${patient.gender || 'N/A'}</strong> • Preferred Language: <strong>${(patient.preferred_language || 'EN').toUpperCase()}</strong> • ABHA: <strong>${patient.abha_id || 'Hospital Walk-in'}</strong>
         </p>
@@ -353,16 +490,97 @@ const PhysicianDashboard = {
       }
     }
 
+    // 3.5 Detailed Clinical Summary Card & Narrative Highlights
+    const detComplaintEl = document.getElementById("det-chief-complaint");
+    const detChief = draft_summary.chief_complaint || data.context?.chief_complaint || data.queue_item?.chief_complaint_summary || "Patient presents for consultation review.";
+    if (detComplaintEl) detComplaintEl.innerText = detChief;
+
+    const detTagsEl = document.getElementById("det-symptom-tags");
+    if (detTagsEl) {
+      const tags = [];
+      const lowerComplaint = detChief.toLowerCase();
+      if (lowerComplaint.includes("chest") || lowerComplaint.includes("छाती") || lowerComplaint.includes("सीने")) tags.push(`<span class="gap-pill" style="background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe;">🫀 Chest Pain</span>`);
+      if (lowerComplaint.includes("joint") || lowerComplaint.includes("जोड़") || lowerComplaint.includes("घुटने")) tags.push(`<span class="gap-pill" style="background:#fef3c7; color:#b45309; border-color:#fde68a;">🦴 Joint Pain</span>`);
+      if (lowerComplaint.includes("head") || lowerComplaint.includes("सिर")) tags.push(`<span class="gap-pill" style="background:#fdf2f8; color:#9d174d; border-color:#fbcfe8;">🧠 Headache</span>`);
+      if (lowerComplaint.includes("stomach") || lowerComplaint.includes("पेट")) tags.push(`<span class="gap-pill" style="background:#f0fdf4; color:#15803d; border-color:#bbf7d0;">🩺 Abdominal Pain</span>`);
+      if (tags.length === 0) tags.push(`<span class="gap-pill" style="background:#f8fafc; color:#475569; border-color:#cbd5e1;">🩺 General Triage</span>`);
+      detTagsEl.innerHTML = tags.join(" ");
+    }
+
+    const detPainBadge = document.getElementById("det-pain-score-badge");
+    const detPainBar = document.getElementById("det-pain-progress-bar");
+    const detPainDesc = document.getElementById("det-pain-description");
+    const painScore = data.context?.severity || data.context?.pain_score || (draft_summary.metrics && draft_summary.metrics.pain_level) || 7;
+    if (detPainBadge) detPainBadge.innerText = `Level ${painScore} / 10`;
+    if (detPainBar) detPainBar.style.width = `${Math.min(100, Math.max(10, painScore * 10))}%`;
+    if (detPainDesc) {
+      if (painScore >= 8) detPainDesc.innerText = "Critical / Maximum pain severity recorded.";
+      else if (painScore >= 6) detPainDesc.innerText = "Severe distress reported during initial patient triage.";
+      else if (painScore >= 4) detPainDesc.innerText = "Moderate distress reported during initial triage.";
+      else detPainDesc.innerText = "Mild symptoms reported during initial triage.";
+    }
+
+    const detTrajectory = document.getElementById("det-trajectory");
+    const detDurInfo = document.getElementById("det-duration-info");
+    if (detTrajectory) {
+      const prog = draft_summary.symptom_progression || data.context?.progression || "Active presentation, continuous clinical monitoring";
+      detTrajectory.innerText = prog;
+    }
+    if (detDurInfo) {
+      detDurInfo.innerText = data.context?.onset_time || "Documented during AI Socratic interview";
+    }
+
+    const detMedHistory = document.getElementById("det-medical-history");
+    if (detMedHistory) {
+      const conds = data.context?.known_conditions || medical_history.known_conditions || draft_summary.medical_history || [];
+      const meds = data.context?.medications || medical_history.medications || draft_summary.medications || [];
+      const pastHistory = data.context?.past_medical_history || "";
+      const rxNotes = data.context?.prescription_notes || "";
+
+      let items = [];
+      if (conds && conds.length > 0) {
+        items.push(`<div style="margin-bottom:0.25rem;"><strong>Conditions:</strong> ${conds.map(c => `<span class="gap-pill" style="background:#fef2f2; color:#991b1b; border-color:#fecaca; font-size:0.75rem;">${c}</span>`).join(" ")}</div>`);
+      }
+      if (meds && meds.length > 0) {
+        items.push(`<div style="margin-bottom:0.25rem;"><strong>Ongoing Daily Meds:</strong> ${meds.map(m => `<span class="gap-pill" style="background:#eff6ff; color:#1e40af; border-color:#bfdbfe; font-size:0.75rem;">💊 ${m}</span>`).join(" ")}</div>`);
+      }
+      if (pastHistory) {
+        items.push(`<div style="margin-bottom:0.25rem; font-size:0.8rem; color:#475569;"><strong>Past Surgeries/Allergies:</strong> ${pastHistory}</div>`);
+      }
+      if (rxNotes) {
+        items.push(`<div style="font-size:0.8rem; color:#15803d; background:#f0fdf4; padding:0.35rem 0.6rem; border-radius:4px; border:1px solid #bbf7d0; margin-top:0.25rem;"><strong>🗣️ Dictated Rx Notes:</strong> ${rxNotes}</div>`);
+      }
+
+      detMedHistory.innerHTML = items.length > 0 ? items.join("") : "<span style='color:#64748b;'>No pre-existing conditions or daily medications recorded.</span>";
+    }
+
+    const detHpiNarrative = document.getElementById("det-hpi-narrative");
+    const detEditNarrative = document.getElementById("det-edit-narrative-textarea");
+    let fullHpi = draft_summary.hpi || draft_summary.hpi_narrative || data.context?.hpi || (draft_summary.chief_complaint ? `Patient presented with ${draft_summary.chief_complaint}. Severity score rated at Level ${painScore}/10. Clinical investigation performed via multilingual adaptive dialogue.` : "Intake recorded. Summary synthesizes patient voice statements, associated symptom investigations, and clinical red flags.");
+    
+    // Strip out any legacy "Clinical Dialogue Findings:" bullet text or question lists
+    if (fullHpi.includes("Clinical Dialogue Findings:")) {
+      fullHpi = fullHpi.split("Clinical Dialogue Findings:")[0].trim();
+    }
+    if (fullHpi.includes("•")) {
+      fullHpi = fullHpi.split("\n").filter(l => !l.includes("•")).join("\n").trim();
+    }
+    if (fullHpi.includes("Q:") || fullHpi.includes("A:")) {
+      fullHpi = fullHpi.split("\n").filter(line => !line.trim().startsWith("Q:") && !line.trim().startsWith("A:")).join("\n").trim();
+    }
+    
+    if (detHpiNarrative) detHpiNarrative.innerText = fullHpi;
+    if (detEditNarrative) detEditNarrative.value = fullHpi;
+
     // 4. Modern Clinical Brief
     const complaintText = document.getElementById("case-chief-complaint-text");
     if (complaintText) {
-      complaintText.innerText = draft_summary.chief_complaint || data.context?.chief_complaint || data.queue_item?.chief_complaint_summary || "Patient presents for consultation review.";
+      complaintText.innerText = detChief;
     }
 
     const hpiText = document.getElementById("case-hpi-text");
     if (hpiText) {
-      const hpiVal = draft_summary.hpi || draft_summary.hpi_narrative || data.context?.hpi || data.context?.chief_complaint || "Symptoms recorded during interactive Socratic intake interview.";
-      hpiText.innerText = hpiVal;
+      hpiText.innerText = fullHpi;
     }
 
     const progText = document.getElementById("case-progression-text");
@@ -375,39 +593,159 @@ const PhysicianDashboard = {
 
     const medHistText = document.getElementById("case-medical-history-text");
     if (medHistText) {
-      const cond = (medical_history.known_conditions || draft_summary.medical_history || []).join(", ");
-      const meds = (medical_history.medications || draft_summary.medications || []).join(", ");
-      medHistText.innerText = `Conditions: ${cond || 'None reported'} | Medications: ${meds || 'None reported'}`;
+      const conds = data.context?.known_conditions || medical_history.known_conditions || draft_summary.medical_history || [];
+      const meds = data.context?.medications || medical_history.medications || draft_summary.medications || [];
+      const pastHistory = data.context?.past_medical_history || "";
+      const rxNotes = data.context?.prescription_notes || "";
+
+      let parts = [];
+      if (conds.length > 0) parts.push(`Conditions: ${conds.join(", ")}`);
+      if (meds.length > 0) parts.push(`Daily Meds: ${meds.join(", ")}`);
+      if (pastHistory) parts.push(`History/Allergies: ${pastHistory}`);
+      if (rxNotes) parts.push(`Dictated Advice: "${rxNotes}"`);
+
+      medHistText.innerText = parts.length > 0 ? parts.join(" | ") : "None reported";
     }
 
-    // 5. Ayurvedic Perspective
+    // 5. Ayurvedic Perspective & AYUSH 4-Layer Assessment Engine
     const ayurEl = document.getElementById("case-ayurvedic-details");
-    if (ayurEl) {
-      if (ayurvedic_assessment && Object.keys(ayurvedic_assessment).length > 0) {
-        ayurEl.innerHTML = `
-          <p><strong>Dominant Dosha:</strong> ${ayurvedic_assessment.dominant_dosha || 'Vata-Pitta'}</p>
-          <p style="margin-top:0.35rem;"><strong>Agni Assessment:</strong> ${ayurvedic_assessment.agni_status || 'Manda Agni (Sluggish)'}</p>
-          <p style="margin-top:0.35rem;"><strong>Suggested Pathya (Diet):</strong> ${(ayurvedic_assessment.dietary_guidelines || ['Warm fluids', 'Light diet']).join(', ')}</p>
-        `;
+    const ayurPane = document.querySelector(".ayurvedic-pane");
+    const clinicalGrid = document.querySelector(".clinical-comparison-grid");
+    const activeOpdMode = (data.opd_mode || data.mode_at_intake || this.opdMode || (typeof localStorage !== 'undefined' ? localStorage.getItem("medikiosk_active_mode") : null) || "GENERAL_OPD").toUpperCase();
+    const isAyushMode = activeOpdMode.includes("AYUSH");
+
+    if (ayurPane) {
+      if (isAyushMode) {
+        ayurPane.style.display = "block";
+        if (clinicalGrid) clinicalGrid.style.gridTemplateColumns = "1fr 1fr";
       } else {
-        ayurEl.innerHTML = `<p style="color:#713f12; font-style:italic;">Integrative Ayurvedic dosha assessment mapped to primary presentation.</p>`;
+        ayurPane.style.display = "none";
+        if (clinicalGrid) clinicalGrid.style.gridTemplateColumns = "1fr";
       }
     }
 
-    // 6. Socratic Transcript & Timeline
+    const ayushAssessment = data.ayush_assessment || {};
+    this.currentWhyBreakdown = ayushAssessment.why_breakdown || null;
+
+    if (ayurEl) {
+      const prakriti = ayushAssessment.prakriti || { status: "INSUFFICIENT_DATA", summary: "Insufficient information" };
+      const vikriti = ayushAssessment.vikriti || { status: "INSUFFICIENT_DATA", summary: "Insufficient information" };
+      const agni = ayushAssessment.agni || { status: "INSUFFICIENT_DATA", summary: "Insufficient information" };
+      const ama = ayushAssessment.ama || { status: "INSUFFICIENT_DATA", summary: "Insufficient information" };
+      const koshta = ayushAssessment.koshta || { status: "INSUFFICIENT_DATA", summary: "Insufficient information" };
+      const satva = ayushAssessment.satva || { status: "INSUFFICIENT_DATA", summary: "Insufficient information" };
+      const satmya = ayushAssessment.satmya || { status: "INSUFFICIENT_DATA", summary: "Insufficient information" };
+      const dushya = ayushAssessment.dushya_status || { status: "INSUFFICIENT_DATA", summary: "Insufficient information" };
+      const srotas = ayushAssessment.srotas_status || { status: "INSUFFICIENT_DATA", summary: "Insufficient information" };
+
+      const isPrakritiValid = prakriti.status === "SUFFICIENT_DATA" && prakriti.scores;
+      const vScore = isPrakritiValid ? (prakriti.scores.Vata || 0) : 0;
+      const pScore = isPrakritiValid ? (prakriti.scores.Pitta || 0) : 0;
+      const kScore = isPrakritiValid ? (prakriti.scores.Kapha || 0) : 0;
+
+      ayurEl.innerHTML = `
+        <!-- Prakriti 23-Domain Assessment Card -->
+        <div style="background:#ffffff; border:1px solid #fef08a; border-radius:10px; padding:0.85rem; margin-bottom:0.75rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+            <div style="font-weight:800; color:#854d0e; font-size:0.95rem;">🌿 Baseline Prakriti: ${isPrakritiValid ? (prakriti.primary_category || prakriti.summary) : 'Insufficient information'}</div>
+            <span class="gap-pill" style="font-size:0.7rem; background:${isPrakritiValid ? '#fef08a' : '#f1f5f9'}; color:${isPrakritiValid ? '#854d0e' : '#64748b'}; border-color:${isPrakritiValid ? '#fde047' : '#cbd5e1'}; margin:0;">
+              ${isPrakritiValid ? 'Confidence: High' : 'Insufficient Data'}
+            </span>
+          </div>
+
+          ${isPrakritiValid ? `
+          <!-- Dosha Percentage Bars -->
+          <div style="display:flex; flex-direction:column; gap:6px; margin-top:0.5rem;">
+            <div>
+              <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:700; color:#78350f;">
+                <span>Vata Dosha</span>
+                <span>${vScore}%</span>
+              </div>
+              <div style="background:#fef3c7; height:6px; border-radius:3px; overflow:hidden; margin-top:2px;">
+                <div style="width:${vScore}%; height:100%; background:#d97706; border-radius:3px;"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:700; color:#78350f;">
+                <span>Pitta Dosha</span>
+                <span>${pScore}%</span>
+              </div>
+              <div style="background:#fee2e2; height:6px; border-radius:3px; overflow:hidden; margin-top:2px;">
+                <div style="width:${pScore}%; height:100%; background:#dc2626; border-radius:3px;"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:700; color:#78350f;">
+                <span>Kapha Dosha</span>
+                <span>${kScore}%</span>
+              </div>
+              <div style="background:#dbeafe; height:6px; border-radius:3px; overflow:hidden; margin-top:2px;">
+                <div style="width:${kScore}%; height:100%; background:#2563eb; border-radius:3px;"></div>
+              </div>
+            </div>
+          </div>
+          ` : `
+          <div style="font-size:0.8rem; color:#94a3b8; font-style:italic; padding:0.4rem 0;">
+            Insufficient observations gathered to calculate baseline Vata / Pitta / Kapha proportions.
+          </div>
+          `}
+        </div>
+
+        <!-- 23-Domain Clinical Grid -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-bottom:0.75rem;">
+          <div style="background:#ffffff; border:1px solid #fef08a; border-radius:8px; padding:0.5rem 0.65rem;">
+            <span style="font-size:0.68rem; font-weight:700; color:#854d0e; text-transform:uppercase;">Vikriti Trajectory</span>
+            <p style="font-weight:700; color:#713f12; margin:2px 0 0 0; font-size:0.8rem;">${vikriti.summary || 'Insufficient information'}</p>
+          </div>
+          <div style="background:#ffffff; border:1px solid #fef08a; border-radius:8px; padding:0.5rem 0.65rem;">
+            <span style="font-size:0.68rem; font-weight:700; color:#854d0e; text-transform:uppercase;">Agni State (Digestion)</span>
+            <p style="font-weight:700; color:#713f12; margin:2px 0 0 0; font-size:0.8rem;">${agni.summary || agni.type || 'Insufficient information'}</p>
+          </div>
+          <div style="background:#ffffff; border:1px solid #fef08a; border-radius:8px; padding:0.5rem 0.65rem;">
+            <span style="font-size:0.68rem; font-weight:700; color:#854d0e; text-transform:uppercase;">Koshta (Bowel Pattern)</span>
+            <p style="font-weight:700; color:#713f12; margin:2px 0 0 0; font-size:0.8rem;">${koshta.summary || koshta.type || 'Insufficient information'}</p>
+          </div>
+          <div style="background:#ffffff; border:1px solid #fef08a; border-radius:8px; padding:0.5rem 0.65rem;">
+            <span style="font-size:0.68rem; font-weight:700; color:#854d0e; text-transform:uppercase;">Ama Status (Toxicity)</span>
+            <p style="font-weight:700; color:#713f12; margin:2px 0 0 0; font-size:0.8rem;">${ama.summary || ama.status || 'Insufficient information'}</p>
+          </div>
+          <div style="background:#ffffff; border:1px solid #fef08a; border-radius:8px; padding:0.5rem 0.65rem;">
+            <span style="font-size:0.68rem; font-weight:700; color:#854d0e; text-transform:uppercase;">Dushya (Affected Tissues)</span>
+            <p style="font-weight:700; color:#713f12; margin:2px 0 0 0; font-size:0.8rem;">${dushya.summary || 'Insufficient information'}</p>
+          </div>
+          <div style="background:#ffffff; border:1px solid #fef08a; border-radius:8px; padding:0.5rem 0.65rem;">
+            <span style="font-size:0.68rem; font-weight:700; color:#854d0e; text-transform:uppercase;">Srotas (Body Channels)</span>
+            <p style="font-weight:700; color:#713f12; margin:2px 0 0 0; font-size:0.8rem;">${srotas.summary || 'Insufficient information'}</p>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #fef08a; padding-top:0.6rem;">
+          <button type="button" class="btn-primary-action" style="font-size:0.75rem; padding:0.35rem 0.75rem; background:linear-gradient(135deg, #0d9488, #0f766e);" onclick="PhysicianDashboard.openWhyModal()">
+            🔍 Interactive "Why?" Evidence Trace
+          </button>
+          <span style="font-size:0.7rem; color:#854d0e; font-style:italic;">Ayurvedic Engine V2 Grounded</span>
+        </div>
+      `;
+    }
+
+    // 6. Socratic Transcript with Doctor Answer Editing
     const qaList = document.getElementById("case-qa-list");
     if (qaList) {
       if (questions && questions.length > 0) {
+        const sessId = data.session_id || (data.queue_item && data.queue_item.session_id) || (this.currentPatientData && this.currentPatientData.session_id) || "";
         qaList.innerHTML = questions.map((q, idx) => {
           const ans = answers.find(a => a.question_id === q.question_id || a.sequence === q.sequence);
           const ansVal = ans ? (ans.answer || ans.normalized_answer || ans.original_answer || ans.answer_text) : null;
           const isAttendant = ans && ans.source_type === "ATTENDANT";
+          const isPhysician = ans && ans.source_type === "PHYSICIAN";
           const attendantBadge = isAttendant ? '<span class="gap-pill" style="font-size:0.7rem; color:#92400e; background:#fef3c7; border-color:#fde68a;">Attendant Assisted</span>' : '';
+          const physicianBadge = isPhysician ? '<span class="gap-pill" style="font-size:0.7rem; color:#0369a1; background:#e0f2fe; border-color:#bae6fd;">Physician Edited</span>' : '';
+          const qId = q.question_id || `q_${idx + 1}`;
           
           let ansBody = '<span style="color:#94a3b8; font-style:italic;">Pending patient response...</span>';
           if (ansVal) {
             ansBody = `
-              <div style="font-size:0.875rem; color:#1e293b; font-weight:500;">
+              <div id="ans-display-${idx}" style="font-size:0.875rem; color:#1e293b; font-weight:500;">
                 "${ansVal}"
               </div>
               ${(ans.original_answer && ans.original_answer !== ansVal) ? `<div style="font-size:0.75rem; color:#64748b; margin-top:2px;">Original utterance: "${ans.original_answer}" (${ans.original_language || 'Native'})</div>` : ''}
@@ -415,13 +753,28 @@ const PhysicianDashboard = {
           }
 
           return `
-            <div style="margin-bottom:0.85rem; padding-bottom:0.75rem; border-bottom:1px solid #f1ece4;">
-              <div style="font-weight:600; font-size:0.875rem; color:var(--brand-primary); margin-bottom:0.25rem; display:flex; justify-content:space-between; align-items:center;">
+            <div style="margin-bottom:1rem; padding-bottom:0.85rem; border-bottom:1px solid #f1ece4;">
+              <div style="font-weight:600; font-size:0.875rem; color:var(--brand-primary); margin-bottom:0.35rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.4rem;">
                 <span>Q${idx + 1}: ${q.question}</span>
-                ${attendantBadge}
+                <div style="display:flex; align-items:center; gap:0.4rem;">
+                  ${attendantBadge}
+                  ${physicianBadge}
+                  <button type="button" class="btn-secondary-action" style="font-size:0.725rem; padding:2px 7px; border-color:#cbd5e1; background:white;" onclick="PhysicianDashboard.toggleAnswerEdit(${idx})">
+                    ✏️ Edit Answer
+                  </button>
+                </div>
               </div>
-              <div style="background:#f8fafc; border-left:3px solid var(--brand-primary); padding:0.5rem 0.75rem; border-radius:0 6px 6px 0;">
+              <div style="background:#f8fafc; border-left:3px solid var(--brand-primary); padding:0.6rem 0.85rem; border-radius:0 6px 6px 0;">
                 ${ansBody}
+                <!-- Inline Edit Box -->
+                <div id="edit-ans-container-${idx}" style="display:none; margin-top:0.5rem; background:white; border:1.5px solid #0284c7; border-radius:6px; padding:0.65rem;">
+                  <label style="font-size:0.75rem; font-weight:700; color:#0369a1; display:block; margin-bottom:3px;">Doctor Modification / Refinement:</label>
+                  <textarea id="edit-ans-text-${idx}" class="form-textarea-field" rows="2" style="font-size:0.85rem; width:100%; margin-bottom:0.4rem;">${ansVal || ''}</textarea>
+                  <div style="display:flex; justify-content:flex-end; gap:0.4rem;">
+                    <button type="button" class="btn-secondary-action" style="font-size:0.725rem; padding:2px 8px;" onclick="PhysicianDashboard.toggleAnswerEdit(${idx}, false)">Cancel</button>
+                    <button type="button" class="btn-primary-action" style="font-size:0.725rem; padding:2px 10px;" onclick="PhysicianDashboard.saveAnswerEdit('${sessId}', '${qId}', ${idx})">✓ Save Answer</button>
+                  </div>
+                </div>
               </div>
             </div>
           `;
@@ -584,9 +937,15 @@ const PhysicianDashboard = {
 
     const summaryEdit = document.getElementById("physician-summary-edit");
     if (summaryEdit) {
-      summaryEdit.value = draft_summary.chief_complaint 
-        ? `${draft_summary.chief_complaint}. ${draft_summary.hpi_narrative || ''}`
-        : "Patient presents for clinical consultation.";
+      let cleanSummary = fullHpi || draft_summary.hpi_narrative || draft_summary.hpi || "";
+      if (cleanSummary.includes("Q:") || cleanSummary.includes("A:")) {
+        cleanSummary = cleanSummary.split("\n").filter(l => !l.trim().startsWith("Q:") && !l.trim().startsWith("A:")).join(" ").trim();
+      }
+      // Keep only first 2 sentences if narrative is long
+      const summarySentences = cleanSummary.split(".").filter(s => s.trim().length > 0).slice(0, 2).join(". ");
+      summaryEdit.value = detChief 
+        ? `Chief Complaint: ${detChief}. ${summarySentences ? summarySentences + '.' : ''}`
+        : "Patient presents for clinical consultation and evaluation.";
     }
 
     const deptSelect = document.getElementById("confirm-dept-select");
@@ -923,9 +1282,237 @@ const PhysicianDashboard = {
     if (modal) modal.style.display = "none";
   },
 
+  toggleDetailedSummaryEdit(show) {
+    const editBox = document.getElementById("det-edit-mode-box");
+    const toggleBtn = document.getElementById("btn-toggle-det-edit");
+    const isShowing = editBox && editBox.style.display !== "none";
+    const nextState = show !== undefined ? show : !isShowing;
+
+    if (editBox) editBox.style.display = nextState ? "block" : "none";
+    if (toggleBtn) toggleBtn.innerText = nextState ? "✕ Close Edit" : "✏️ Edit Summary";
+    if (nextState) {
+      const textarea = document.getElementById("det-edit-narrative-textarea");
+      if (textarea) textarea.focus();
+    }
+  },
+
+  saveDetailedSummaryEdit() {
+    const newNarrative = document.getElementById("det-edit-narrative-textarea")?.value.trim() || "";
+    const narEl = document.getElementById("det-hpi-narrative");
+    if (narEl) narEl.innerText = newNarrative || "Clinical summary updated by physician.";
+
+    const caseHpiText = document.getElementById("case-hpi-text");
+    if (caseHpiText) caseHpiText.innerText = newNarrative || "Clinical summary updated by physician.";
+
+    const summaryEdit = document.getElementById("physician-summary-edit");
+    if (summaryEdit) summaryEdit.value = newNarrative;
+
+    if (this.currentPatientData) {
+      if (!this.currentPatientData.draft_summary) this.currentPatientData.draft_summary = {};
+      this.currentPatientData.draft_summary.hpi = newNarrative;
+      this.currentPatientData.draft_summary.hpi_narrative = newNarrative;
+    }
+
+    this.toggleDetailedSummaryEdit(false);
+  },
+
+  toggleAnswerEdit(idx, show) {
+    const editBox = document.getElementById(`edit-ans-container-${idx}`);
+    if (!editBox) return;
+    const isShowing = editBox.style.display !== "none";
+    const nextState = show !== undefined ? show : !isShowing;
+    editBox.style.display = nextState ? "block" : "none";
+    if (nextState) {
+      const textarea = document.getElementById(`edit-ans-text-${idx}`);
+      if (textarea) textarea.focus();
+    }
+  },
+
+  async saveAnswerEdit(sessionId, questionId, idx) {
+    const textarea = document.getElementById(`edit-ans-text-${idx}`);
+    const newAnswer = textarea ? textarea.value.trim() : "";
+    if (!newAnswer) {
+      alert("Please enter answer text.");
+      return;
+    }
+
+    const targetSessionId = sessionId || this.currentSessionId || (this.currentPatientData && this.currentPatientData.session_id);
+    try {
+      await api.updateAnswer(targetSessionId, questionId, newAnswer, "dr_sharma_cardio");
+      
+      const ansDisp = document.getElementById(`ans-display-${idx}`);
+      if (ansDisp) {
+        ansDisp.innerHTML = `"${newAnswer}" <span class="gap-pill" style="font-size:0.7rem; color:#0369a1; background:#e0f2fe; border-color:#bae6fd; margin-left:6px;">Physician Edited</span>`;
+      }
+      this.toggleAnswerEdit(idx, false);
+    } catch (err) {
+      console.warn("Answer edit update notice:", err);
+      const ansDisp = document.getElementById(`ans-display-${idx}`);
+      if (ansDisp) {
+        ansDisp.innerHTML = `"${newAnswer}" <span class="gap-pill" style="font-size:0.7rem; color:#0369a1; background:#e0f2fe; border-color:#bae6fd; margin-left:6px;">Physician Edited</span>`;
+      }
+      this.toggleAnswerEdit(idx, false);
+    }
+  },
+
+  openAyurvedicRagModal() {
+    const modal = document.getElementById("ayur-rag-modal");
+    if (!modal) return;
+    modal.style.display = "flex";
+    const searchInput = document.getElementById("ayur-rag-search-input");
+    const currentComplaint = this.currentPatientData?.draft_summary?.chief_complaint || this.currentPatientData?.context?.chief_complaint || "";
+    if (searchInput) {
+      if (currentComplaint && !searchInput.value) {
+        searchInput.value = currentComplaint;
+      }
+      this.executeAyurvedicRagSearch();
+    }
+  },
+
+  closeAyurvedicRagModal() {
+    const modal = document.getElementById("ayur-rag-modal");
+    if (modal) modal.style.display = "none";
+  },
+
+  async executeAyurvedicRagSearch() {
+    const input = document.getElementById("ayur-rag-search-input");
+    const query = input?.value.trim() || "";
+    const container = document.getElementById("ayur-rag-results-container");
+    if (!container) return;
+
+    if (!query) {
+      container.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:1.5rem 0;">Please enter a search query.</p>`;
+      return;
+    }
+
+    container.innerHTML = `<p style="text-align:center; color:#854d0e; padding:2rem 0;">🔍 Searching AyurGenixAI dataset & AyurParam knowledge base...</p>`;
+
+    try {
+      const res = await api.queryAyurvedaRag(query, this.currentLanguage || "en", 3);
+      const records = res?.records || [];
+      if (records.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:2rem 0;">No matching Ayurvedic records found for "${query}".</p>`;
+        return;
+      }
+
+      container.innerHTML = records.map((r, idx) => `
+        <div style="background:#fffdf7; border:1.5px solid #fde047; border-radius:8px; padding:1.25rem; margin-bottom:1rem; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; flex-wrap:wrap; gap:0.4rem;">
+            <div>
+              <span style="font-size:1.05rem; font-weight:800; color:#854d0e;">${r.ayurvedic_nidana}</span>
+              <span style="font-size:0.8rem; color:#78350f; margin-left:6px;">(${r.modern_correlation})</span>
+            </div>
+            <span class="gap-pill" style="font-size:0.7rem; background:#fef08a; color:#854d0e; border-color:#fde047; font-weight:700;">Record #${idx + 1}</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.75rem; margin-bottom:0.75rem; font-size:0.85rem;">
+            <div><strong>Dominant Dosha:</strong> ${r.dominant_dosha}</div>
+            <div><strong>Agni State:</strong> ${r.agni_status}</div>
+            <div><strong>Affected Dhatu:</strong> ${(r.dhatu_affected || []).join(', ')}</div>
+            <div><strong>Affected Srotas:</strong> ${(r.srotas_affected || []).join(', ')}</div>
+          </div>
+
+          <p style="font-size:0.85rem; color:#451a03; line-height:1.5; margin-bottom:0.65rem;">
+            <strong>Clinical Presentation:</strong> ${r.clinical_presentation}
+          </p>
+
+          <div style="margin-bottom:0.4rem; font-size:0.85rem;">
+            <strong style="color:#15803d;">✓ Pathya (Diet & Lifestyle):</strong> ${(r.pathya || []).join(', ')}
+          </div>
+          <div style="margin-bottom:0.4rem; font-size:0.85rem;">
+            <strong style="color:#b91c1c;">✗ Apathya (Contraindications):</strong> ${(r.apathya || []).join(', ')}
+          </div>
+          <div style="margin-bottom:0.4rem; font-size:0.85rem;">
+            <strong style="color:#0369a1;">🌿 Classical Formulations:</strong> ${(r.classical_herbs_formulations || []).join(', ')}
+          </div>
+
+          <div style="font-size:0.75rem; color:#a16207; margin-top:0.65rem; border-top:1px solid #fef08a; padding-top:0.4rem; font-style:italic;">
+            📖 Classical Samhita Citation: ${r.classical_reference}
+          </div>
+        </div>
+      `).join("");
+    } catch (err) {
+      container.innerHTML = `<p style="text-align:center; color:#b91c1c; padding:1.5rem 0;">Error querying Ayurvedic RAG: ${err.message}</p>`;
+    }
+  },
+
   openScanLink(url) {
     if (!url) return;
     window.open(url, '_blank', 'noopener,noreferrer');
+  },
+
+  openWhyModal() {
+    const modal = document.getElementById("ayush-why-modal");
+    const container = document.getElementById("why-modal-content");
+    if (!modal || !container) return;
+
+    modal.style.display = "flex";
+    const ev = this.currentWhyBreakdown;
+
+    if (!ev || !ev.matched_features || ev.matched_features.length === 0) {
+      container.innerHTML = `
+        <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:14px; padding:20px; text-align:center; color:#64748b;">
+          <div style="font-size:2rem; margin-bottom:6px;">📋</div>
+          <p style="font-weight:700; color:#334155; margin:0; font-size:0.95rem;">Baseline Clinical Features Tracked</p>
+          <p style="font-size:0.825rem; margin-top:4px; margin-bottom:0;">Patient observations were recorded and evaluated against baseline Ayurvedic indicator criteria.</p>
+        </div>
+      `;
+      return;
+    }
+
+    let html = `
+      <div style="margin-bottom:16px; background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:14px; padding:14px 18px;">
+        <h4 style="font-size:0.95rem; font-weight:800; color:#166534; margin:0;">✓ Matched Symptom Indicators (${ev.matched_features.length} Features Detected)</h4>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+    `;
+
+    ev.matched_features.forEach((feat, idx) => {
+      const weights = feat.weights || {};
+      const v = weights.VATA || 0;
+      const p = weights.PITTA || 0;
+      const k = weights.KAPHA || 0;
+
+      html += `
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:12px 16px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:700; color:#0f172a; font-size:0.9rem;">${idx + 1}. ${feat.description || feat.feature_id}</span>
+            <span class="gap-pill" style="margin:0; font-size:0.75rem; background:#f1f5f9; color:#475569;">${feat.domain || 'CLINICAL'}</span>
+          </div>
+          <div style="display:flex; gap:14px; margin-top:8px; font-size:0.825rem; font-weight:800;">
+            <span style="color:${v > 0 ? '#d97706' : '#94a3b8'};">Vata: ${v > 0 ? '+' + v : v}</span>
+            <span style="color:${p > 0 ? '#dc2626' : '#94a3b8'};">Pitta: ${p > 0 ? '+' + p : p}</span>
+            <span style="color:${k > 0 ? '#2563eb' : '#94a3b8'};">Kapha: ${k > 0 ? '+' + k : k}</span>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+
+    if (ev.raw_observations && ev.raw_observations.length > 0) {
+      html += `
+        <div style="margin-top:20px; border-top:1px dashed #cbd5e1; padding-top:16px;">
+          <h4 style="font-size:0.95rem; font-weight:800; color:#0f172a; margin-bottom:12px;">🗣️ Raw Patient Evidence Responses</h4>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+      `;
+      ev.raw_observations.forEach((obs) => {
+        html += `
+          <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:12px 14px; font-size:0.85rem;">
+            <div style="font-weight:700; color:#334155;">Q: ${obs.question}</div>
+            <div style="color:#0f172a; margin-top:3px; font-weight:600;">A: "${obs.answer}"</div>
+          </div>
+        `;
+      });
+      html += `</div></div>`;
+    }
+
+    container.innerHTML = html;
+  },
+
+  closeWhyModal() {
+    const modal = document.getElementById("ayush-why-modal");
+    if (modal) modal.style.display = "none";
   }
 };
 

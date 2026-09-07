@@ -25,6 +25,7 @@ class PriorityQueueItem(BaseModel):
     waiting_time_minutes: int = 0
     
     # Priority classification
+    opd_mode: str = "GENERAL_OPD"
     is_red_flag: bool = False
     priority_group: int = 1  # 0 for Red Flag, 1 for Normal
     overall_severity: RedFlagSeverity = RedFlagSeverity.NONE

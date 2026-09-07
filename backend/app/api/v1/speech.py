@@ -35,16 +35,70 @@ async def fetch_tts_audio_bytes(text: str, language: str) -> Optional[bytes]:
     if cache_key in _tts_cache:
         return _tts_cache[cache_key]
 
-    # Map language code to TTS locale
+INDIC_VOICE_MAP = {
+    "kn": "kn-IN-SapnaNeural",
+    "ta": "ta-IN-PallaviNeural",
+    "te": "te-IN-ShrutiNeural",
+    "ml": "ml-IN-SobhanaNeural",
+    "mr": "mr-IN-AarohiNeural",
+    "bn": "bn-IN-TanishaaNeural",
+    "gu": "gu-IN-DhwaniNeural",
+    "pa": "hi-IN-SwaraNeural",
+    "hi": "hi-IN-SwaraNeural",
+    "en": "en-IN-NeerjaNeural"
+}
+
+def gurmukhi_to_phonetic_devanagari(text: str) -> str:
+    """
+    Phonetically maps Gurmukhi Unicode characters (0x0A00-0x0A7F) to Devanagari (0x0900-0x097F)
+    so Indic neural speech synthesizers pronounce Punjabi words accurately.
+    """
+    dev_chars = []
+    for char in text:
+        code = ord(char)
+        if 0x0A05 <= code <= 0x0A75:
+            if code in (0x0A70, 0x0A71):  # Tippi / Addak -> Anusvara
+                dev_chars.append('\u0902')
+            else:
+                dev_chars.append(chr(code - 0x0A00 + 0x0900))
+        else:
+            dev_chars.append(char)
+    return ''.join(dev_chars)
+
+async def fetch_tts_audio_bytes(text: str, language: str) -> Optional[bytes]:
+    """
+    Fetches high-quality neural TTS audio bytes for all 10 Indian languages.
+    """
+    if not text or not text.strip():
+        return None
+
+    cache_key = f"{language}_{text.strip()}"
+    if cache_key in _tts_cache:
+        return _tts_cache[cache_key]
+
     lang_code = (language or "en").lower().strip()
-    g_lang_map = {
-        "hi": "hi", "kn": "kn", "ta": "ta", "te": "te",
-        "ml": "ml", "mr": "mr", "bn": "bn", "gu": "gu",
-        "pa": "pa", "en": "en"
-    }
-    target_tl = g_lang_map.get(lang_code, "en")
-    
-    # AI4Bharat check first
+    voice = INDIC_VOICE_MAP.get(lang_code, "en-IN-NeerjaNeural")
+
+    synthesis_text = text.strip()
+    if lang_code == "pa":
+        synthesis_text = gurmukhi_to_phonetic_devanagari(synthesis_text)
+
+    # 1. Edge Indic Neural TTS (Natural Authentic Indian Voices)
+    try:
+        import edge_tts
+        communicate = edge_tts.Communicate(synthesis_text, voice, rate="+0%", pitch="+0Hz")
+        audio_buffer = bytearray()
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_buffer.extend(chunk["data"])
+        if len(audio_buffer) > 200:
+            result = bytes(audio_buffer)
+            _tts_cache[cache_key] = result
+            return result
+    except Exception as e:
+        logger.debug("Edge Indic TTS notice: %s", e)
+
+    # 2. AI4Bharat Cloud TTS Fallback
     try:
         ai4b_res = await provider_manager.ai4bharat.synthesize_speech(
             text=text,
@@ -57,21 +111,6 @@ async def fetch_tts_audio_bytes(text: str, language: str) -> Optional[bytes]:
             return raw
     except Exception as e:
         logger.debug("AI4Bharat TTS fallback: %s", e)
-
-    # Universal Indic TTS audio endpoint
-    try:
-        encoded_q = urllib.parse.quote(text.strip())
-        tts_url = f"https://translate.google.com/translate_tts?ie=UTF-8&q={encoded_q}&tl={target_tl}&client=tw-ob"
-        async with httpx.AsyncClient(timeout=4.0) as client:
-            resp = await client.get(
-                tts_url,
-                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-            )
-            if resp.status_code == 200 and len(resp.content) > 100:
-                _tts_cache[cache_key] = resp.content
-                return resp.content
-    except Exception as e:
-        logger.warning("TTS audio fetch note for '%s' (%s): %s", text[:30], lang_code, e)
 
     return None
 

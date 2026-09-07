@@ -1,34 +1,58 @@
 # Pre-curated patient-friendly Ayurvedic phrasing templates
 AYURVEDIC_DOMAIN_TEMPLATES = {
+    "PRAKRITI": {
+        "domain": "PRAKRITI",
+        "display_label": "(Prakriti)",
+        "objective": "Determine baseline physical build and natural body constitution",
+        "default_question": "How would you describe your natural body frame, skin texture, and climate preference throughout your life? (Prakriti)"
+    },
     "AGNI": {
         "domain": "AGNI",
         "display_label": "(Agni)",
-        "objective": "Assess digestive strength and appetite",
-        "default_question": "How is your digestion after eating? Do you usually digest food easily, or do you often feel heaviness, bloating, or discomfort? (Agni)"
+        "objective": "Assess digestive strength and appetite regularity",
+        "default_question": "How is your digestion after meals? Do you usually digest food easily, or do you often feel heaviness, bloating, or acidity? (Agni)"
     },
-    "MALA": {
-        "domain": "MALA",
-        "display_label": "(Mala)",
-        "objective": "Assess bowel movements and waste elimination",
-        "default_question": "How are your bowel movements? Do you have constipation, loose stools, or any change from your usual pattern? (Mala)"
+    "KOSHTA": {
+        "domain": "KOSHTA",
+        "display_label": "(Koshta)",
+        "objective": "Assess bowel type and evacuation tendency",
+        "default_question": "How would you describe your bowel movements? Do you have hard stools/constipation, or soft/quick evacuations? (Koshta)"
+    },
+    "AMA": {
+        "domain": "AMA",
+        "display_label": "(Ama)",
+        "objective": "Assess metabolic toxicity and morning heaviness",
+        "default_question": "Do you often wake up feeling heavy, sluggish, or notice a thick coating on your tongue in the morning? (Ama)"
     },
     "NIDRA": {
         "domain": "NIDRA",
         "display_label": "(Nidra)",
         "objective": "Assess sleep quality, duration, and restedness",
-        "default_question": "How has your sleep been recently? Do you fall asleep easily, wake up often, or feel rested when you wake up? (Nidra)"
+        "default_question": "How has your sleep been recently? Do you fall asleep easily, wake up often, or feel light/interrupted during the night? (Nidra)"
+    },
+    "SATVA": {
+        "domain": "SATVA",
+        "display_label": "(Satva)",
+        "objective": "Assess psychological resilience and stress tolerance",
+        "default_question": "How do you handle daily emotional stress or pain? Do you stay calm under pressure or tend to feel anxious easily? (Satva)"
     },
     "AHARA": {
         "domain": "AHARA",
         "display_label": "(Ahara)",
-        "objective": "Assess dietary habits and food triggers",
-        "default_question": "What do you usually eat in a normal day, and have there been any recent changes in your food habits? (Ahara)"
+        "objective": "Assess dietary habits and food tolerance",
+        "default_question": "What kind of food do you usually eat in a normal day, and do certain foods trigger your symptoms? (Ahara)"
     },
     "VIHARA": {
         "domain": "VIHARA",
         "display_label": "(Vihara)",
-        "objective": "Assess daily routine, physical activity, and stress",
-        "default_question": "What does a normal day look like for you? For example, how much physical activity, sitting, work, travel, or exercise do you usually have? (Vihara)"
+        "objective": "Assess daily routine, physical activity, and sleep-wake schedule",
+        "default_question": "What does your typical daily physical activity and work routine look like? (Vihara)"
+    },
+    "MALA": {
+        "domain": "MALA",
+        "display_label": "(Mala)",
+        "objective": "Assess waste elimination patterns and bowel movements",
+        "default_question": "How are your bowel movements? Do you have constipation, loose stools, or any change from your usual pattern? (Mala)"
     },
     "NIDANA": {
         "domain": "NIDANA",

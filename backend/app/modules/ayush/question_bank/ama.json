@@ -1,0 +1,21 @@
+{
+  "domain": "AMA",
+  "version": "2.0",
+  "questions": [
+    {
+      "question_id": "AMA_MORNING_001",
+      "domain": "AMA",
+      "objective": "Assess morning body heaviness, sluggishness, and tongue coating",
+      "patient_text": "When you wake up in the morning, do you experience heavy body stiffness or a thick white coating on your tongue? (Ama)",
+      "ayurvedic_label": "Ama Lakshana / Gaurava",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "No — I wake up feeling light, active, and clean", "value": "ama_absent", "ama_status": "NIRAMA"},
+        {"label": "Sometimes — Slight heaviness or occasional tongue coating", "value": "ama_occasional", "ama_status": "SAAMA_MILD"},
+        {"label": "Yes — Thick white tongue coating, heavy body, sticky mouth, and lethargy every morning", "value": "ama_present", "ama_status": "SAAMA_SIGNIFICANT"}
+      ],
+      "feature_targets": ["tongue_coating", "morning_heaviness"],
+      "priority": 1
+    }
+  ]
+}

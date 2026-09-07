@@ -9,6 +9,13 @@ const PatientIntake = {
   attendantId: null,
   painLevel: 7,
   registeredData: null,
+  knownConditions: [],
+  medications: [],
+  pastMedicalHistory: "",
+  prescriptionNotes: "",
+
+
+  hasSpokenInitialWelcome: false,
 
   init() {
     // 1. Restore saved language if user previously chose one
@@ -17,6 +24,7 @@ const PatientIntake = {
       this.language = savedLang;
     }
 
+    this.updateModeUI();
     this.bindEvents();
     SpeechManager.init();
     I18n.setLanguage(this.language);
@@ -25,29 +33,114 @@ const PatientIntake = {
     this.updateLanguageGridUI(this.language);
 
     // 2. IMMEDIATE WELCOMING AUTO-SPEECH
-    const speakWelcome = () => {
-      if (this.currentStep === 1 && !SpeechManager.isSpeaking && !SpeechManager.isMuted) {
-        SpeechManager.speakStepGuidance(1, this.language);
+    const triggerWelcomeSpeech = () => {
+      if (this.currentStep === 1 && !this.hasSpokenInitialWelcome && !SpeechManager.isMuted) {
+        this.hasSpokenInitialWelcome = true;
+        SpeechManager.resumeAudioAndSpeak(1, this.language);
       }
     };
 
     // Immediate attempt on load (50ms)
-    setTimeout(speakWelcome, 50);
+    setTimeout(triggerWelcomeSpeech, 50);
+    setTimeout(triggerWelcomeSpeech, 250);
 
-    // Immediate attempt after 300ms
-    setTimeout(speakWelcome, 300);
-
-    // Unlock audio instantly on first gesture (click, touch, pointer, key, mouse)
-    const unlockAudio = () => {
-      if (SpeechManager.synth) {
-        try { SpeechManager.synth.resume(); } catch(e) {}
-      }
-      speakWelcome();
+    // Unlock audio instantly on any first micro-interaction
+    const unlockAndSpeak = () => {
+      try {
+        if (SpeechManager.synth) SpeechManager.synth.resume();
+        const ctx = SpeechManager.getAudioContext();
+        if (ctx && ctx.state === 'suspended') ctx.resume();
+      } catch(e) {}
+      triggerWelcomeSpeech();
     };
 
-    ['click', 'touchstart', 'pointerdown', 'keydown', 'mousedown'].forEach(evt => {
-      window.addEventListener(evt, unlockAudio, { once: true, passive: true });
+    ['click', 'touchstart', 'touchend', 'pointerdown', 'pointermove', 'mousemove', 'keydown', 'scroll', 'focus'].forEach(evt => {
+      window.addEventListener(evt, unlockAndSpeak, { once: true, passive: true });
     });
+  },
+
+  getActiveOpdMode() {
+    return localStorage.getItem("medikiosk_active_mode") || "GENERAL_OPD";
+  },
+
+  setActiveOpdMode(mode) {
+    const validMode = (mode === "AYUSH_OPD") ? "AYUSH_OPD" : "GENERAL_OPD";
+    localStorage.setItem("medikiosk_active_mode", validMode);
+    this.updateModeUI();
+  },
+
+  selectedTempMode: null,
+
+  openStaffModeModal() {
+    this.selectedTempMode = this.getActiveOpdMode();
+    const modal = document.getElementById("staff-mode-modal");
+    if (modal) {
+      modal.style.display = "flex";
+      this.renderModalModeOptions(this.selectedTempMode);
+    }
+  },
+
+  closeStaffModeModal() {
+    const modal = document.getElementById("staff-mode-modal");
+    if (modal) modal.style.display = "none";
+  },
+
+  selectKioskMode(mode) {
+    this.selectedTempMode = mode;
+    this.renderModalModeOptions(mode);
+  },
+
+  renderModalModeOptions(mode) {
+    const optGen = document.getElementById("mode-opt-general");
+    const optAyur = document.getElementById("mode-opt-ayush");
+    const badge = document.getElementById("modal-active-mode-badge");
+
+    if (badge) {
+      badge.innerText = mode === "AYUSH_OPD" ? "AYUSH OPD (Ayurvedic Assessment)" : "GENERAL OPD (Standard Intake)";
+      badge.style.color = mode === "AYUSH_OPD" ? "#059669" : "#0d9488";
+    }
+
+    if (optGen) {
+      if (mode === "GENERAL_OPD") {
+        optGen.style.borderColor = "#0d9488";
+        optGen.style.backgroundColor = "#f0fdf4";
+      } else {
+        optGen.style.borderColor = "#cbd5e1";
+        optGen.style.backgroundColor = "#ffffff";
+      }
+    }
+    if (optAyur) {
+      if (mode === "AYUSH_OPD") {
+        optAyur.style.borderColor = "#059669";
+        optAyur.style.backgroundColor = "#ecfdf5";
+      } else {
+        optAyur.style.borderColor = "#cbd5e1";
+        optAyur.style.backgroundColor = "#ffffff";
+      }
+    }
+  },
+
+  confirmKioskModeChange() {
+    if (this.selectedTempMode) {
+      this.setActiveOpdMode(this.selectedTempMode);
+    }
+    this.closeStaffModeModal();
+  },
+
+  updateModeUI() {
+    const currentMode = this.getActiveOpdMode();
+    const pillText = document.getElementById("opd-mode-pill-text");
+    const pill = document.getElementById("kiosk-opd-mode-pill");
+
+    if (pillText && pill) {
+      if (currentMode === "AYUSH_OPD") {
+        pillText.innerText = "AYUSH OPD";
+        pill.style.background = "linear-gradient(135deg, #059669, #047857)";
+      } else {
+        pillText.innerText = "GENERAL OPD";
+        pill.style.background = "linear-gradient(135deg, #0d9488, #0f766e)";
+      }
+    }
   },
 
   bindEvents() {
@@ -102,32 +195,29 @@ const PatientIntake = {
     this.updateStepIndicator(stepNum);
     window.scrollTo({ top: 0, behavior: "smooth" });
 
-    // Step 7: Immediately set localized question text before network calls
+    // Step 2: Refresh language grid UI and continue button
+    if (stepNum === 2) {
+      this.updateLanguageGridUI(this.language);
+      this.updateStep2ContinueBtn(this.language);
+      setTimeout(() => {
+        SpeechManager.resumeAudioAndSpeak(2, this.language);
+      }, 300);
+      return;
+    }
+
+    // Step 7: Socratic Intake Interview
     if (stepNum === 7) {
       if (!this.currentSessionId) {
         this.currentSessionId = `sess_${this.currentPatientId || 'pat'}_${Date.now()}`;
       }
       this.currentQuestionId = this.currentQuestionId || `q_${this.currentSessionId}_1`;
-
-      const initialQMap = {
-        en: "What is the main health concern or symptom bringing you here today?",
-        hi: "आज आपको अस्पताल या क्लिनिक लाने वाली मुख्य स्वास्थ्य समस्या या लक्षण क्या है?",
-        kn: "ಇಂದು ನಿಮ್ಮನ್ನು ಆಸ್ಪತ್ರೆಗೆ ಕರೆತಂದ ಮುಖ್ಯ ಆರೋಗ್ಯ ಸಮಸ್ಯೆ ಅಥವಾ ರೋಗಲಕ್ಷಣ ಯಾವುದು?",
-        ta: "இன்று உங்களை மருத்துவமனைக்கு வரவழைத்த முக்கிய உடல்நலப் பிரச்சனை அல்லது அறிகுறி என்ன?",
-        te: "ఈరోజు మిమ్మల్ని ఇక్కడికి తీసుకువచ్చిన ప్రధాన ఆరోగ్య సమస్య లేదా లక్షణం ఏమిటి?",
-        ml: "ഇന്ന് നിങ്ങളെ ഇവിടെ എത്തിച്ച പ്രധാന ആരോഗ്യ പ്രശ്നമോ ലക്ഷണങ്ങളോ എന്താണ്?",
-        mr: "आज तुम्हाला येथे आणणारी मुख्य आरोग्य समस्या किंवा लक्षण काय आहे?",
-        bn: "আজ আপনাকে এখানে নিয়ে আসার প্রধান স্বাস্থ্য समस्या বা উপসর্গটি কী?",
-        gu: "આજે તમને અહીં લાવનારી મુખ્ય સ્વાસ્થ્ય સમસ્યા અથવા લક્ષણ કયું છે?",
-        pa: "ਅੱਜ ਤੁਹਾਨੂੰ ਇੱਥੇ ਲਿਆਉਣ ਵਾਲੀ ਮੁੱਖ ਸਿਹਤ ਸਮੱਸਿਆ ਜਾਂ ਲੱਛਣ ਕੀ ਹੈ?"
-      };
-      const initialQ = initialQMap[this.language] || initialQMap["en"];
       const qTextEl = document.getElementById("current-question-text");
-      if (qTextEl) qTextEl.innerText = initialQ;
-      this.currentQuestionText = initialQ;
+      if (qTextEl && !this.currentQuestionText) {
+        qTextEl.innerText = "Preparing clinical inquiry...";
+      }
     } else {
       setTimeout(() => {
-        SpeechManager.speakStepGuidance(stepNum, this.language);
+        SpeechManager.resumeAudioAndSpeak(stepNum, this.language);
       }, 350);
     }
   },
@@ -138,7 +228,7 @@ const PatientIntake = {
       const line = document.getElementById(`step-line-${i}`);
       if (node) {
         node.className = "wizard-step-node";
-        if (i < stepNum) {
+        if (i < stepNum || (i === 8 && stepNum === 8)) {
           node.classList.add("completed");
           node.innerHTML = "✓";
         } else if (i === stepNum) {
@@ -149,19 +239,48 @@ const PatientIntake = {
         }
       }
       if (line) {
-        line.className = "wizard-step-line" + (i < stepNum ? " completed" : "");
+        line.className = "wizard-step-line" + (i <= stepNum ? " completed" : "");
       }
     }
   },
 
   updateLanguageGridUI(lang) {
     document.querySelectorAll(".lang-tile").forEach((tile) => {
-      if (tile.getAttribute("data-lang") === lang) {
+      const tileLang = tile.getAttribute("data-lang");
+      const badge = tile.querySelector(".lang-tile-badge");
+      if (tileLang === lang) {
         tile.classList.add("selected");
+        if (badge) {
+          badge.className = "lang-tile-badge lang-badge-selected";
+          badge.innerText = "✓ SELECTED";
+        }
       } else {
         tile.classList.remove("selected");
+        if (badge) {
+          badge.className = "lang-tile-badge lang-badge-ready";
+          badge.innerText = "READY";
+        }
       }
     });
+  },
+
+  updateStep2ContinueBtn(lang) {
+    const continueBtnText = {
+      en: "Continue in English →",
+      hi: "आगे बढ़ें (Continue in हिन्दी) →",
+      kn: "ಮುಂದುವರಿಯಿರಿ (Continue in ಕನ್ನಡ) →",
+      ta: "தொடரவும் (Continue in தமிழ்) →",
+      te: "కొనసాగించండి (Continue in తెలుగు) →",
+      ml: "തുടരുക (Continue in മലയാളം) →",
+      mr: "पुढे जा (Continue in मराठी) →",
+      bn: "এগিয়ে যান (Continue in বাংলা) →",
+      gu: "આગળ વધો (Continue in ગુજરાતી) →",
+      pa: "ਅੱਗੇ ਵਧੋ (Continue in ਪੰਜਾਬੀ) →"
+    };
+    const contBtn = document.getElementById("step2-continue-btn");
+    if (contBtn) {
+      contBtn.innerHTML = `<span>${continueBtnText[lang] || 'Continue →'}</span>`;
+    }
   },
 
   selectLanguage(lang) {
@@ -170,11 +289,13 @@ const PatientIntake = {
       this.autoAdvanceTimer = null;
     }
 
+    SpeechManager.stopAllAudio();
     this.language = lang;
     localStorage.setItem("medikiosk_lang", lang);
     I18n.setLanguage(lang);
     SpeechManager.setLanguage(lang);
     this.updateLanguageGridUI(lang);
+    this.updateStep2ContinueBtn(lang);
 
     const nativeLangConfirm = {
       en: "English language selected. Welcome to MediKiosk.",
@@ -184,19 +305,12 @@ const PatientIntake = {
       te: "తెలుగు భాష ఎంపిక చేయబడింది. మెడికియోస్క్‌కు స్వాగతం.",
       ml: "മലയാളം ഭാഷ തിരഞ്ഞെടുത്തു. മെഡികിയോസ്കിലേക്ക് സ്വാഗതം.",
       mr: "मराठी भाषा निवडली आहे. मेडीकियोस्क मध्ये आपले स्वागत आहे.",
-      bn: "বাংলা भाषा নির্বাচন করা হয়েছে। মেডিকিয়স্কে আপনাকে স্বাগতম।",
+      bn: "বাংলা ভাষা নির্বাচন করা হয়েছে। মেডিকিয়স্কে আপনাকে স্বাগতম।",
       gu: "ગુજરાતી ભાષા પસંદ કરવામાં આવી છે. મેડીકિયોસ્કમાં આપનું સ્વાગત છે.",
       pa: "ਪੰਜਾਬੀ ਭਾਸ਼ਾ ਚੁਣੀ ਗਈ ਹੈ। ਮੈਡੀਕਿਓਸਕ ਵਿੱਚ ਤੁਹਾਡਾ ਸੁਆਗਤ ਹੈ।"
     };
     const confirmMsg = nativeLangConfirm[lang] || `Language selected: ${lang}`;
     SpeechManager.speakText(confirmMsg, lang);
-
-    // Auto-advance seamlessly to Step 3 (Consent) after 1.2s so patient flow is frictionless
-    this.autoAdvanceTimer = setTimeout(() => {
-      if (this.currentStep === 2) {
-        this.goToStep(3);
-      }
-    }, 1200);
   },
 
   handleConsentNext() {
@@ -285,6 +399,35 @@ const PatientIntake = {
     }
   },
 
+    toggleCondition(el, cond) {
+    if (!this.knownConditions) this.knownConditions = [];
+    if (cond === 'None') {
+      this.knownConditions = [];
+      document.querySelectorAll('#chronic-conditions-grid .condition-pill').forEach(pill => {
+        pill.classList.remove('selected');
+      });
+      if (el) el.classList.add('selected');
+      return;
+    }
+
+    // Unselect 'None' pill if active
+    const nonePills = document.querySelectorAll('#chronic-conditions-grid .condition-pill');
+    nonePills.forEach(p => {
+      if (p.innerText.includes('No Chronic') || p.innerText.includes('कोई नहीं') || p.innerText.includes('ಯಾವುದೇ') || p.innerText.includes('எதுவும் இல்லை') || p.innerText.includes('లేవు') || p.innerText.includes('ഇല്ല') || p.innerText.includes('नाही') || p.innerText.includes('নেই') || p.innerText.includes('નથી') || p.innerText.includes('ਨਹੀਂ')) {
+        p.classList.remove('selected');
+      }
+    });
+
+    const idx = this.knownConditions.indexOf(cond);
+    if (idx > -1) {
+      this.knownConditions.splice(idx, 1);
+      if (el) el.classList.remove('selected');
+    } else {
+      this.knownConditions.push(cond);
+      if (el) el.classList.add('selected');
+    }
+  },
+
   appendTag(symptom) {
     const input = document.getElementById("chief-complaint-input");
     if (!input) return;
@@ -345,7 +488,72 @@ const PatientIntake = {
 
   handleComplaintNext() {
     this.painLevel = parseInt(document.getElementById("pain-range")?.value || this.painLevel || 7, 10);
+    
+    // Collect ongoing medications
+    const medsInput = document.getElementById("current-medications-input");
+    if (medsInput && medsInput.value.trim()) {
+      this.medications = medsInput.value.trim().split(/[,;\n]+/).map(m => m.trim()).filter(Boolean);
+    }
+    
+    // Collect past medical history / allergies
+    const pastHistInput = document.getElementById("past-medical-history-input");
+    if (pastHistInput) {
+      this.pastMedicalHistory = pastHistInput.value.trim();
+    }
+
     this.goToStep(6);
+  },
+
+  handleStep6Continue() {
+    const rxInput = document.getElementById("prescription-dictation-input");
+    if (rxInput && rxInput.value.trim()) {
+      this.prescriptionNotes = rxInput.value.trim();
+    }
+    this.startSocraticIntake();
+  },
+
+  handleFileSelect(e) {
+    const input = e.target;
+    if (!input || !input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const previewContainer = document.getElementById("doc-file-selected-preview");
+    if (!previewContainer) return;
+
+    const isImage = file.type.startsWith("image/");
+    const localUrl = isImage ? URL.createObjectURL(file) : "";
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+
+    previewContainer.style.display = "block";
+    previewContainer.innerHTML = `
+      <div style="background:#eff6ff; border:1.5px solid #93c5fd; border-radius:8px; padding:0.85rem; margin-top:0.75rem;">
+        <div style="display:flex; align-items:center; gap:0.85rem;">
+          ${isImage ? `<img src="${localUrl}" style="width:65px; height:65px; object-fit:cover; border-radius:6px; border:1px solid #60a5fa; box-shadow:0 2px 6px rgba(0,0,0,0.15);" />` : `<div style="width:65px; height:65px; background:#dbeafe; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:2rem; color:#1d4ed8;">📄</div>`}
+          <div style="flex:1; overflow:hidden;">
+            <p style="font-weight:700; color:#1e40af; margin:0; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📄 ${file.name}</p>
+            <p style="font-size:0.8rem; color:#2563eb; margin:0.25rem 0 0 0;">Size: ${sizeMb} MB • Ready for Cloud Encryption & OCR Analysis</p>
+          </div>
+        </div>
+        ${isImage ? `
+          <div style="margin-top:0.6rem; text-align:center;">
+            <img src="${localUrl}" style="max-width:100%; max-height:180px; border-radius:6px; border:1px solid #bfdbfe; object-fit:contain;" />
+          </div>
+        ` : ''}
+      </div>
+    `;
+  },
+
+  toggleFullOcrText() {
+    const el = document.getElementById("full-ocr-text-container");
+    const label = document.getElementById("btn-toggle-ocr-text-label");
+    if (!el) return;
+    const isExpanded = el.style.maxHeight === "none" || el.style.maxHeight === "1000px";
+    if (isExpanded) {
+      el.style.maxHeight = "160px";
+      if (label) label.innerText = "📖 Show Full Extracted Text ▼";
+    } else {
+      el.style.maxHeight = "none";
+      if (label) label.innerText = "▲ Collapse Text";
+    }
   },
 
   async handleDocUpload(e) {
@@ -382,6 +590,9 @@ const PatientIntake = {
       formData.append("perform_ocr", "true");
 
       const res = await api.uploadDocument(formData);
+      const uploadedAccessUrl = res.access_url || '';
+      const localFileUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : '';
+      const docPreviewUrl = uploadedAccessUrl || localFileUrl;
       
       // Document is securely stored in cloud and metadata recorded (<400ms)
       if (ocrDiv) {
@@ -389,19 +600,19 @@ const PatientIntake = {
           <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:var(--radius-md); padding:1.15rem; margin-top:1rem;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-size:1.3rem;">✅</span>
-              <p style="font-weight:700; color:#15803d; font-size:1rem;">Document Stored ✓ — Running Background OCR</p>
+              <p style="font-weight:700; color:#15803d; font-size:1rem;">Document Encrypted & Stored ✓</p>
             </div>
             <p style="font-size:0.85rem; color:#166534; margin-top:0.35rem;">
-              Your document is securely encrypted and attached to your clinical consultation record.
+              Your document is securely attached to your clinical consultation record.
             </p>
-            <div id="ocr-polling-status" style="font-size:0.8rem; color:#475569; margin-top:0.5rem; display:flex; align-items:center; gap:6px;">
-              <span class="spinner">⏳</span> Digitizing laboratory values and clinical entities in background...
+            <div id="ocr-polling-status" style="font-size:0.8rem; color:#475569; margin-top:0.5rem;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="spinner">⏳</span> Digitizing laboratory values and clinical entities in background...
+              </div>
             </div>
           </div>
         `;
       }
-
-      btn.innerText = "2/3 Document Stored ✓";
 
       // Non-blocking status polling with 800ms intervals
       const docId = res.document_id;
@@ -410,15 +621,31 @@ const PatientIntake = {
         attempts++;
         try {
           const statusRes = await api.getDocumentStatus(docId);
-          if (statusRes.ocr_status === "COMPLETED") {
+          if (statusRes.ocr_status === "COMPLETED" || statusRes.ocr_status === "OCR_COMPLETE") {
             const pollStatusEl = document.getElementById("ocr-polling-status");
             if (pollStatusEl) {
-              const textSnippet = statusRes.extracted_text_preview || 'Clinical entities digitized successfully.';
+              const fullText = statusRes.extracted_text || statusRes.extracted_text_preview || 'Clinical entities digitized successfully.';
+              const activeViewUrl = statusRes.access_url || docPreviewUrl;
               pollStatusEl.innerHTML = `
-                <div style="width:100%;">
-                  <span style="color:#15803d; font-weight:700;">✓ OCR Digitization Complete</span>
-                  <div style="font-size:0.8rem; color:#1e293b; margin-top:0.4rem; font-family:monospace; background:white; padding:0.5rem; border-radius:6px; border:1px solid #bbf7d0; max-height:80px; overflow-y:auto;">
-                    ${textSnippet}
+                <div style="width:100%; margin-top:0.5rem;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem; flex-wrap:wrap; gap:0.5rem;">
+                    <span style="color:#15803d; font-weight:700; font-size:0.9rem;">✓ OCR Digitization Complete</span>
+                    <button type="button" onclick="PatientIntake.toggleFullOcrText()" style="background:#e0f2fe; color:#0369a1; border:1px solid #7dd3fc; padding:4px 10px; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer;">
+                      <span id="btn-toggle-ocr-text-label">📖 Show Full Extracted Text ▼</span>
+                    </button>
+                  </div>
+
+                  ${activeViewUrl ? `
+                    <div style="margin-bottom:0.75rem; text-align:center; background:white; border:1px solid #bbf7d0; border-radius:8px; padding:0.6rem; max-height:240px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+                      <img src="${activeViewUrl}" alt="Document Scan Preview" style="max-width:100%; max-height:220px; border-radius:6px; object-fit:contain; box-shadow:0 2px 10px rgba(0,0,0,0.12);" />
+                    </div>
+                  ` : ''}
+
+                  <div style="font-weight:700; font-size:0.8rem; color:#166534; margin-bottom:0.35rem;">
+                    📄 Extracted Clinical Content:
+                  </div>
+                  <div id="full-ocr-text-container" style="font-size:0.85rem; color:#1e293b; font-family:monospace; background:white; padding:0.85rem 1rem; border-radius:8px; border:1px solid #bbf7d0; max-height:160px; overflow-y:auto; white-space:pre-wrap; word-break:break-word; transition:all 0.3s ease; box-shadow:inset 0 1px 3px rgba(0,0,0,0.05);">
+                    ${fullText}
                   </div>
                 </div>
               `;
@@ -444,27 +671,34 @@ const PatientIntake = {
         kn: "ವೈದ್ಯಕೀಯ ವರದಿ ಯಶಸ್ವಿಯಾಗಿ ಅಪ್‌ಲೋಡ್ ಆಗಿದೆ.",
         ta: "மருத்துவ அறிக்கை வெற்றிகரமாக பதிவேற்றப்பட்டது.",
         te: "వైద్య నివేదిక విజయవంతంగా అప్‌లోడ్ చేయబడింది.",
-        ml: "മെഡിക്കൽ റിപ്പോർട്ട് വിജയകരമായി അപ്‌ലോഡ് ചെയ്തു.",
+        ml: "മെഡിക്കൽ റിപ്പോർട്ട് വിജയകരമായി അപ്‌ಲೋഡ് ചെയ്തു.",
         mr: "वैद्यकीय अहवाल यशस्वीरित्या अपलोड झाला आहे.",
-        bn: "মেডিকেল रिपोर्ट সফলভাবে আপলোড হয়েছে।",
+        bn: "মেডিকেল রিপোর্ট সফলভাবে আপলোড হয়েছে।",
         gu: "મેડિકલ રિપોર્ટ સફળતાપૂર્વક અપલોડ થઈ ગયો છે.",
         pa: "ਮੈਡੀਕਲ ਰਿਪੋਰਟ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਈ ਹੈ।"
       };
       const docMsg = nativeDocSuccess[this.language] || nativeDocSuccess["en"];
       SpeechManager.speakText(docMsg, this.language);
 
-      // Fast auto-advance to consultation after 1.5s while background task finishes
-      setTimeout(() => {
-        this.startSocraticIntake();
-      }, 1500);
-
-      // Background poll in parallel
+      // Background poll in parallel — do NOT auto-advance, wait for Proceed button
       const pollInterval = setInterval(async () => {
         const done = await pollOcr();
         if (done || attempts >= 8) {
           clearInterval(pollInterval);
         }
       }, 800);
+
+      // Show Proceed button inside the OCR result area (NO auto-advance)
+      btn.style.display = "none";
+      const proceedDiv = document.createElement('div');
+      proceedDiv.style.cssText = 'margin-top:1rem; text-align:center;';
+      proceedDiv.innerHTML = `
+        <button type="button" id="btn-proceed-after-ocr" class="btn-primary-action" style="padding:0.75rem 2rem; font-size:1rem; font-weight:700;" onclick="PatientIntake.handleStep6Continue()">
+          ✓ Proceed to AI Clinical Interview →
+        </button>
+      `;
+      const ocrParent = document.getElementById('doc-ocr-result');
+      if (ocrParent) ocrParent.appendChild(proceedDiv);
 
     } catch (err) {
       console.warn("Document upload error:", err.message);
@@ -474,18 +708,22 @@ const PatientIntake = {
           <div style="background:#fef2f2; border:1px solid #fca5a5; border-radius:var(--radius-md); padding:1rem; margin-top:1rem;">
             <p style="font-weight:700; color:#991b1b;">⚠️ Upload Notice</p>
             <p style="font-size:0.85rem; color:#7f1d1d; margin-top:0.25rem;">We could not upload this file, but you can continue with your voice consultation.</p>
+            <button type="button" class="btn-primary-action" style="margin-top:0.75rem; padding:0.6rem 1.5rem;" onclick="PatientIntake.handleStep6Continue()">
+              Proceed to Interview →
+            </button>
           </div>
         `;
       }
-      setTimeout(() => this.startSocraticIntake(), 1200);
     } finally {
       btn.disabled = false;
-      btn.innerText = "Upload & Run OCR";
     }
   },
 
   async startSocraticIntake() {
     this.goToStep(7);
+
+    const complaintText = document.getElementById("chief-complaint-input")?.value.trim() || "";
+    const painLevelVal = this.painLevel || 7;
 
     try {
       if (!this.currentPatientId) {
@@ -501,7 +739,14 @@ const PatientIntake = {
         this.language,
         this.isAttendant,
         this.attendantId,
-        this.currentSessionId
+        this.currentSessionId,
+        complaintText || null,
+        painLevelVal,
+        this.knownConditions || [],
+        this.medications || [],
+        this.pastMedicalHistory || null,
+        this.prescriptionNotes || null,
+        this.getActiveOpdMode()
       );
 
       if (res.session_id) {
@@ -511,45 +756,31 @@ const PatientIntake = {
         this.currentQuestionId = res.question.question_id;
       }
 
-      // If initial complaint was entered, seed it
-      const complaintText = document.getElementById("chief-complaint-input")?.value.trim();
-      if (complaintText) {
-        const answerRes = await api.submitAnswer(
-          this.currentSessionId,
-          this.currentQuestionId,
-          complaintText,
-          this.isAttendant ? "ATTENDANT" : "PATIENT",
-          this.attendantId,
-          this.language
-        );
-        if (answerRes && answerRes.next_question) {
-          this.renderQuestion(answerRes.next_question);
-        } else if (res.question) {
-          this.renderQuestion(res.question);
-        }
-      } else if (res.question) {
+      if (res.question) {
         this.renderQuestion(res.question);
       }
     } catch (err) {
       console.warn("Intake session initialization notice:", err.message);
-      const initialQMap = {
-        en: "What is the main health concern or symptom bringing you here today?",
-        hi: "आज आपको अस्पताल या क्लिनिक लाने वाली मुख्य स्वास्थ्य समस्या या लक्षण क्या है?",
-        kn: "ಇಂದು ನಿಮ್ಮನ್ನು ಆಸ್ಪತ್ರೆಗೆ ಕರೆತಂದ ಮುಖ್ಯ ಆರೋಗ್ಯ ಸಮಸ್ಯೆ ಅಥವಾ ರೋಗಲಕ್ಷಣ ಯಾವುದು?",
-        ta: "இன்று உங்களை மருத்துவமனைக்கு வரவழைத்த முக்கிய உடல்நலப் பிரச்சனை அல்லது அறிகுறி என்ன?",
-        te: "ఈరోజు మిమ్మల్ని ఇక్కడికి తీసుకువచ్చిన ప్రధాన ఆరోగ్య సమస్య లేదా లక్షణం ఏమిటి?",
-        ml: "ഇന്ന് നിങ്ങളെ ഇവിടെ എത്തിച്ച പ്രധാന ആരോഗ്യ പ്രശ്നമോ ലക്ഷണങ്ങളോ എന്താണ്?",
-        mr: "आज तुम्हाला येथे आणणारी मुख्य आरोग्य समस्या किंवा लक्षण काय आहे?",
-        bn: "আজ আপনাকে এখানে নিয়ে আসার প্রধান স্বাস্থ্য সমস্যা বা উপসর্গটি কী?",
-        gu: "આજે તમને અહીં લાવનારી મુખ્ય સ્વાસ્થ્ય સમસ્યા અથવા લક્ષણ કયું છે?",
-        pa: "ਅੱਜ ਤੁਹਾਨੂੰ ਇੱਥੇ ਲਿਆਉਣ ਵਾਲੀ ਮੁੱਖ ਸਿਹਤ ਸਮੱਸਿਆ ਜਾਂ ਲੱਛਣ ਕੀ ਹੈ?"
-      };
-      const q = initialQMap[this.language] || initialQMap["en"];
-      this.renderQuestion({
-        question_id: `q_${this.currentSessionId || 'default'}_1`,
-        question: q,
-        objective: "Identify chief complaint"
-      });
+      if (complaintText) {
+        const fallbacks = {
+          en: `Could you describe how your symptoms feel and whether they spread anywhere?`,
+          hi: `क्या आप बता सकते हैं कि यह दर्द या लक्षण कैसा महसूस होता है और क्या यह कहीं और फैलता है?`,
+          kn: `ಈ ನೋವು ಅಥವಾ ಲಕ್ಷಣಗಳು ಹೇಗಿವೆ ಮತ್ತು ಬೇರೆಡೆ ಹರಡುತ್ತವೆಯೇ ಎಂದು ವಿವರಿಸಬಹುದೇ?`,
+          ta: `இந்த வலி எப்படி இருக்கிறது மற்றும் வேறு எங்கும் பரவுகிறதா?`,
+          te: `ఈ నొప్పి ఎలా ఉంది మరియు ఇతర భాగాలకు వ్యాపిస్తుందా?`,
+          ml: `ഈ വേദന എങ്ങനെയുണ്ട്, മറ്റ് ഭാഗങ്ങളിലേക്ക് വ്യാപിക്കുന്നുണ്ടോ?`,
+          mr: `हे दुखणे कसे वाटते आणि इतरत्र कुठे पसरते का?`,
+          bn: `এই ব্যথাটি কেমন এবং অন্য কোথাও ছড়ায় কি না বলতে পারেন?`,
+          gu: `આ દુખાવો કેવો લાગે છે અને બીજે ક્યાંય ફેલાય છે?`,
+          pa: `ਇਹ ਦਰਦ ਕਿਵੇਂ ਮਹਿਸੂਸ ਹੁੰਦਾ ਹੈ ਅਤੇ ਕੀ ਇਹ ਹੋਰ ਕਿਤੇ ਫੈਲਦਾ ਹੈ?`
+        };
+        const fbText = fallbacks[this.language] || fallbacks["en"];
+        this.renderQuestion({
+          question_id: `q_${this.currentSessionId}_fallback`,
+          question: fbText,
+          objective: "Clarify symptom details"
+        });
+      }
     }
   },
 
@@ -582,6 +813,9 @@ const PatientIntake = {
 
     // Auto-speak question in patient's selected language using Indian female voice TTS, then auto-open mic
     SpeechManager.speakText(this.currentQuestionText, this.language, () => {
+      // CRITICAL: Set activeTargetInputId so transcript writes to the answer input
+      SpeechManager.activeTargetInputId = 'patient-answer-input';
+      SpeechManager.activeTargetBtnId = 'btn-mic-toggle';
       SpeechManager.startListeningWithSilenceTimeout(4000);
     });
   },
@@ -589,6 +823,8 @@ const PatientIntake = {
   speakCurrentQuestion() {
     if (this.currentQuestionText) {
       SpeechManager.speakText(this.currentQuestionText, this.language, () => {
+        SpeechManager.activeTargetInputId = 'patient-answer-input';
+        SpeechManager.activeTargetBtnId = 'btn-mic-toggle';
         SpeechManager.startListeningWithSilenceTimeout(4000);
       });
     }
@@ -665,22 +901,53 @@ const PatientIntake = {
     }
   },
 
+  renderTicketDetails(data = {}) {
+    const bodyEl = document.getElementById("ticket-details-body");
+    if (bodyEl) {
+      const patientName = data.patient_name || this.registeredData?.name || 'Registered Patient';
+      const dept = (data.department || this.department || 'General Medicine').toUpperCase();
+      const complaint = data.chief_complaint || this.chiefComplaint || 'Clinical intake recorded successfully.';
+      const reasoning = data.reasoning || 'Patient triaged and queued for attending physician consultation.';
+
+      bodyEl.innerHTML = `
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.25rem; margin-bottom:1.25rem;">
+          <div>
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">PATIENT NAME</span>
+            <p style="font-weight:700; font-size:1.05rem; color:#0f172a; margin-top:2px;">${patientName}</p>
+          </div>
+          <div>
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">ASSIGNED DEPARTMENT</span>
+            <p style="font-weight:700; font-size:1.05rem; color:var(--brand-primary); margin-top:2px;">${dept}</p>
+          </div>
+        </div>
+        <div style="margin-bottom:1.25rem;">
+          <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">CHIEF COMPLAINT NARRATIVE</span>
+          <p style="font-style:italic; color:#334155; margin-top:4px; font-size:0.95rem; line-height:1.5;">"${complaint}"</p>
+        </div>
+        <div style="background:#faf8f5; border:1px solid #e5e0d5; padding:0.85rem 1rem; border-radius:var(--radius-sm); font-size:0.875rem;">
+          <p style="margin:0; color:#334155;"><strong>Routing Assessment:</strong> ${reasoning}</p>
+        </div>
+      `;
+    }
+  },
+
   async finishIntake() {
     this.goToStep(8);
+    this.renderTicketDetails();
 
     try {
       const res = await api.completeIntake(this.currentSessionId, this.currentPatientId || 'pat_dev');
-      const ticketNum = `MK-${Math.floor(10000000 + Math.random() * 90000000)}`;
+      const ticketNum = res?.ticket_number || `MK-${Math.floor(10000000 + Math.random() * 90000000)}`;
       
       const numEl = document.getElementById("ticket-number-display");
       if (numEl) numEl.innerText = ticketNum;
 
       const rf = res?.red_flag || { overall_severity: "MEDIUM" };
-      const routing = res?.routing || { recommended_department: "general_medicine", reasoning: "Comprehensive clinical intake recorded." };
+      const routing = res?.routing || { recommended_department: this.department || "general_medicine", reasoning: "Comprehensive clinical intake recorded." };
 
       const badgeContainer = document.getElementById("ticket-triage-badge");
       if (badgeContainer) {
-        let badgeClass = "lang-badge-connected";
+        let badgeClass = "lang-badge-ready";
         if (rf.overall_severity === "CRITICAL") badgeClass = "lang-badge-connected' style='background:#fee2e2; color:#991b1b;";
         else if (rf.overall_severity === "HIGH") badgeClass = "lang-badge-connected' style='background:#ffedd5; color:#9a3412;";
         else if (rf.overall_severity === "MEDIUM") badgeClass = "lang-badge-connected' style='background:#fef3c7; color:#92400e;";
@@ -688,28 +955,12 @@ const PatientIntake = {
         badgeContainer.innerHTML = `<span class="lang-tile-badge ${badgeClass}">${rf.overall_severity} PRIORITY</span>`;
       }
 
-      const bodyEl = document.getElementById("ticket-details-body");
-      if (bodyEl) {
-        bodyEl.innerHTML = `
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.25rem; margin-bottom:1rem;">
-            <div>
-              <span style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">PATIENT NAME</span>
-              <p style="font-weight:700; font-size:1.05rem;">${this.registeredData?.name || 'Patient'}</p>
-            </div>
-            <div>
-              <span style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">ASSIGNED DEPARTMENT</span>
-              <p style="font-weight:700; font-size:1.05rem; color:var(--brand-primary);">${(routing.recommended_department || 'General Medicine').toUpperCase()}</p>
-            </div>
-          </div>
-          <div style="margin-bottom:1rem;">
-            <span style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">CHIEF COMPLAINT NARRATIVE</span>
-            <p style="font-style:italic; color:#334155;">"${res?.draft_summary?.chief_complaint || 'Recorded during intake'}"</p>
-          </div>
-          <div style="background:#faf8f5; border:1px solid #e5e0d5; padding:0.85rem; border-radius:var(--radius-sm); font-size:0.875rem;">
-            <p><strong>Routing Assessment:</strong> ${routing.reasoning || 'Patient triaged and ready for consultation.'}</p>
-          </div>
-        `;
-      }
+      this.renderTicketDetails({
+        patient_name: this.registeredData?.name || 'Registered Patient',
+        department: routing.recommended_department || this.department || 'General Medicine',
+        chief_complaint: res?.draft_summary?.chief_complaint || this.chiefComplaint || 'Recorded during intake',
+        reasoning: routing.reasoning || 'Patient triaged and ready for consultation.'
+      });
 
       SpeechManager.speakText(`Intake completed. Consultation Ticket number is ${ticketNum}. Please proceed to the ${routing.recommended_department || 'assigned'} department.`, this.language);
     } catch (err) {
@@ -717,3 +968,7 @@ const PatientIntake = {
     }
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.PatientIntake = PatientIntake;
+}

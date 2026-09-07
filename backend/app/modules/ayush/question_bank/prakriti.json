@@ -1,0 +1,88 @@
+{
+  "domain": "PRAKRITI",
+  "version": "2.0",
+  "questions": [
+    {
+      "question_id": "PRAK_BUILD_001",
+      "domain": "PRAKRITI",
+      "sub_domain": "SHARIRA",
+      "objective": "Determine natural body build and frame size",
+      "patient_text": "How would you describe your natural body build throughout your life? (Prakriti)",
+      "ayurvedic_label": "Deha Prakriti / Sharira Samhanana",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "Naturally thin, slender, or lean frame", "value": "build_slender", "weights": {"VATA": 2, "PITTA": 0, "KAPHA": -1}},
+        {"label": "Medium build, proportionate musculature", "value": "build_medium", "weights": {"VATA": 0, "PITTA": 2, "KAPHA": 0}},
+        {"label": "Broad, heavy build, sturdy frame", "value": "build_broad", "weights": {"VATA": -1, "PITTA": 0, "KAPHA": 2}},
+        {"label": "Not sure / Varies", "value": "build_uncertain", "weights": {"VATA": 0, "PITTA": 0, "KAPHA": 0}}
+      ],
+      "feature_targets": ["body_frame", "musculature"],
+      "priority": 1
+    },
+    {
+      "question_id": "PRAK_SKIN_002",
+      "domain": "PRAKRITI",
+      "sub_domain": "SHARIRA",
+      "objective": "Determine usual skin characteristics",
+      "patient_text": "How would you describe your skin texture most of your life? (Prakriti)",
+      "ayurvedic_label": "Twak Sparsha",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "Dry, rough, or tends to crack easily", "value": "skin_dry", "weights": {"VATA": 2, "PITTA": 0, "KAPHA": -1}},
+        {"label": "Warm, soft, sensitive, or prone to redness/moles", "value": "skin_warm_soft", "weights": {"VATA": 0, "PITTA": 2, "KAPHA": 0}},
+        {"label": "Smooth, thick, moist, or oily skin", "value": "skin_smooth_oily", "weights": {"VATA": -1, "PITTA": 0, "KAPHA": 2}},
+        {"label": "Normal / Combination skin", "value": "skin_normal", "weights": {"VATA": 0, "PITTA": 0, "KAPHA": 0}}
+      ],
+      "feature_targets": ["skin_texture", "skin_temperature"],
+      "priority": 2
+    },
+    {
+      "question_id": "PRAK_HUNGER_003",
+      "domain": "PRAKRITI",
+      "sub_domain": "DIGESTION",
+      "objective": "Determine usual appetite pattern throughout life",
+      "patient_text": "How is your usual hunger and appetite on a normal day? (Prakriti)",
+      "ayurvedic_label": "Ahara Shakti / Agni Baseline",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "Hunger changes a lot from day to day (sometimes very hungry, sometimes none)", "value": "appetite_variable", "weights": {"VATA": 2, "PITTA": 0, "KAPHA": 0}},
+        {"label": "Strong, intense hunger; get irritable if meals are delayed", "value": "appetite_intense", "weights": {"VATA": 0, "PITTA": 2, "KAPHA": 0}},
+        {"label": "Steady but modest hunger; can skip meals easily without discomfort", "value": "appetite_steady_slow", "weights": {"VATA": 0, "PITTA": -1, "KAPHA": 2}}
+      ],
+      "feature_targets": ["usual_hunger_pattern"],
+      "priority": 3
+    },
+    {
+      "question_id": "PRAK_SLEEP_004",
+      "domain": "PRAKRITI",
+      "sub_domain": "NIDRA",
+      "objective": "Determine baseline sleep depth and tendency",
+      "patient_text": "How deeply do you usually sleep? (Nidra)",
+      "ayurvedic_label": "Nidra Baseline",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "Light sleeper, wake up easily at small sounds", "value": "sleep_light", "weights": {"VATA": 2, "PITTA": 0, "KAPHA": -1}},
+        {"label": "Moderate sleep, easily fall back asleep if awakened", "value": "sleep_moderate", "weights": {"VATA": 0, "PITTA": 2, "KAPHA": 0}},
+        {"label": "Deep, heavy sleep; difficult to wake up in the morning", "value": "sleep_deep", "weights": {"VATA": -1, "PITTA": 0, "KAPHA": 2}}
+      ],
+      "feature_targets": ["sleep_depth"],
+      "priority": 4
+    },
+    {
+      "question_id": "PRAK_CLIMATE_005",
+      "domain": "PRAKRITI",
+      "sub_domain": "ENVIRONMENT",
+      "objective": "Determine weather and temperature tolerance",
+      "patient_text": "Which weather or temperature makes you feel most uncomfortable? (Prakriti)",
+      "ayurvedic_label": "Sheeta/Ushna Sahishnuta",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "Cold weather and cold wind (prefer warm environment)", "value": "intolerant_cold", "weights": {"VATA": 2, "PITTA": 0, "KAPHA": 0}},
+        {"label": "Hot weather and sun (prefer cool environment)", "value": "intolerant_heat", "weights": {"VATA": 0, "PITTA": 2, "KAPHA": -1}},
+        {"label": "Cold & damp weather (prefer dry, sunny environment)", "value": "intolerant_damp", "weights": {"VATA": 0, "PITTA": -1, "KAPHA": 2}}
+      ],
+      "feature_targets": ["temperature_preference"],
+      "priority": 5
+    }
+  ]
+}

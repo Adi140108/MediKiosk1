@@ -6,6 +6,7 @@ from app.api.v1.physician import router as physician_router
 from app.api.v1.speech import router as speech_router
 from app.api.v1.health import router as health_router
 from app.api.v1.diagnostics import router as diagnostics_router
+from app.api.v1.ayurveda import router as ayurveda_router
 
 __all__ = [
     "auth_router",
@@ -15,5 +16,6 @@ __all__ = [
     "physician_router",
     "speech_router",
     "health_router",
-    "diagnostics_router"
+    "diagnostics_router",
+    "ayurveda_router"
 ]

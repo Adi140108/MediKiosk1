@@ -32,8 +32,15 @@ class StartIntakeRequest(BaseModel):
     patient_id: str
     session_id: Optional[str] = None
     language: str = "en"
+    opd_mode: Optional[str] = "GENERAL_OPD"
     is_attendant_assisted: bool = False
     attendant_id: Optional[str] = None
+    chief_complaint: Optional[str] = None
+    pain_level: Optional[int] = None
+    known_conditions: Optional[List[str]] = None
+    medications: Optional[List[str]] = None
+    past_medical_history: Optional[str] = None
+    prescription_notes: Optional[str] = None
 
 class SubmitAnswerRequest(BaseModel):
     session_id: str
@@ -42,6 +49,12 @@ class SubmitAnswerRequest(BaseModel):
     source_type: Optional[SourceType] = SourceType.PATIENT
     attendant_id: Optional[str] = None
     language: Optional[str] = "en"
+
+class UpdateAnswerRequest(BaseModel):
+    session_id: str
+    question_id: str
+    new_answer: str
+    physician_id: Optional[str] = "dr_sharma_cardio"
 
 class CompleteIntakeRequest(BaseModel):
     session_id: str
@@ -55,15 +68,48 @@ def start_intake_session(req: StartIntakeRequest):
         patient.active_session_id = session_id
         patient_repo.save_patient(patient)
 
+    mode = req.opd_mode or "GENERAL_OPD"
     first_q = intake_service.start_intake(
         session_id=session_id,
         patient_id=req.patient_id,
-        language=req.language or "en"
+        language=req.language or "en",
+        opd_mode=mode,
+        initial_chief_complaint=req.chief_complaint,
+        initial_pain_score=req.pain_level,
+        known_conditions=req.known_conditions or [],
+        medications=req.medications or [],
+        past_medical_history=req.past_medical_history,
+        prescription_notes=req.prescription_notes
     )
     return {
         "session_id": session_id,
         "question": first_q.model_dump(),
         "is_finished": False
+    }
+
+@router.put("/answer")
+@router.post("/answer/update")
+def update_intake_answer(req: UpdateAnswerRequest):
+    updated = intake_service.repo.update_answer_text(
+        session_id=req.session_id,
+        question_id=req.question_id,
+        new_answer_text=req.new_answer,
+        edited_by=req.physician_id or "physician"
+    )
+    if not updated:
+        from app.schemas.intake import AnswerItem
+        updated = AnswerItem(
+            answer_id=f"a_{req.session_id}_{uuid.uuid4().hex[:4]}",
+            question_id=req.question_id,
+            session_id=req.session_id,
+            question="Clinical Inquiry",
+            answer=req.new_answer,
+            source_type=SourceType.PHYSICIAN
+        )
+        intake_service.repo.save_answer(updated)
+    return {
+        "status": "success",
+        "answer": updated.model_dump()
     }
 
 @router.post("/answer")
@@ -120,6 +166,27 @@ async def complete_intake(req: CompleteIntakeRequest):
         patient_age=patient_age
     )
 
+    # 2.5 Run AYUSH 4-Layer Assessment Engine if in AYUSH OPD mode
+    from app.modules.ayush.assessment_engine import AyushAssessmentEngine
+    ayush_engine = AyushAssessmentEngine()
+    session_qa = intake_service.get_session_qa(req.session_id)
+    qa_list = []
+    for q_item, a_item in zip(session_qa.get("questions", []), session_qa.get("answers", [])):
+        qa_list.append({
+            "question_id": q_item.get("question_id"),
+            "question": q_item.get("question"),
+            "answer": a_item.get("answer"),
+            "clinical_domain": q_item.get("clinical_domain", "general")
+        })
+
+    ayush_eval = ayush_engine.evaluate_assessment(
+        qa_pairs=qa_list,
+        patient_age=patient_age,
+        ayurvedic_findings=context.ayurvedic_findings
+    )
+    context.ayush_assessment = ayush_eval
+    intake_service.repo.save_context_state(req.session_id, context)
+
     # 3. Generate Draft Physician Summary
     draft_summary = await review_service.generate_draft_summary(
         session_id=req.session_id,
@@ -136,6 +203,7 @@ async def complete_intake(req: CompleteIntakeRequest):
     sev_rank = RedFlagSeverity.get_rank(sev)
     p_group = 0 if is_rf else 1
 
+    opd_mode_val = str(getattr(context, "opd_mode", "GENERAL_OPD"))
     queue_item = PriorityQueueItem(
         queue_id=queue_id,
         patient_id=req.patient_id,
@@ -145,6 +213,7 @@ async def complete_intake(req: CompleteIntakeRequest):
         gender=patient_gender,
         arrival_time=now_utc,
         waiting_time_minutes=0,
+        opd_mode=opd_mode_val,
         is_red_flag=is_rf,
         priority_group=p_group,
         overall_severity=sev,

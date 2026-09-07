@@ -1,0 +1,36 @@
+{
+  "domain": "AHARA_VYAYAMA_SHAKTI",
+  "version": "2.0",
+  "questions": [
+    {
+      "question_id": "AHARA_CAP_001",
+      "domain": "AHARA_SHAKTI",
+      "objective": "Assess meal quantity capacity (Abhyavaharana Shakti)",
+      "patient_text": "How is your food intake capacity during meals? (Abhyavaharana Shakti)",
+      "ayurvedic_label": "Abhyavaharana Shakti",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "Good, healthy meal capacity without early fullness", "value": "cap_good", "grade": "PRAVARA"},
+        {"label": "Moderate capacity", "value": "cap_moderate", "grade": "MADHYAMA"},
+        {"label": "Low capacity / get full very quickly after a few bites", "value": "cap_low", "grade": "AVARA"}
+      ],
+      "feature_targets": ["abhyavaharana_shakti"],
+      "priority": 1
+    },
+    {
+      "question_id": "VYAYAMA_END_002",
+      "domain": "VYAYAMA_SHAKTI",
+      "objective": "Assess physical work and exercise endurance",
+      "patient_text": "How is your physical stamina and exertion tolerance? (Vyayama Shakti)",
+      "ayurvedic_label": "Vyayama Shakti",
+      "answer_type": "single_choice",
+      "options": [
+        {"label": "High — Can perform heavy physical work/exercise without excessive fatigue (Pravara)", "value": "exertion_high", "grade": "PRAVARA"},
+        {"label": "Moderate — Manage normal daily walking/activities fine (Madhyama)", "value": "exertion_moderate", "grade": "MADHYAMA"},
+        {"label": "Low — Get exhausted, breathless, or severe fatigue easily (Avara)", "value": "exertion_low", "grade": "AVARA"}
+      ],
+      "feature_targets": ["vyayama_shakti"],
+      "priority": 2
+    }
+  ]
+}

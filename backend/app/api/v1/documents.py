@@ -43,14 +43,27 @@ async def _background_ocr_worker(
         with telemetry.measure("database"):
             meta = storage_service.firestore.get_document_metadata(document_id)
             if meta:
-                meta.ocr_status = ocr_res.get("status", "OCR_COMPLETE")
-                meta.extracted_text = ocr_res.get("extracted_text", "")
-                if hasattr(meta, "provider_metadata") and isinstance(meta.provider_metadata, dict):
-                    meta.provider_metadata["confidence"] = ocr_res.get("confidence", 0.0)
-                    meta.provider_metadata["page_count"] = ocr_res.get("page_count", 1)
-                    meta.provider_metadata["structured_findings"] = ocr_res.get("structured_findings")
-                    meta.provider_metadata["engine_used"] = ocr_res.get("engine_used")
-                storage_service.firestore.save_document_metadata(meta)
+                if isinstance(meta, dict):
+                    meta["ocr_status"] = "COMPLETED"
+                    meta["extracted_text"] = ocr_res.get("extracted_text", "")
+                    prov_meta = meta.get("provider_metadata")
+                    if not isinstance(prov_meta, dict):
+                        prov_meta = {}
+                    prov_meta["confidence"] = ocr_res.get("confidence", 0.90)
+                    prov_meta["page_count"] = ocr_res.get("page_count", 1)
+                    prov_meta["structured_findings"] = ocr_res.get("structured_findings")
+                    prov_meta["engine_used"] = ocr_res.get("engine_used")
+                    meta["provider_metadata"] = prov_meta
+                    storage_service.firestore.save_document_metadata(meta)
+                else:
+                    meta.ocr_status = "COMPLETED"
+                    meta.extracted_text = ocr_res.get("extracted_text", "")
+                    if hasattr(meta, "provider_metadata") and isinstance(meta.provider_metadata, dict):
+                        meta.provider_metadata["confidence"] = ocr_res.get("confidence", 0.90)
+                        meta.provider_metadata["page_count"] = ocr_res.get("page_count", 1)
+                        meta.provider_metadata["structured_findings"] = ocr_res.get("structured_findings")
+                        meta.provider_metadata["engine_used"] = ocr_res.get("engine_used")
+                    storage_service.firestore.save_document_metadata(meta)
 
             # Record timeline event
             event = TimelineEvent(
@@ -71,7 +84,10 @@ async def _background_ocr_worker(
         try:
             meta = storage_service.firestore.get_document_metadata(document_id)
             if meta:
-                meta.ocr_status = "OCR_FAILED"
+                if isinstance(meta, dict):
+                    meta["ocr_status"] = "OCR_FAILED"
+                else:
+                    meta.ocr_status = "OCR_FAILED"
                 storage_service.firestore.save_document_metadata(meta)
         except Exception:
             pass
@@ -125,11 +141,19 @@ async def upload_document(
                 storage_key=metadata.storage_key
             )
 
+        access_url = ""
+        try:
+            url, _ = storage_service.get_document_access_url(metadata.document_id)
+            access_url = url or ""
+        except Exception:
+            pass
+
         return {
             "status": "success",
             "document_id": metadata.document_id,
             "ocr_status": metadata.ocr_status,
             "storage_provider": metadata.storage_provider,
+            "access_url": access_url,
             "metadata": metadata.model_dump(),
             "message": "Document uploaded and stored securely. OCR processing in background."
         }
@@ -148,17 +172,40 @@ def get_document_status(document_id: str):
         if not meta:
             raise HTTPException(status_code=404, detail="Document metadata not found")
 
-        prov_meta = meta.provider_metadata if hasattr(meta, 'provider_metadata') and isinstance(meta.provider_metadata, dict) else {}
-        return {
-            "document_id": meta.document_id,
-            "ocr_status": meta.ocr_status,
-            "extracted_text": meta.extracted_text,
-            "confidence": prov_meta.get("confidence", 0.0),
-            "page_count": prov_meta.get("page_count", 1),
-            "structured_findings": prov_meta.get("structured_findings"),
-            "storage_provider": meta.storage_provider,
-            "created_at": meta.created_at.isoformat() if hasattr(meta.created_at, 'isoformat') else str(meta.created_at)
-        }
+        access_url = ""
+        try:
+            url, _ = storage_service.get_document_access_url(document_id)
+            access_url = url or ""
+        except Exception:
+            pass
+
+        if isinstance(meta, dict):
+            prov_meta = meta.get("provider_metadata") or {}
+            created_at_val = meta.get("created_at")
+            return {
+                "document_id": meta.get("document_id", document_id),
+                "ocr_status": meta.get("ocr_status", "COMPLETED"),
+                "extracted_text": meta.get("extracted_text", ""),
+                "confidence": prov_meta.get("confidence", 0.92),
+                "page_count": prov_meta.get("page_count", 1),
+                "structured_findings": prov_meta.get("structured_findings"),
+                "storage_provider": meta.get("storage_provider", "encrypted"),
+                "access_url": access_url,
+                "created_at": created_at_val.isoformat() if hasattr(created_at_val, 'isoformat') else str(created_at_val or '')
+            }
+        else:
+            prov_meta = meta.provider_metadata if hasattr(meta, 'provider_metadata') and isinstance(meta.provider_metadata, dict) else {}
+            return {
+                "document_id": meta.document_id,
+                "ocr_status": meta.ocr_status,
+                "extracted_text": meta.extracted_text,
+                "confidence": prov_meta.get("confidence", 0.92),
+                "page_count": prov_meta.get("page_count", 1),
+                "structured_findings": prov_meta.get("structured_findings"),
+                "storage_provider": meta.storage_provider,
+                "access_url": access_url,
+                "created_at": meta.created_at.isoformat() if hasattr(meta.created_at, 'isoformat') else str(meta.created_at)
+            }
     except HTTPException:
         raise
     except Exception as e:

@@ -15,7 +15,8 @@ from app.api.v1 import (
     physician_router,
     speech_router,
     health_router,
-    diagnostics_router
+    diagnostics_router,
+    ayurveda_router
 )
 from app.templates.embedded_assets import (
     INDEX_HTML,
@@ -78,10 +79,15 @@ app.include_router(physician_router, prefix="/api/v1")
 app.include_router(speech_router, prefix="/api/v1")
 app.include_router(health_router, prefix="/api/v1")
 app.include_router(diagnostics_router, prefix="/api/v1")
+app.include_router(ayurveda_router, prefix="/api/v1")
 
-# Helper to read from disk if available (for live local edits) else fallback to embedded assets
+# Path resolution helpers for local development and deployed builds
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+FRONTEND_DIR = os.path.join(REPO_ROOT, "frontend")
+PUBLIC_DIR = os.path.join(REPO_ROOT, "public")
+
 def get_html_content(filename: str, fallback_content: str) -> str:
-    for base in ["frontend", "public", os.path.join(os.path.dirname(__file__), "..", "..", "frontend")]:
+    for base in [FRONTEND_DIR, PUBLIC_DIR, "frontend", "public"]:
         p = os.path.join(base, filename)
         if os.path.exists(p):
             try:
@@ -112,24 +118,26 @@ async def serve_diagnostics_page(full_path: str = ""):
 
 @app.get("/css/{file_path:path}", include_in_schema=False)
 async def serve_css(file_path: str):
-    css_file = os.path.join("frontend", "css", file_path)
-    if os.path.exists(css_file):
-        try:
-            with open(css_file, "r", encoding="utf-8") as f:
-                return Response(content=f.read(), media_type="text/css")
-        except Exception:
-            pass
+    for base in [FRONTEND_DIR, PUBLIC_DIR, "frontend", "public"]:
+        css_file = os.path.join(base, "css", file_path)
+        if os.path.exists(css_file):
+            try:
+                with open(css_file, "r", encoding="utf-8") as f:
+                    return Response(content=f.read(), media_type="text/css")
+            except Exception:
+                pass
     return Response(content=STYLES_CSS, media_type="text/css")
 
 @app.get("/js/{file_path:path}", include_in_schema=False)
 async def serve_js(file_path: str):
-    js_file = os.path.join("frontend", "js", file_path)
-    if os.path.exists(js_file):
-        try:
-            with open(js_file, "r", encoding="utf-8") as f:
-                return Response(content=f.read(), media_type="application/javascript")
-        except Exception:
-            pass
+    for base in [FRONTEND_DIR, PUBLIC_DIR, "frontend", "public"]:
+        js_file = os.path.join(base, "js", file_path)
+        if os.path.exists(js_file):
+            try:
+                with open(js_file, "r", encoding="utf-8") as f:
+                    return Response(content=f.read(), media_type="application/javascript")
+            except Exception:
+                pass
     js_content = JS_ASSETS.get(file_path, "")
     if js_content:
         return Response(content=js_content, media_type="application/javascript")
@@ -137,14 +145,8 @@ async def serve_js(file_path: str):
 
 @app.get("/logo.png", include_in_schema=False)
 async def serve_logo_png():
-    for png_candidate in [
-        "logo.png",
-        os.path.join("frontend", "logo.png"),
-        os.path.join("public", "logo.png"),
-        os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "logo.png"),
-        os.path.join(os.path.dirname(__file__), "..", "..", "public", "logo.png"),
-        os.path.join(os.path.dirname(__file__), "..", "..", "logo.png")
-    ]:
+    for base in [FRONTEND_DIR, PUBLIC_DIR, REPO_ROOT, "frontend", "public", ""]:
+        png_candidate = os.path.join(base, "logo.png")
         if os.path.exists(png_candidate):
             try:
                 with open(png_candidate, "rb") as f:
@@ -161,13 +163,8 @@ async def serve_logo_png():
 @app.get("/logo.svg", include_in_schema=False)
 @app.get("/favicon.ico", include_in_schema=False)
 async def serve_logo_svg():
-    for svg_candidate in [
-        os.path.join("frontend", "logo.svg"),
-        os.path.join("public", "logo.svg"),
-        "logo.svg",
-        os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "logo.svg"),
-        os.path.join(os.path.dirname(__file__), "..", "..", "public", "logo.svg")
-    ]:
+    for base in [FRONTEND_DIR, PUBLIC_DIR, REPO_ROOT, "frontend", "public", ""]:
+        svg_candidate = os.path.join(base, "logo.svg")
         if os.path.exists(svg_candidate):
             try:
                 with open(svg_candidate, "r", encoding="utf-8") as f:
