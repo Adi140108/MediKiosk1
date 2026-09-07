@@ -15,10 +15,23 @@ const PatientIntake = {
     SpeechManager.init();
     I18n.setLanguage("en");
     this.updateStepIndicator(1);
+    
     // Automatic welcoming voice guidance for illiterate/rural patients on kiosk startup
-    setTimeout(() => {
+    const speakWelcome = () => {
       SpeechManager.speakStepGuidance(1, this.language);
-    }, 800);
+    };
+    setTimeout(speakWelcome, 300);
+
+    // Fallback one-time gesture listener if browser strict autoplay blocked initial audio
+    const unlockAudioOnce = () => {
+      if (this.currentStep === 1 && !SpeechManager.isSpeaking && !SpeechManager.isMuted) {
+        speakWelcome();
+      }
+      window.removeEventListener('click', unlockAudioOnce);
+      window.removeEventListener('touchstart', unlockAudioOnce);
+    };
+    window.addEventListener('click', unlockAudioOnce, { once: true });
+    window.addEventListener('touchstart', unlockAudioOnce, { once: true });
   },
 
   bindEvents() {
@@ -68,8 +81,25 @@ const PatientIntake = {
     this.updateStepIndicator(stepNum);
     window.scrollTo({ top: 0, behavior: "smooth" });
 
-    // Step 7 questions are spoken dynamically in renderQuestion
-    if (stepNum !== 7) {
+    // Step 7: Immediately set localized question text before network calls
+    if (stepNum === 7) {
+      const initialQMap = {
+        en: "What is the main health concern or symptom bringing you here today?",
+        hi: "आज आपको अस्पताल या क्लिनिक लाने वाली मुख्य स्वास्थ्य समस्या या लक्षण क्या है?",
+        kn: "ಇಂದು ನಿಮ್ಮನ್ನು ಆಸ್ಪತ್ರೆಗೆ ಕರೆತಂದ ಮುಖ್ಯ ಆರೋಗ್ಯ ಸಮಸ್ಯೆ ಅಥವಾ ರೋಗಲಕ್ಷಣ ಯಾವುದು?",
+        ta: "இன்று உங்களை மருத்துவமனைக்கு வரவழைத்த முக்கிய உடல்நலப் பிரச்சனை அல்லது அறிகுறி என்ன?",
+        te: "ఈరోజు మిమ్మల్ని ఇక్కడికి తీసుకువచ్చిన ప్రధాన ఆరోగ్య సమస్య లేదా లక్షణం ఏమిటి?",
+        ml: "ഇന്ന് നിങ്ങളെ ഇവിടെ എത്തിച്ച പ്രധാന ആരോഗ്യ പ്രശ്നമോ ലക്ഷണങ്ങളോ എന്താണ്?",
+        mr: "आज तुम्हाला येथे आणणारी मुख्य आरोग्य समस्या किंवा लक्षण काय आहे?",
+        bn: "আজ আপনাকে এখানে নিয়ে আসার প্রধান স্বাস্থ্য সমস্যা বা উপসর্গটি কী?",
+        gu: "આજે તમને અહીં લાવનારી મુખ્ય સ્વાસ્થ્ય સમસ્યા અથવા લક્ષણ કયું છે?",
+        pa: "ਅੱਜ ਤੁਹਾਨੂੰ ਇੱਥੇ ਲਿਆਉਣ ਵਾਲੀ ਮੁੱਖ ਸਿਹਤ ਸਮੱਸਿਆ ਜਾਂ ਲੱਛਣ ਕੀ ਹੈ?"
+      };
+      const initialQ = initialQMap[this.language] || initialQMap["en"];
+      const qTextEl = document.getElementById("current-question-text");
+      if (qTextEl) qTextEl.innerText = initialQ;
+      this.currentQuestionText = initialQ;
+    } else {
       setTimeout(() => {
         SpeechManager.speakStepGuidance(stepNum, this.language);
       }, 350);

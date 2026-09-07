@@ -20,14 +20,37 @@ const PhysicianDashboard = {
   currentDepartmentName: "Cardiology",
   currentSessionId: null,
   currentPatientData: null,
+  currentLanguage: "en",
   refreshTimer: null,
   originalRecommendedDept: null,
   originalRecommendedPriority: null,
 
   init() {
     this.bindEvents();
+    if (typeof I18n !== "undefined") {
+      I18n.setLanguage(this.currentLanguage);
+    }
     this.renderDepartmentGrid(DEFAULT_DEPARTMENTS);
     this.loadDepartmentSelection();
+  },
+
+  changeLanguage(lang) {
+    this.currentLanguage = lang || "en";
+    if (typeof I18n !== "undefined") {
+      I18n.setLanguage(this.currentLanguage);
+    }
+    const sel = document.getElementById("physician-lang-select");
+    if (sel && sel.value !== this.currentLanguage) {
+      sel.value = this.currentLanguage;
+    }
+    // Re-render UI views if open
+    if (this.currentPatientData && document.getElementById("physician-case-view")?.style.display === "block") {
+      this.populateCaseInspector(this.currentPatientData);
+    } else if (this.currentDepartment) {
+      this.loadQueue();
+    } else {
+      this.loadDepartmentSelection();
+    }
   },
 
   bindEvents() {
@@ -303,18 +326,21 @@ const PhysicianDashboard = {
     // 3. Explainable AI Cards
     const expRouting = document.getElementById("explain-routing-content");
     if (expRouting) {
+      const deptName = routing.recommended_department || routing.assigned_department || data.queue_item?.assigned_department || 'General Medicine';
+      const deptReason = routing.reasoning || routing.routing_rationale || 'Symptom pattern matching aligns with this clinical department.';
       expRouting.innerHTML = `
-        <p><strong>Affinity:</strong> ${routing.recommended_department ? routing.recommended_department.toUpperCase() : 'GENERAL MEDICINE'}</p>
-        <p style="margin-top:0.35rem; font-size:0.825rem; line-height:1.4;">${routing.reasoning || 'Symptom pattern matching aligns with this clinical department.'}</p>
+        <p><strong>Affinity:</strong> ${deptName.toUpperCase()}</p>
+        <p style="margin-top:0.35rem; font-size:0.825rem; line-height:1.4;">${deptReason}</p>
       `;
     }
 
     const expPriority = document.getElementById("explain-priority-content");
     if (expPriority) {
-      const priorityLabel = red_flag.overall_severity || "NORMAL";
+      const priorityLabel = red_flag.overall_severity || data.queue_item?.overall_severity || "NORMAL";
+      const priorityReason = red_flag.triage_rationale || red_flag.reasoning || (red_flag.flagged_reasons ? red_flag.flagged_reasons.join(" • ") : null) || 'Standard OPD consultation priority based on deterministic clinical intake.';
       expPriority.innerHTML = `
         <p><strong>Priority Tier:</strong> ${priorityLabel}</p>
-        <p style="margin-top:0.35rem; font-size:0.825rem; line-height:1.4;">${red_flag.triage_rationale || red_flag.reasoning || 'Standard OPD consultation priority.'}</p>
+        <p style="margin-top:0.35rem; font-size:0.825rem; line-height:1.4;">${priorityReason}</p>
       `;
     }
 
@@ -329,19 +355,29 @@ const PhysicianDashboard = {
 
     // 4. Modern Clinical Brief
     const complaintText = document.getElementById("case-chief-complaint-text");
-    if (complaintText) complaintText.innerText = draft_summary.chief_complaint || "Patient presents for consultation review.";
+    if (complaintText) {
+      complaintText.innerText = draft_summary.chief_complaint || data.context?.chief_complaint || data.queue_item?.chief_complaint_summary || "Patient presents for consultation review.";
+    }
 
     const hpiText = document.getElementById("case-hpi-text");
-    if (hpiText) hpiText.innerText = draft_summary.hpi_narrative || "No extended narrative recorded.";
+    if (hpiText) {
+      const hpiVal = draft_summary.hpi || draft_summary.hpi_narrative || data.context?.hpi || data.context?.chief_complaint || "Symptoms recorded during interactive Socratic intake interview.";
+      hpiText.innerText = hpiVal;
+    }
 
     const progText = document.getElementById("case-progression-text");
-    if (progText) progText.innerText = (draft_summary.associated_symptoms || []).join(", ") || "No specific associated symptoms reported.";
+    if (progText) {
+      const assoc = (draft_summary.associated_symptoms && draft_summary.associated_symptoms.length > 0)
+        ? draft_summary.associated_symptoms.join(", ")
+        : (draft_summary.symptom_progression || data.context?.progression || "No specific associated symptoms reported.");
+      progText.innerText = assoc;
+    }
 
     const medHistText = document.getElementById("case-medical-history-text");
     if (medHistText) {
-      const cond = (medical_history.known_conditions || []).join(", ");
-      const meds = (medical_history.medications || []).join(", ");
-      medHistText.innerText = `Conditions: ${cond || 'None'} | Medications: ${meds || 'None'}`;
+      const cond = (medical_history.known_conditions || draft_summary.medical_history || []).join(", ");
+      const meds = (medical_history.medications || draft_summary.medications || []).join(", ");
+      medHistText.innerText = `Conditions: ${cond || 'None reported'} | Medications: ${meds || 'None reported'}`;
     }
 
     // 5. Ayurvedic Perspective

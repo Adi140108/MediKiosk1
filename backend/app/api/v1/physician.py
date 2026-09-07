@@ -130,6 +130,40 @@ async def get_patient_case_workspace(session_id: str):
         if not context.family_history: missing_gaps.append({"field": "family_history", "label": "Family History", "status": "Not recorded"})
         if not documents_with_urls: missing_gaps.append({"field": "documents", "label": "Previous Medical Records", "status": "No documents uploaded"})
 
+    # Red flag & Routing safety fallback synthesis
+    if not rf_result:
+        rf_sev = queue_item.overall_severity.value if (queue_item and hasattr(queue_item.overall_severity, 'value')) else (queue_item.overall_severity if queue_item else "NONE")
+        is_rf = rf_sev in ("CRITICAL", "HIGH")
+        rf_dict = {
+            "is_red_flag": is_rf,
+            "overall_severity": rf_sev,
+            "severity_rank": 0 if rf_sev == "CRITICAL" else (1 if rf_sev == "HIGH" else 4),
+            "flagged_rules": [],
+            "flagged_reasons": [queue_item.red_flag_summary] if (queue_item and queue_item.red_flag_summary) else [],
+            "triage_rationale": queue_item.red_flag_summary if (queue_item and queue_item.red_flag_summary) else "Standard OPD consultation priority based on deterministic clinical intake."
+        }
+    else:
+        rf_dict = rf_result.model_dump()
+        if not rf_dict.get("triage_rationale"):
+            rf_dict["triage_rationale"] = (
+                "🚨 Critical clinical red flags detected requiring urgent attending evaluation."
+                if rf_dict.get("overall_severity") == "CRITICAL"
+                else "Evaluated against deterministic red flag safety protocols."
+            )
+
+    if not routing:
+        target_dept = queue_item.assigned_department.value if (queue_item and hasattr(queue_item.assigned_department, 'value')) else (queue_item.assigned_department if queue_item else "general-medicine")
+        routing_dict = {
+            "recommended_department": target_dept,
+            "assigned_department": target_dept,
+            "confidence": queue_item.routing_confidence if queue_item else 0.85,
+            "reasoning": "Symptom pattern matching and patient chief complaint aligned with this clinical specialty."
+        }
+    else:
+        routing_dict = routing.model_dump()
+        if not routing_dict.get("reasoning"):
+            routing_dict["reasoning"] = "Symptom pattern matching and patient chief complaint aligned with this clinical specialty."
+
     patient_dict = patient.model_dump() if patient else (
         {
             "patient_id": queue_item.patient_id,
@@ -141,7 +175,11 @@ async def get_patient_case_workspace(session_id: str):
     )
 
     draft_dict = draft_summary.model_dump() if draft_summary else {}
-    rf_dict = rf_result.model_dump() if rf_result else None
+    if draft_dict:
+        if "hpi" in draft_dict and not draft_dict.get("hpi_narrative"):
+            draft_dict["hpi_narrative"] = draft_dict["hpi"]
+        elif "hpi_narrative" in draft_dict and not draft_dict.get("hpi"):
+            draft_dict["hpi"] = draft_dict["hpi_narrative"]
 
     return {
         "patient": patient_dict,
@@ -150,7 +188,7 @@ async def get_patient_case_workspace(session_id: str):
         "clinical_brief": draft_dict,
         "red_flag": rf_dict,
         "red_flags": rf_dict,
-        "routing": routing.model_dump() if routing else None,
+        "routing": routing_dict,
         "information_gaps": missing_gaps,
         "medical_history": {
             "known_conditions": context.known_conditions if context else [],

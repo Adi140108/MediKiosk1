@@ -97,6 +97,21 @@
     </div>
 
     <div class="nav-actions">
+      <div style="display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; padding:0.25rem 0.6rem; border-radius:var(--radius-sm);">
+        <span style="font-size:0.85rem;">🌐</span>
+        <select id="physician-lang-select" style="background:transparent; border:none; font-size:0.85rem; font-weight:600; color:var(--text-main); outline:none; cursor:pointer;" onchange="PhysicianDashboard.changeLanguage(this.value)">
+          <option value="en">English (EN)</option>
+          <option value="hi">हिन्दी (HI)</option>
+          <option value="kn">ಕನ್ನಡ (KN)</option>
+          <option value="ta">தமிழ் (TA)</option>
+          <option value="te">తెలుగు (TE)</option>
+          <option value="ml">മലയാളം (ML)</option>
+          <option value="mr">मराठी (MR)</option>
+          <option value="bn">বাংলা (BN)</option>
+          <option value="gu">ગુજરાતી (GU)</option>
+          <option value="pa">ਪੰਜਾਬੀ (PA)</option>
+        </select>
+      </div>
       <div class="lang-pill-indicator">
         <span>👨‍⚕️</span>
         <span id="physician-user-badge">Dr. A. Sharma (Cardiology)</span>

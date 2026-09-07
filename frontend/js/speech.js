@@ -472,9 +472,9 @@ const SpeechManager = {
     });
   },
 
-  toggleSpeak(text = null, lang = null) {
-    if (!this.synth) return false;
+  currentAudio: null,
 
+  toggleSpeak(text = null, lang = null) {
     if (this.isMuted) {
       // User tapped while muted -> Unmute and speak
       this.isMuted = false;
@@ -486,9 +486,7 @@ const SpeechManager = {
       // User tapped while unmuted / playing -> Mute completely
       this.isMuted = true;
       this.isSpeaking = false;
-      if (this.synth) {
-        this.synth.cancel();
-      }
+      this.stopAllAudio();
       this.updateButtonStates('muted');
       return false;
     }
@@ -497,7 +495,14 @@ const SpeechManager = {
   stopAllAudio() {
     this.clearSilenceTimer();
     if (this.synth) {
-      this.synth.cancel();
+      try { this.synth.cancel(); } catch(e) {}
+    }
+    if (this.currentAudio) {
+      try {
+        this.currentAudio.pause();
+        this.currentAudio.currentTime = 0;
+      } catch(e) {}
+      this.currentAudio = null;
     }
     this.isSpeaking = false;
     this.stopListening();
@@ -505,49 +510,114 @@ const SpeechManager = {
   },
 
   speakText(text, lang = null, onEndCallback = null) {
-    if (!this.synth) {
-      if (onEndCallback) setTimeout(onEndCallback, 300);
+    if (!text || !text.trim()) {
+      if (onEndCallback) setTimeout(onEndCallback, 100);
       return;
     }
+
     if (this.isMuted) {
       this.updateButtonStates('muted');
-      if (onEndCallback) setTimeout(onEndCallback, 300);
+      if (onEndCallback) setTimeout(onEndCallback, 200);
       return;
     }
 
-    this.synth.cancel();
-    this.lastSpokenText = text;
-
-    const targetLang = lang || this.currentLanguage || 'en';
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = this.langLocaleMap[targetLang] || 'en-IN';
-    utterance.rate = 0.92;  // Natural, clear conversational pace
-    utterance.pitch = 1.0;  // Balanced, natural tone
-
-    const assignedVoice = this.getIndianFemaleVoice(targetLang);
-    if (assignedVoice) {
-      utterance.voice = assignedVoice;
+    // Stop any ongoing speech or audio
+    if (this.synth) {
+      try { this.synth.cancel(); } catch(e) {}
+    }
+    if (this.currentAudio) {
+      try {
+        this.currentAudio.pause();
+        this.currentAudio.currentTime = 0;
+      } catch(e) {}
+      this.currentAudio = null;
     }
 
-    this.updateButtonStates('playing');
+    this.lastSpokenText = text;
+    const targetLang = (lang || this.currentLanguage || 'en').toLowerCase().trim();
+    const assignedVoice = this.getIndianFemaleVoice(targetLang);
 
-    utterance.onend = () => {
+    // Option A: If browser has a dedicated matching native voice (or English)
+    if (this.synth && (assignedVoice || targetLang === 'en')) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = this.langLocaleMap[targetLang] || 'en-IN';
+      utterance.rate = 0.92;
+      utterance.pitch = 1.0;
+      if (assignedVoice) {
+        utterance.voice = assignedVoice;
+      }
+
+      this.updateButtonStates('playing');
+
+      utterance.onend = () => {
+        this.isSpeaking = false;
+        this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
+        if (typeof onEndCallback === 'function') {
+          onEndCallback();
+        }
+      };
+
+      utterance.onerror = () => {
+        this.isSpeaking = false;
+        this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
+        if (typeof onEndCallback === 'function') {
+          onEndCallback();
+        }
+      };
+
+      this.isSpeaking = true;
+      try {
+        this.synth.speak(utterance);
+        return;
+      } catch (err) {
+        console.warn("Browser speech error, falling back to server TTS stream:", err);
+      }
+    }
+
+    // Option B: High-clarity Streaming Server TTS for all 10 Indian languages
+    try {
+      this.updateButtonStates('playing');
+      this.isSpeaking = true;
+
+      const streamUrl = `/api/v1/speech/stream?text=${encodeURIComponent(text.trim())}&language=${encodeURIComponent(targetLang)}`;
+      const audio = new Audio(streamUrl);
+      this.currentAudio = audio;
+
+      audio.onended = () => {
+        this.isSpeaking = false;
+        this.currentAudio = null;
+        this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
+        if (typeof onEndCallback === 'function') {
+          onEndCallback();
+        }
+      };
+
+      audio.onerror = (e) => {
+        console.warn("Audio stream playback notice:", e);
+        this.isSpeaking = false;
+        this.currentAudio = null;
+        this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
+        if (typeof onEndCallback === 'function') {
+          onEndCallback();
+        }
+      };
+
+      audio.play().catch(err => {
+        console.debug("Autoplay note:", err);
+        this.isSpeaking = false;
+        this.currentAudio = null;
+        this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
+        if (typeof onEndCallback === 'function') {
+          onEndCallback();
+        }
+      });
+    } catch (err) {
+      console.warn("Speech synthesis initialization error:", err);
       this.isSpeaking = false;
       this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
       if (typeof onEndCallback === 'function') {
         onEndCallback();
       }
-    };
-
-    utterance.onerror = () => {
-      this.isSpeaking = false;
-      this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
-      if (typeof onEndCallback === 'function') {
-        onEndCallback();
-      }
-    };
-
-    this.isSpeaking = true;
-    this.synth.speak(utterance);
+    }
   }
 };
