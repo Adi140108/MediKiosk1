@@ -4,6 +4,7 @@ from app.schemas.intake import PatientContextState, SocraticStage
 from app.modules.intake.ayurvedic_questioning import AyurvedicQuestionEngine
 from app.modules.intake.question_priority import calculate_candidate_priority
 from app.modules.intake.socratic_engine import SocraticEngine
+from app.modules.ayush.question_planner import AyushQuestionPlanner, AyushAssessmentSessionState
 
 logger = logging.getLogger("medikiosk.intake.branching")
 
@@ -38,10 +39,12 @@ class AdaptiveBranchingEngine:
     def __init__(
         self,
         ayurvedic_engine: Optional[AyurvedicQuestionEngine] = None,
-        socratic_engine: Optional[SocraticEngine] = None
+        socratic_engine: Optional[SocraticEngine] = None,
+        ayush_planner: Optional[AyushQuestionPlanner] = None
     ):
         self.ayurvedic = ayurvedic_engine or AyurvedicQuestionEngine()
         self.socratic = socratic_engine or SocraticEngine()
+        self.ayush_planner = ayush_planner or AyushQuestionPlanner()
 
     def identify_missing_information(self, context: PatientContextState) -> List[str]:
         missing = []
@@ -125,19 +128,27 @@ class AdaptiveBranchingEngine:
         # 3. Add relevant Ayurvedic candidates ONLY if kiosk is in AYUSH OPD mode
         mode_str = str(getattr(context, "opd_mode", "GENERAL_OPD")).upper()
         if "AYUSH" in mode_str:
-            relevant_domains = self.ayurvedic.get_relevant_domains(context.chief_complaint or "", context.associated_symptoms)
-            for domain in relevant_domains:
-                q_id = f"ayur_{domain.lower()}"
-                if q_id not in asked_question_ids:
-                    ayur_item = self.ayurvedic.generate_patient_friendly_question(domain)
-                    candidates.append({
-                        "id": q_id,
-                        "objective": ayur_item["objective"],
-                        "category": "AYURVEDIC",
-                        "ayurvedic_domain": ayur_item["ayurvedic_domain"],
-                        "display_label": ayur_item["display_label"],
-                        "question": ayur_item["question"]
-                    })
+            state = AyushAssessmentSessionState(
+                session_id=getattr(context, "session_id", "active_session"),
+                patient_id=getattr(context, "patient_id", "patient"),
+                opd_mode="AYUSH_OPD",
+                asked_question_ids=list(asked_question_ids)
+            )
+            ayush_q = self.ayush_planner.select_next_question(state, asked_ids=list(asked_question_ids))
+            if ayush_q:
+                q_text = ayush_q.get("question_patient_language", {}).get("en") or ayush_q.get("question_en") or ayush_q.get("text", "")
+                candidates.append({
+                    "id": ayush_q.get("question_id"),
+                    "question_id": ayush_q.get("question_id"),
+                    "objective": f"Assess {ayush_q.get('domain')} - {ayush_q.get('feature')}",
+                    "category": "AYURVEDIC",
+                    "ayurvedic_domain": str(ayush_q.get("domain", "AYUSH")).lower(),
+                    "display_label": f"{ayush_q.get('domain')} ({ayush_q.get('feature')})",
+                    "question": q_text,
+                    "options": ayush_q.get("options", []),
+                    "answer_type": ayush_q.get("answer_type", "single_choice"),
+                    "feature": ayush_q.get("feature")
+                })
         else:
             # Strictly exclude any Ayurvedic candidates in GENERAL OPD mode
             candidates = [c for c in candidates if c.get("category") != "AYURVEDIC" and not c.get("ayurvedic_domain")]

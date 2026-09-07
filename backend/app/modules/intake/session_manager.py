@@ -219,6 +219,7 @@ class IntakeSessionManager:
             socratic_stage=stage,
             ayurvedic_domain=candidate.get("ayurvedic_domain"),
             display_label=candidate.get("display_label"),
+            options=candidate.get("options"),
             language=language,
             sequence=next_q_num
         )

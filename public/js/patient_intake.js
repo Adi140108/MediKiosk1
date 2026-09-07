@@ -805,6 +805,26 @@ const PatientIntake = {
       }
     }
 
+    // Render structured option buttons if provided by question bank
+    const existingOpts = document.getElementById("question-options-container");
+    if (existingOpts) existingOpts.remove();
+
+    if (question.options && Array.isArray(question.options) && question.options.length > 0) {
+      const optionsContainer = document.createElement("div");
+      optionsContainer.id = "question-options-container";
+      optionsContainer.style.cssText = "display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; margin-bottom: 1rem;";
+      optionsContainer.innerHTML = question.options.map((opt) => {
+        const val = typeof opt === "string" ? opt : (opt.value || opt.label || opt.text_en || "");
+        const label = typeof opt === "string" ? opt : (opt.label || opt.text_en || opt.value || "");
+        const weightsJson = opt.weights ? JSON.stringify(opt.weights).replace(/"/g, '&quot;') : '{}';
+        return `<button type="button" class="btn-option-pill" style="flex: 1 1 calc(50% - 0.75rem); min-width: 150px; min-height: 48px; padding: 0.75rem 1rem; background: #ffffff; border: 2px solid #0d9488; color: #0f766e; font-weight: 700; border-radius: 10px; cursor: pointer; text-align: center; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05);" onclick="PatientIntake.selectOption('${val.replace(/'/g, "\\'")}', '${label.replace(/'/g, "\\'")}', ${weightsJson})">${label}</button>`;
+      }).join('');
+
+      if (qTextEl && qTextEl.parentNode) {
+        qTextEl.parentNode.insertBefore(optionsContainer, qTextEl.nextSibling);
+      }
+    }
+
     const input = document.getElementById("patient-answer-input");
     if (input) {
       input.value = "";
@@ -813,11 +833,19 @@ const PatientIntake = {
 
     // Auto-speak question in patient's selected language using Indian female voice TTS, then auto-open mic
     SpeechManager.speakText(this.currentQuestionText, this.language, () => {
-      // CRITICAL: Set activeTargetInputId so transcript writes to the answer input
       SpeechManager.activeTargetInputId = 'patient-answer-input';
       SpeechManager.activeTargetBtnId = 'btn-mic-toggle';
       SpeechManager.startListeningWithSilenceTimeout(4000);
     });
+  },
+
+  selectOption(val, label, weights) {
+    const input = document.getElementById("patient-answer-input");
+    if (input) {
+      input.value = label || val;
+    }
+    this.selectedOptionMeta = { value: val, label: label, weights: weights };
+    this.handleAnswerSubmit();
   },
 
   speakCurrentQuestion() {

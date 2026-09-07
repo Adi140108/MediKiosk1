@@ -29,6 +29,9 @@ class StructuredObservation(BaseModel):
     is_denial: bool = False
     confidence: float = 0.9
     evidence_source: str = "patient"
+    dosha_weights: Dict[str, int] = Field(default_factory=dict)
+    option_value: Optional[str] = None
+    feature_targets: List[str] = Field(default_factory=list)
     timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class ObservationNormalizer:
@@ -67,7 +70,15 @@ class ObservationNormalizer:
         text_lower = text_clean.lower()
 
         # 1. Check option metadata if provided
+        dosha_weights = {}
+        option_val = None
+        feature_targets = []
+
         if option_meta:
+            dosha_weights = option_meta.get("weights", {}) or option_meta.get("dosha_weights", {})
+            option_val = option_meta.get("value") or option_meta.get("label")
+            feature_targets = option_meta.get("feature_targets", [])
+            
             opt_val = str(option_meta.get("value", "")).lower()
             if "absent" in opt_val or "no" in opt_val or "none" in opt_val:
                 return StructuredObservation(
@@ -80,7 +91,10 @@ class ObservationNormalizer:
                     severity=0,
                     frequency="never",
                     is_denial=True,
-                    confidence=0.98
+                    confidence=0.98,
+                    dosha_weights=dosha_weights,
+                    option_value=option_val,
+                    feature_targets=feature_targets
                 )
 
         # 2. Check for explicit negation in free-text answer
@@ -142,5 +156,8 @@ class ObservationNormalizer:
             severity=sev,
             frequency=freq,
             is_denial=False,
-            confidence=0.88
+            confidence=0.88,
+            dosha_weights=dosha_weights,
+            option_value=option_val,
+            feature_targets=feature_targets
         )

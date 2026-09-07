@@ -190,15 +190,20 @@ class AyurvedicScoringEngine:
         supporting = []
 
         for obs in prakriti_obs:
-            raw = (obs.raw_answer + " " + obs.feature).lower()
-            if any(k in raw for k in ["vata", "thin", "slender", "lean", "dry", "crackling", "variable", "bloated", "gassy", "light sleep", "interrupted"]):
-                v_score += 1
+            weights = obs.dosha_weights or {}
+            v_w = weights.get("VATA", weights.get("vata", 0))
+            p_w = weights.get("PITTA", weights.get("pitta", 0))
+            k_w = weights.get("KAPHA", weights.get("kapha", 0))
+            opt_val = (obs.option_value or obs.raw_answer or "").lower()
+
+            if v_w > 0 or any(k in opt_val for k in ["vata", "thin", "slender", "lean", "dry"]):
+                v_score += max(v_w, 1)
                 supporting.append({"feature": obs.feature, "dosha": "Vata", "answer": obs.raw_answer})
-            if any(k in raw for k in ["pitta", "medium", "warm", "sharp", "intense", "acidity", "burning", "sweat"]):
-                p_score += 1
+            if p_w > 0 or any(k in opt_val for k in ["pitta", "medium", "warm", "sharp"]):
+                p_score += max(p_w, 1)
                 supporting.append({"feature": obs.feature, "dosha": "Pitta", "answer": obs.raw_answer})
-            if any(k in raw for k in ["kapha", "large", "heavy", "broad", "smooth", "calm", "deep sleep", "sluggish"]):
-                k_score += 1
+            if k_w > 0 or any(k in opt_val for k in ["kapha", "large", "heavy", "broad"]):
+                k_score += max(k_w, 1)
                 supporting.append({"feature": obs.feature, "dosha": "Kapha", "answer": obs.raw_answer})
 
         total = v_score + p_score + k_score
