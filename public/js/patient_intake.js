@@ -392,9 +392,32 @@ const PatientIntake = {
         }
       }
     }
+
+    // Sync Mobile Progress Header
+    const mobileBadge = document.getElementById("mobile-step-badge");
+    const mobileLabel = document.getElementById("mobile-step-label");
+    const mobileIcon = document.getElementById("mobile-step-icon");
+    const mobileFill = document.getElementById("mobile-progress-fill");
+
+    const stepTitles = {
+      1: { icon: "📍", title: "Welcome & Registration" },
+      2: { icon: "🌐", title: "Select Language" },
+      3: { icon: "🛡️", title: "Patient Consent" },
+      4: { icon: "👤", title: "Patient Details" },
+      5: { icon: "🩺", title: "Symptoms & History" },
+      6: { icon: "📄", title: "Previous Records" },
+      7: { icon: "💬", title: "AI Clinical Intake" },
+      8: { icon: "🎫", title: "Consultation Token" }
+    };
+
+    if (mobileBadge) mobileBadge.innerText = `Step ${stepNum} of 8`;
+    if (mobileLabel && stepTitles[stepNum]) mobileLabel.innerText = stepTitles[stepNum].title;
+    if (mobileIcon && stepTitles[stepNum]) mobileIcon.innerText = stepTitles[stepNum].icon;
+    if (mobileFill) mobileFill.style.width = `${(stepNum / 8) * 100}%`;
   },
 
   updateLanguageGridUI(lang) {
+    // Step 2 Tiles
     document.querySelectorAll(".lang-tile").forEach((tile) => {
       const tileLang = tile.getAttribute("data-lang");
       const badge = tile.querySelector(".lang-tile-badge");
@@ -412,6 +435,20 @@ const PatientIntake = {
         }
       }
     });
+
+    // Step 1 Hero Chips
+    document.querySelectorAll(".hero-lang-chip").forEach((chip) => {
+      const chipLang = chip.getAttribute("data-lang");
+      if (chipLang === lang) {
+        chip.classList.add("active");
+      } else {
+        chip.classList.remove("active");
+      }
+    });
+
+    // Header Navbar Lang Pill
+    const langPill = document.getElementById("current-lang-pill");
+    if (langPill) langPill.innerText = lang.toUpperCase();
   },
 
   updateStep2ContinueBtn(lang) {
@@ -708,64 +745,89 @@ const PatientIntake = {
 
   cameraStream: null,
   capturedCameraFile: null,
+  cameraFacingMode: "environment",
+  capturedBlobUrl: null,
 
-  triggerCameraCapture() {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-    if (isMobile) {
-      const camInput = document.getElementById("doc-camera-input");
-      if (camInput) {
-        camInput.click();
-        return;
-      }
-    }
-    this.openCameraModal();
-  },
-
-  async openCameraModal() {
+  async openCameraScanner() {
     const modal = document.getElementById("camera-capture-modal");
     const video = document.getElementById("camera-video-feed");
+    const viewfinder = document.getElementById("camera-viewfinder-container");
+    const snapshotPreview = document.getElementById("camera-snapshot-preview");
+    const liveControls = document.getElementById("camera-live-controls");
+    const confirmControls = document.getElementById("camera-confirm-controls");
+    const notice = document.getElementById("camera-permission-notice");
+
     if (!modal || !video) return;
 
     modal.style.display = "flex";
+    if (viewfinder) viewfinder.style.display = "flex";
+    if (snapshotPreview) snapshotPreview.style.display = "none";
+    if (liveControls) liveControls.style.display = "flex";
+    if (confirmControls) confirmControls.style.display = "none";
+    if (notice) notice.style.display = "none";
+
+    await this.startCameraStream();
+  },
+
+  async startCameraStream() {
+    const video = document.getElementById("camera-video-feed");
+    const notice = document.getElementById("camera-permission-notice");
+    if (!video) return;
+
+    if (this.cameraStream) {
+      try {
+        this.cameraStream.getTracks().forEach(t => t.stop());
+      } catch (e) {}
+      this.cameraStream = null;
+    }
 
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }
+          video: {
+            facingMode: { ideal: this.cameraFacingMode },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          }
         });
         this.cameraStream = stream;
         video.srcObject = stream;
+        await video.play();
       } else {
-        const camInput = document.getElementById("doc-camera-input");
-        if (camInput) camInput.click();
+        throw new Error("getUserMedia not supported");
       }
     } catch (err) {
-      console.warn("Camera access error:", err);
-      this.closeCameraModal();
-      const camInput = document.getElementById("doc-camera-input");
-      if (camInput) camInput.click();
+      console.warn("Camera stream initial error, attempting relaxed constraints:", err);
+      try {
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        this.cameraStream = fallbackStream;
+        video.srcObject = fallbackStream;
+        await video.play();
+      } catch (fallbackErr) {
+        console.warn("Camera access denied or unavailable:", fallbackErr);
+        if (notice) notice.style.display = "block";
+      }
     }
   },
 
-  closeCameraModal() {
-    if (this.cameraStream) {
-      try {
-        this.cameraStream.getTracks().forEach(track => track.stop());
-      } catch (e) {}
-      this.cameraStream = null;
-    }
-    const modal = document.getElementById("camera-capture-modal");
-    if (modal) modal.style.display = "none";
+  async switchCamera() {
+    this.cameraFacingMode = this.cameraFacingMode === "environment" ? "user" : "environment";
+    await this.startCameraStream();
   },
 
   capturePhotoFromWebcam() {
     const video = document.getElementById("camera-video-feed");
     const canvas = document.getElementById("camera-canvas");
+    const viewfinder = document.getElementById("camera-viewfinder-container");
+    const snapshotPreview = document.getElementById("camera-snapshot-preview");
+    const previewImg = document.getElementById("camera-preview-img");
+    const liveControls = document.getElementById("camera-live-controls");
+    const confirmControls = document.getElementById("camera-confirm-controls");
+
     if (!video || !canvas) return;
 
-    const width = video.videoWidth || 640;
-    const height = video.videoHeight || 480;
-
+    const width = video.videoWidth || 1280;
+    const height = video.videoHeight || 720;
     canvas.width = width;
     canvas.height = height;
 
@@ -774,19 +836,56 @@ const PatientIntake = {
 
     canvas.toBlob((blob) => {
       if (!blob) return;
-      const file = new File([blob], `camera_scan_${Date.now()}.jpg`, { type: "image/jpeg" });
+      if (this.capturedBlobUrl) {
+        try { URL.revokeObjectURL(this.capturedBlobUrl); } catch (e) {}
+      }
+      this.capturedBlobUrl = URL.createObjectURL(blob);
+      const file = new File([blob], `medikiosk_scan_${Date.now()}.jpg`, { type: "image/jpeg" });
       this.capturedCameraFile = file;
 
-      try {
-        const container = new DataTransfer();
-        container.items.add(file);
-        const fileInput = document.getElementById("doc-file-input");
-        if (fileInput) fileInput.files = container.files;
-      } catch (e) {}
+      if (previewImg) previewImg.src = this.capturedBlobUrl;
+      if (viewfinder) viewfinder.style.display = "none";
+      if (snapshotPreview) snapshotPreview.style.display = "block";
+      if (liveControls) liveControls.style.display = "none";
+      if (confirmControls) confirmControls.style.display = "flex";
+    }, "image/jpeg", 0.94);
+  },
 
-      this.handleFileSelect({ target: { files: [file] } });
-      this.closeCameraModal();
-    }, "image/jpeg", 0.92);
+  retakeCameraPhoto() {
+    const viewfinder = document.getElementById("camera-viewfinder-container");
+    const snapshotPreview = document.getElementById("camera-snapshot-preview");
+    const liveControls = document.getElementById("camera-live-controls");
+    const confirmControls = document.getElementById("camera-confirm-controls");
+
+    if (viewfinder) viewfinder.style.display = "flex";
+    if (snapshotPreview) snapshotPreview.style.display = "none";
+    if (liveControls) liveControls.style.display = "flex";
+    if (confirmControls) confirmControls.style.display = "none";
+  },
+
+  confirmCameraPhoto() {
+    if (!this.capturedCameraFile) return;
+
+    try {
+      const container = new DataTransfer();
+      container.items.add(this.capturedCameraFile);
+      const fileInput = document.getElementById("doc-file-input");
+      if (fileInput) fileInput.files = container.files;
+    } catch (e) {}
+
+    this.handleFileSelect({ target: { files: [this.capturedCameraFile] } });
+    this.closeCameraModal();
+  },
+
+  closeCameraModal() {
+    if (this.cameraStream) {
+      try {
+        this.cameraStream.getTracks().forEach(t => t.stop());
+      } catch (e) {}
+      this.cameraStream = null;
+    }
+    const modal = document.getElementById("camera-capture-modal");
+    if (modal) modal.style.display = "none";
   },
 
   async handleDocUpload(e) {
@@ -1093,9 +1192,13 @@ const PatientIntake = {
 
   async handleAnswerSubmit() {
     SpeechManager.stopListening();
+    if (this._isSubmittingAnswer || this._isFinishingIntake || this._intakeCompleted) return;
+    
     const input = document.getElementById("patient-answer-input");
     const answer = input ? input.value.trim() : "";
     if (!answer) return;
+
+    this._isSubmittingAnswer = true;
 
     if (!this.currentSessionId) {
       this.currentSessionId = `sess_${this.currentPatientId || 'pat'}_${Date.now()}`;
@@ -1155,7 +1258,8 @@ const PatientIntake = {
         alert("⚠️ Please tap Submit Answer once more to proceed.");
       }
     } finally {
-      if (btn) {
+      this._isSubmittingAnswer = false;
+      if (btn && !this._isFinishingIntake) {
         btn.disabled = false;
         btn.innerHTML = originalText;
       }
@@ -1189,6 +1293,7 @@ const PatientIntake = {
         "emergency": "EMERGENCY / TRAUMA"
       };
       const dept = deptDisplayMap[rawDept] || rawDept.toUpperCase().replace(/-/g, ' ');
+      const patientName = data.patient_name || this.registeredData?.name || 'Registered Patient';
       const complaint = data.chief_complaint || this.chiefComplaint || 'Clinical intake recorded successfully.';
       const reasoning = data.reasoning || 'Patient triaged and queued for attending physician consultation.';
 
@@ -1215,6 +1320,13 @@ const PatientIntake = {
   },
 
   async finishIntake() {
+    if (this._isFinishingIntake || this._intakeCompleted) {
+      console.log("Intake already finishing or completed, ignoring duplicate call.");
+      return;
+    }
+    this._isFinishingIntake = true;
+    this._intakeCompleted = true;
+
     const modal = document.getElementById("ai-synthesis-modal");
     const fill = document.getElementById("synthesis-progress-fill");
     const item1 = document.getElementById("synthesis-step-1");
@@ -1240,15 +1352,14 @@ const PatientIntake = {
       console.warn("Summary completion notice:", err.message);
     }
 
-    // Wait at least 1400ms for smooth clinical synthesis visualization
-    await new Promise(resolve => setTimeout(resolve, 1400));
+    // Wait for single smooth clinical synthesis visualization
+    await new Promise(resolve => setTimeout(resolve, 1300));
 
     if (modal) {
       modal.classList.remove("active");
     }
 
     this.goToStep(8);
-    this.renderTicketDetails();
 
     const ticketNum = res?.ticket_number || `MK-${Math.floor(10000000 + Math.random() * 90000000)}`;
     const numEl = document.getElementById("ticket-number-display");

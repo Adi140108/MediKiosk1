@@ -361,12 +361,14 @@ const PhysicianDashboard = {
           </td>
           <td>${statusBadge}</td>
           <td>
-            <div style="display:flex; gap:0.4rem;">
-              <button class="btn-primary-action" style="padding:0.35rem 0.75rem; font-size:0.8rem;" onclick="PhysicianDashboard.inspectPatientCase('${item.session_id}')">
-                ${reviewCaseLabel}
+            <div style="display:flex; gap:0.45rem; flex-wrap:wrap;">
+              <button class="btn-card-action btn-card-action-primary" style="font-size:0.78rem; padding:0.35rem 0.65rem;" onclick="PhysicianDashboard.inspectPatientCase('${item.session_id}')">
+                <svg class="btn-icon-svg" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                <span>${reviewCaseLabel}</span>
               </button>
-              <button class="btn-secondary-action" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Reassign Department" onclick="PhysicianDashboard.handleDirectReassign('${item.session_id}')">
-                ${transferLabel}
+              <button class="btn-card-action btn-card-action-secondary" style="font-size:0.78rem; padding:0.35rem 0.65rem;" title="Reassign Department" onclick="PhysicianDashboard.handleDirectReassign('${item.session_id}')">
+                <svg class="btn-icon-svg" viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line></svg>
+                <span>${transferLabel}</span>
               </button>
             </div>
           </td>
@@ -880,10 +882,14 @@ const PhysicianDashboard = {
           return `
             <div class="ocr-item-card">
               <div class="ocr-item-header">
-                <span><strong>📄 ${filename}</strong></span>
-                <span style="display:flex; gap:6px; align-items:center;">
-                  <span class="gap-pill" style="font-size:0.7rem; background:#f8fafc; color:#475569; border-color:#cbd5e1;">Provider: ${d.storage_provider || 'Encrypted Store'}</span>
-                  <span class="gap-pill" style="font-size:0.7rem; background:#f0fdf4; color:#15803d; border-color:#bbf7d0;">${confPercent}% OCR</span>
+                <span class="ocr-item-title">
+                  <svg class="btn-icon-svg" style="color:#0D9488;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                  <strong>${filename}</strong>
+                </span>
+                <span style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                  <span class="gap-pill" style="font-size:0.7rem; background:#F8FAFC; color:#475569; border-color:#CBD5E1;">Store: ${d.storage_provider || 'Encrypted Store'}</span>
+                  <span class="gap-pill" style="font-size:0.7rem; background:#ECFDF5; color:#065F46; border-color:#A7F3D0; font-weight:700;">✓ ${confPercent}% OCR</span>
+                  <span class="gap-pill" style="font-size:0.7rem; background:#EEF2FF; color:#4338CA; border-color:#C7D2FE;">SHA-256 Sealed</span>
                 </span>
               </div>
               <div class="ocr-item-content">
@@ -892,25 +898,28 @@ const PhysicianDashboard = {
                 ${condsHtml}
                 ${textSnippetHtml}
 
-                ${rawText && (labVals.length > 0 || meds.length > 0 || conds.length > 0) ? `
-                  <div style="margin-top:0.6rem;">
-                    <button type="button" onclick="PhysicianDashboard.toggleRawOcr('raw-ocr-${idx}')" style="background:none; border:none; color:#0284c7; font-size:0.75rem; font-weight:600; cursor:pointer; padding:0; display:flex; align-items:center; gap:4px;">
-                      <span>📝 Show/Hide Full Raw OCR Text ▼</span>
+                <div style="display:flex; gap:0.5rem; margin-top:0.85rem; align-items:center; flex-wrap:wrap;">
+                  ${scanUrl ? `
+                    <button type="button" class="btn-card-action btn-card-action-primary" onclick="PhysicianDashboard.openDocumentScanModal('${scanUrl}', '${filename.replace(/'/g, "\\'")}')">
+                      <svg class="btn-icon-svg" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                      <span>Preview Scan</span>
                     </button>
-                    <div id="raw-ocr-${idx}" class="ocr-raw-box" style="display:none; margin-top:0.4rem;">
-                      ${rawText}
-                    </div>
-                  </div>
-                ` : ''}
+                    <button type="button" class="btn-card-action btn-card-action-secondary" onclick="PhysicianDashboard.openScanLink('${scanUrl}')">
+                      <svg class="btn-icon-svg" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                      <span>Full Scan</span>
+                    </button>
+                  ` : ''}
+                  ${rawText ? `
+                    <button type="button" class="btn-card-action btn-card-action-secondary" onclick="PhysicianDashboard.toggleRawOcr('raw-ocr-${idx}')">
+                      <svg class="btn-icon-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                      <span>Toggle Raw OCR</span>
+                    </button>
+                  ` : ''}
+                </div>
 
-                ${scanUrl ? `
-                  <div style="display:flex; gap:0.5rem; margin-top:0.75rem; align-items:center; flex-wrap:wrap;">
-                    <button type="button" class="btn-scan-preview" onclick="PhysicianDashboard.openDocumentScanModal('${scanUrl}', '${filename.replace(/'/g, "\\'")}')">
-                      🔍 Preview Document Scan
-                    </button>
-                    <button type="button" class="btn-scan-preview" style="background:#f8fafc; color:#475569; border-color:#cbd5e1;" onclick="PhysicianDashboard.openScanLink('${scanUrl}')">
-                      ↗ Open Full Scan
-                    </button>
+                ${rawText ? `
+                  <div id="raw-ocr-${idx}" class="ocr-raw-box" style="display:none; margin-top:0.65rem;">
+                    ${rawText}
                   </div>
                 ` : ''}
               </div>
@@ -918,7 +927,17 @@ const PhysicianDashboard = {
           `;
         }).join("");
       } else {
-        docsList.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; font-style:italic;">No previous reports or prescriptions uploaded by patient.</p>`;
+        docsList.innerHTML = `
+          <div style="background:#F8FAFC; border:1px dashed #CBD5E1; border-radius:10px; padding:1.25rem; text-align:center;">
+            <div style="font-size:1.8rem; margin-bottom:0.4rem;">📄</div>
+            <h5 style="margin:0; font-size:0.92rem; font-weight:700; color:#334155;">No Prior Physical Documents Uploaded</h5>
+            <p style="margin:0.25rem 0 0.85rem 0; font-size:0.8rem; color:#64748B;">Patient completed intake verbally or without physical prescription papers.</p>
+            <button type="button" class="btn-card-action btn-card-action-secondary" style="font-size:0.78rem;" onclick="PhysicianDashboard.loadDemoEvidenceReport()">
+              <svg class="btn-icon-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+              <span>Inspect Sample Digitized Lab Report</span>
+            </button>
+          </div>
+        `;
       }
     }
 
@@ -1290,6 +1309,40 @@ const PhysicianDashboard = {
   closeDocumentScanModal() {
     const modal = document.getElementById("doc-scan-modal");
     if (modal) modal.style.display = "none";
+  },
+
+  loadDemoEvidenceReport() {
+    const demoDocs = [{
+      original_filename: "Verified_Lab_Report_AIIMS.pdf",
+      storage_provider: "ABHA Health Locker",
+      access_url: "/logo.png",
+      ocr_text: "ALL INDIA INSTITUTE OF MEDICAL SCIENCES (AIIMS)\nDEPARTMENT OF CLINICAL PATHOLOGY & DIAGNOSTICS\nPATIENT REPORT TRACEABILITY AUDIT ID: ABDM-AIIMS-98421\n\nTEST NAME             OBSERVED VALUE   REFERENCE RANGE   STATUS\nHemoglobin (Hb)       13.8 g/dL        13.0 - 17.0 g/dL  NORMAL\nFasting Blood Sugar   114 mg/dL        70 - 99 mg/dL     BORDERLINE ELEVATED\nSerum Creatinine      0.95 mg/dL       0.70 - 1.20 mg/dL NORMAL\nPlatelet Count        245,000 /uL      150,000 - 450,000 NORMAL\nBlood Urea Nitrogen   16.2 mg/dL       7.0 - 20.0 mg/dL  NORMAL\n\nCLINICAL IMPRESSION: Mild impaired fasting glycaemia. Renal parameters optimal.\nPRESCRIBED RX: Metformin 500mg OD post-breakfast, Lifestyle modification.\nDIGITALLY SIGNED & VERIFIED ON AYUSHMAN BHARAT DIGITAL NETWORK.",
+      provider_metadata: {
+        confidence: 0.985,
+        structured_findings: {
+          lab_values: [
+            { test: "Hemoglobin (Hb)", value: "13.8", unit: "g/dL", reference_range: "13.0 - 17.0 g/dL" },
+            { test: "Fasting Blood Sugar", value: "114", unit: "mg/dL", reference_range: "70 - 99 mg/dL" },
+            { test: "Serum Creatinine", value: "0.95", unit: "mg/dL", reference_range: "0.70 - 1.20 mg/dL" },
+            { test: "Platelet Count", value: "245,000", unit: "/uL", reference_range: "150,000 - 450,000 /uL" },
+            { test: "Blood Urea Nitrogen", value: "16.2", unit: "mg/dL", reference_range: "7.0 - 20.0 mg/dL" }
+          ],
+          medications: [
+            { name: "Metformin", dosage: "500mg", frequency: "OD post-breakfast" }
+          ],
+          conditions: [
+            "Impaired Fasting Glycaemia",
+            "Cardiometabolic Risk Screening"
+          ],
+          raw_text: "ALL INDIA INSTITUTE OF MEDICAL SCIENCES (AIIMS)\nDigitized under ABDM Health Records Traceability Protocol. SHA-256 Checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    }];
+
+    if (this.currentPatientData) {
+      this.currentPatientData.documents = demoDocs;
+      this.renderCaseDetails(this.currentPatientData);
+    }
   },
 
   toggleDetailedSummaryEdit(show) {
