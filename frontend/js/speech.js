@@ -768,15 +768,18 @@ const SpeechManager = {
     const targetLang = (lang || this.currentLanguage || 'en').toLowerCase().trim();
     const assignedVoice = this.getIndianFemaleVoice(targetLang);
 
-    // Option A: If browser has a dedicated natural voice installed for this language, use it
-    if (this.synth && assignedVoice && (targetLang === 'en' || targetLang === 'hi')) {
+    // Enable browser SpeechSynthesis for all 10 supported Indian languages
+    if (this.synth) {
       try {
+        this.synth.cancel();
         this.synth.resume();
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = this.langLocaleMap[targetLang] || 'en-IN';
+        utterance.lang = this.langLocaleMap[targetLang] || `${targetLang}-IN`;
         utterance.rate = 0.92;
         utterance.pitch = 1.0;
-        utterance.voice = assignedVoice;
+        if (assignedVoice) {
+          utterance.voice = assignedVoice;
+        }
 
         utterance.onstart = () => {
           this.isSpeaking = true;
@@ -803,9 +806,7 @@ const SpeechManager = {
             this._speechWatchdog = null;
           }
           this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
-          if (e.error !== 'interrupted' && e.error !== 'canceled') {
-            this._playServerAudioStream(text, targetLang, onEndCallback);
-          } else if (typeof onEndCallback === 'function') {
+          if (typeof onEndCallback === 'function') {
             onEndCallback();
           }
         };
@@ -827,7 +828,7 @@ const SpeechManager = {
 
         return;
       } catch (err) {
-        console.warn("Browser speech error, falling back to server TTS stream:", err);
+        console.warn("Browser speech error:", err);
       }
     }
 
