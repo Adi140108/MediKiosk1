@@ -768,9 +768,8 @@ const SpeechManager = {
     const targetLang = (lang || this.currentLanguage || 'en').toLowerCase().trim();
     const assignedVoice = this.getIndianFemaleVoice(targetLang);
 
-    // Browser SpeechSynthesis only reliably works for English and Hindi.
-    // All other Indian languages use server-side edge_tts neural voices for guaranteed audio.
-    if (this.synth && assignedVoice && (targetLang === 'en' || targetLang === 'hi')) {
+    // Primary: Browser SpeechSynthesis for ALL 10 Indian languages
+    if (this.synth) {
       try {
         this.synth.cancel();
         this.synth.resume();
@@ -778,7 +777,9 @@ const SpeechManager = {
         utterance.lang = this.langLocaleMap[targetLang] || `${targetLang}-IN`;
         utterance.rate = 0.92;
         utterance.pitch = 1.0;
-        utterance.voice = assignedVoice;
+        if (assignedVoice) {
+          utterance.voice = assignedVoice;
+        }
 
         // Track whether onstart actually fired (audio actually began playing)
         let audioStarted = false;
@@ -834,7 +835,7 @@ const SpeechManager = {
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
           }
-        }, 1500);
+        }, 1200);
 
         return;
       } catch (err) {
@@ -842,8 +843,7 @@ const SpeechManager = {
       }
     }
 
-    // Server Indic Neural TTS via edge_tts — guaranteed support for all 10 Indian languages:
-    // English, Hindi, Kannada, Tamil, Telugu, Malayalam, Marathi, Bengali, Gujarati, Punjabi
+    // Fallback: Server Indic Neural TTS via edge_tts / Google Translate HTTP TTS stream
     this._playServerAudioStream(text, targetLang, onEndCallback);
   },
 
@@ -866,7 +866,7 @@ const SpeechManager = {
       };
 
       audio.onerror = (e) => {
-        console.warn("Audio stream playback notice:", e);
+        console.warn("Server audio stream failed for", targetLang, ":", e);
         this.isSpeaking = false;
         this.currentAudio = null;
         this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
@@ -876,7 +876,7 @@ const SpeechManager = {
       };
 
       audio.play().catch(err => {
-        console.debug("Autoplay note:", err);
+        console.warn("Audio autoplay blocked or failed:", err);
         this.isSpeaking = false;
         this.currentAudio = null;
         this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
