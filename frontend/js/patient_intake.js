@@ -311,21 +311,36 @@ const PatientIntake = {
     }
   },
 
+  acceptConsent() {
+    this.consentAccepted = true;
+    const chk = document.getElementById("consent-checkbox");
+    if (chk) chk.checked = true;
+    this.goToStep(4);
+  },
+
   updateLanguageGridUI(lang) {
-    document.querySelectorAll(".lang-tile").forEach((tile) => {
+    document.querySelectorAll(".lang-tile, .lang-tile-card").forEach((tile) => {
       const tileLang = tile.getAttribute("data-lang");
-      const badge = tile.querySelector(".lang-tile-badge");
+      const badge = tile.querySelector(".lang-tile-badge, .lang-status-pill");
+      const check = tile.querySelector(".lang-check-badge");
       if (tileLang === lang) {
         tile.classList.add("selected");
+        if (check) check.style.display = "inline-flex";
         if (badge) {
-          badge.className = "lang-tile-badge lang-badge-selected";
-          badge.innerText = "✓ SELECTED";
+          badge.className = "lang-status-pill pill-connected";
+          badge.innerText = "FULLY CONNECTED";
         }
       } else {
         tile.classList.remove("selected");
+        if (check) check.style.display = "none";
         if (badge) {
-          badge.className = "lang-tile-badge lang-badge-ready";
-          badge.innerText = "READY";
+          if (tileLang === "hi") {
+            badge.className = "lang-status-pill pill-ready";
+            badge.innerText = "TRANSLATION READY";
+          } else {
+            badge.className = "lang-status-pill pill-fallback";
+            badge.innerText = "TEXT FALLBACK";
+          }
         }
       }
     });
