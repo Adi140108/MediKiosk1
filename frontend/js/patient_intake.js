@@ -231,17 +231,52 @@ const PatientIntake = {
       patientSec.classList.add("active");
     }
 
-    // Toggle wizard steps display
-    for (let i = 1; i <= 8; i++) {
-      const el = document.getElementById(`kiosk-step-${i}`);
-      if (el) {
-        el.style.display = i === stepNum ? "block" : "none";
-      }
-    }
+    const prevStep = this.currentStep;
+    const isForward = stepNum >= prevStep;
     this.currentStep = stepNum;
 
+    // Show milestone notification when advancing after completing a step
+    if (isForward && prevStep !== stepNum) {
+      this.showStepMilestoneToast(prevStep, stepNum);
+    }
+
+    const currentEl = document.getElementById(`kiosk-step-${prevStep}`);
+    const targetEl = document.getElementById(`kiosk-step-${stepNum}`);
+
+    const switchStepContent = () => {
+      for (let i = 1; i <= 8; i++) {
+        const el = document.getElementById(`kiosk-step-${i}`);
+        if (el) {
+          el.classList.remove("step-exit-forward", "step-exit-backward", "step-enter-forward", "step-enter-backward");
+          if (i === stepNum) {
+            el.style.display = "block";
+            el.classList.add(isForward ? "step-enter-forward" : "step-enter-backward");
+            setTimeout(() => {
+              el.classList.remove("step-enter-forward", "step-enter-backward");
+            }, 500);
+          } else {
+            el.style.display = "none";
+          }
+        }
+      }
+
+      if (stepNum === 8) {
+        setTimeout(() => {
+          const seal = document.getElementById("ticket-verified-seal");
+          if (seal) seal.classList.add("stamped");
+        }, 300);
+      }
+    };
+
+    if (currentEl && targetEl && prevStep !== stepNum && currentEl.style.display !== "none") {
+      currentEl.classList.add(isForward ? "step-exit-forward" : "step-exit-backward");
+      setTimeout(switchStepContent, 160);
+    } else {
+      switchStepContent();
+    }
+
     try {
-      this.updateStepIndicator(stepNum);
+      this.updateStepIndicator(stepNum, prevStep);
     } catch (e) {
       console.warn("Step indicator notice:", e);
     }
@@ -289,7 +324,47 @@ const PatientIntake = {
     }
   },
 
-  updateStepIndicator(stepNum) {
+  showStepMilestoneToast(completedStep, nextStep) {
+    const milestones = {
+      1: { icon: "✓", title: "Registration Started", sub: "Step 1 of 8 Completed", badge: "STEP 1" },
+      2: { icon: "🌐", title: "Language Selected", sub: "Step 2 of 8 Completed", badge: "STEP 2" },
+      3: { icon: "🛡️", title: "Consent Confirmed", sub: "Step 3 of 8 Completed", badge: "STEP 3" },
+      4: { icon: "👤", title: "Patient Details Saved", sub: "Step 4 of 8 Completed", badge: "STEP 4" },
+      5: { icon: "🩺", title: "Symptoms & Vitals Saved", sub: "Step 5 of 8 Completed", badge: "STEP 5" },
+      6: { icon: "📄", title: "Documents Attached", sub: "Step 6 of 8 Completed", badge: "STEP 6" },
+      7: { icon: "📋", title: "Clinical Inquiry Finished", sub: "Step 7 of 8 Completed", badge: "STEP 7" },
+      8: { icon: "🎫", title: "Consultation Ticket Issued", sub: "OPD Check-In Completed", badge: "COMPLETE" }
+    };
+
+    const data = milestones[completedStep] || milestones[1];
+    let toast = document.getElementById("step-milestone-toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "step-milestone-toast";
+      toast.className = "step-milestone-toast";
+      document.body.appendChild(toast);
+    }
+
+    toast.innerHTML = `
+      <span class="step-milestone-icon">${data.icon}</span>
+      <div style="display:flex; flex-direction:column; text-align:left;">
+        <span class="step-milestone-title">${data.title}</span>
+        <span class="step-milestone-sub">${data.sub}</span>
+      </div>
+      <span class="step-milestone-badge">${data.badge}</span>
+    `;
+
+    toast.classList.remove("show");
+    void toast.offsetHeight;
+    toast.classList.add("show");
+
+    if (this._milestoneTimer) clearTimeout(this._milestoneTimer);
+    this._milestoneTimer = setTimeout(() => {
+      toast.classList.remove("show");
+    }, 2800);
+  },
+
+  updateStepIndicator(stepNum, prevStep = null) {
     for (let i = 1; i <= 8; i++) {
       const node = document.getElementById(`step-node-${i}`);
       const line = document.getElementById(`step-line-${i}`);
@@ -298,6 +373,10 @@ const PatientIntake = {
         if (i < stepNum || (i === 8 && stepNum === 8)) {
           node.classList.add("completed");
           node.innerHTML = "✓";
+          if (prevStep && i === prevStep) {
+            node.classList.add("node-shockwave");
+            setTimeout(() => node.classList.remove("node-shockwave"), 750);
+          }
         } else if (i === stepNum) {
           node.classList.add("active");
           node.innerHTML = i;
@@ -306,7 +385,11 @@ const PatientIntake = {
         }
       }
       if (line) {
-        line.className = "wizard-step-line" + (i <= stepNum ? " completed" : "");
+        line.className = "wizard-step-line" + (i < stepNum ? " completed" : "");
+        if (prevStep && i === prevStep && stepNum > prevStep) {
+          line.classList.add("surge");
+          setTimeout(() => line.classList.remove("surge"), 800);
+        }
       }
     }
   },
@@ -1132,40 +1215,90 @@ const PatientIntake = {
   },
 
   async finishIntake() {
-    this.goToStep(8);
-    this.renderTicketDetails();
+    const modal = document.getElementById("ai-synthesis-modal");
+    const fill = document.getElementById("synthesis-progress-fill");
+    const item1 = document.getElementById("synthesis-step-1");
+    const item2 = document.getElementById("synthesis-step-2");
+    const item3 = document.getElementById("synthesis-step-3");
 
+    if (modal && fill) {
+      modal.classList.add("active");
+      fill.style.width = "0%";
+      if (item1) item1.classList.remove("done");
+      if (item2) item2.classList.remove("done");
+      if (item3) item3.classList.remove("done");
+
+      setTimeout(() => { if (fill) fill.style.width = "40%"; if (item1) item1.classList.add("done"); }, 200);
+      setTimeout(() => { if (fill) fill.style.width = "75%"; if (item2) item2.classList.add("done"); }, 600);
+      setTimeout(() => { if (fill) fill.style.width = "100%"; if (item3) item3.classList.add("done"); }, 1050);
+    }
+
+    let res = null;
     try {
-      const res = await api.completeIntake(this.currentSessionId, this.currentPatientId || 'pat_dev');
-      const ticketNum = res?.ticket_number || `MK-${Math.floor(10000000 + Math.random() * 90000000)}`;
-      
-      const numEl = document.getElementById("ticket-number-display");
-      if (numEl) numEl.innerText = ticketNum;
-
-      const rf = res?.red_flag || { overall_severity: "MEDIUM" };
-      const routing = res?.routing || { recommended_department: this.department || "general_medicine", reasoning: "Comprehensive clinical intake recorded." };
-
-      const badgeContainer = document.getElementById("ticket-triage-badge");
-      if (badgeContainer) {
-        let badgeClass = "lang-badge-ready";
-        if (rf.overall_severity === "CRITICAL") badgeClass = "lang-badge-connected' style='background:#fee2e2; color:#991b1b;";
-        else if (rf.overall_severity === "HIGH") badgeClass = "lang-badge-connected' style='background:#ffedd5; color:#9a3412;";
-        else if (rf.overall_severity === "MEDIUM") badgeClass = "lang-badge-connected' style='background:#fef3c7; color:#92400e;";
-
-        badgeContainer.innerHTML = `<span class="lang-tile-badge ${badgeClass}">${rf.overall_severity} PRIORITY</span>`;
-      }
-
-      this.renderTicketDetails({
-        patient_name: this.registeredData?.name || 'Registered Patient',
-        department: routing.recommended_department || this.department || 'General Medicine',
-        chief_complaint: res?.draft_summary?.chief_complaint || this.chiefComplaint || 'Recorded during intake',
-        reasoning: routing.reasoning || 'Patient triaged and ready for consultation.'
-      });
-
-      SpeechManager.speakText(`Intake completed. Consultation Ticket number is ${ticketNum}. Please proceed to the ${routing.recommended_department || 'assigned'} department.`, this.language);
+      res = await api.completeIntake(this.currentSessionId, this.currentPatientId || 'pat_dev');
     } catch (err) {
       console.warn("Summary completion notice:", err.message);
     }
+
+    // Wait at least 1400ms for smooth clinical synthesis visualization
+    await new Promise(resolve => setTimeout(resolve, 1400));
+
+    if (modal) {
+      modal.classList.remove("active");
+    }
+
+    this.goToStep(8);
+    this.renderTicketDetails();
+
+    const ticketNum = res?.ticket_number || `MK-${Math.floor(10000000 + Math.random() * 90000000)}`;
+    const numEl = document.getElementById("ticket-number-display");
+    if (numEl) numEl.innerText = ticketNum;
+
+    const rf = res?.red_flag || { overall_severity: "MEDIUM" };
+    const routing = res?.routing || { recommended_department: this.department || "general_medicine", reasoning: "Comprehensive clinical intake recorded." };
+
+    const badgeContainer = document.getElementById("ticket-triage-badge");
+    if (badgeContainer) {
+      let badgeClass = "lang-badge-ready";
+      if (rf.overall_severity === "CRITICAL") badgeClass = "lang-badge-connected' style='background:#fee2e2; color:#991b1b;";
+      else if (rf.overall_severity === "HIGH") badgeClass = "lang-badge-connected' style='background:#ffedd5; color:#9a3412;";
+      else if (rf.overall_severity === "MEDIUM") badgeClass = "lang-badge-connected' style='background:#fef3c7; color:#92400e;";
+
+      badgeContainer.innerHTML = `<span class="lang-tile-badge ${badgeClass}">${rf.overall_severity} PRIORITY</span>`;
+    }
+
+    this.renderTicketDetails({
+      patient_name: this.registeredData?.name || 'Registered Patient',
+      department: routing.recommended_department || this.department || 'General Medicine',
+      chief_complaint: res?.draft_summary?.chief_complaint || this.chiefComplaint || 'Recorded during intake',
+      reasoning: routing.reasoning || 'Patient triaged and ready for consultation.'
+    });
+
+    SpeechManager.speakText(`Intake completed. Consultation Ticket number is ${ticketNum}. Please proceed to the ${routing.recommended_department || 'assigned'} department.`, this.language);
+  },
+
+  triggerConfettiBurst() {
+    const container = document.getElementById("ticket-confetti-container");
+    if (!container) return;
+    container.innerHTML = "";
+    container.classList.remove("active");
+
+    const colors = ["#0D9488", "#14B8A6", "#6366F1", "#F59E0B", "#EC4899", "#10B981"];
+    for (let i = 0; i < 28; i++) {
+      const piece = document.createElement("div");
+      piece.className = "confetti-piece";
+      piece.style.background = colors[i % colors.length];
+      piece.style.left = `${Math.random() * 90 + 5}%`;
+      piece.style.top = "0px";
+      piece.style.setProperty("--x-start", `${(Math.random() - 0.5) * 60}px`);
+      piece.style.setProperty("--x-end", `${(Math.random() - 0.5) * 140}px`);
+      piece.style.animationDelay = `${Math.random() * 0.4}s`;
+      piece.style.animationDuration = `${1.8 + Math.random() * 1.2}s`;
+      piece.style.borderRadius = i % 2 === 0 ? "50%" : "2px";
+      container.appendChild(piece);
+    }
+    void container.offsetHeight;
+    container.classList.add("active");
   }
 };
 

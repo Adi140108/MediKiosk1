@@ -4,76 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="google" content="notranslate">
+  <meta name="description" content="MediKiosk Physician Command Center — Clinical Decision Support, Socratic Intake Review, and Deterministic Triage Queue Management.">
   <title>MediKiosk — Physician Command Center & Clinical Portal</title>
   <link rel="icon" type="image/svg+xml" href="/logo.svg">
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    .explainable-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-    .explainable-card {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: var(--radius-md);
-      padding: 1rem 1.25rem;
-    }
-    .explainable-title {
-      font-size: 0.85rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 0.5rem;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .clinical-comparison-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.25rem;
-      margin-bottom: 1.5rem;
-    }
-    .clinical-pane {
-      background: white;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      padding: 1.25rem;
-    }
-    .ayurvedic-pane {
-      background: #fefce8;
-      border: 1px solid #fef08a;
-      border-radius: var(--radius-md);
-      padding: 1.25rem;
-    }
-    .override-box {
-      background: #fffbeb;
-      border: 1px solid #fde68a;
-      border-radius: var(--radius-sm);
-      padding: 0.85rem;
-      margin-bottom: 1rem;
-      display: none;
-    }
-    .gap-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: #f1f5f9;
-      border: 1px solid #cbd5e1;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      margin-right: 6px;
-      margin-bottom: 6px;
-    }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body style="background-color: var(--bg-surface);">
+<body style="background-color: var(--bg-main);">
+
+  <!-- Ambient Atmospheric Floating Glow Orbs (Awwwards 60FPS) -->
+  <div class="ambient-glow-orb orb-1" aria-hidden="true"></div>
+  <div class="ambient-glow-orb orb-2" aria-hidden="true"></div>
+  <div class="ambient-glow-orb orb-3" aria-hidden="true"></div>
 
   <!-- Safety Top Notice Banner -->
   <div class="safety-top-banner">
@@ -82,28 +26,29 @@
       <span><strong>Physician Command Center</strong> — Clinical Decision Support & Socratic Intake Review Portal</span>
     </div>
     <div class="physician-loop-pill">
+      <span class="live-dot-beacon" style="background:#A7F3D0;"></span>
       <span>👨‍⚕️</span>
-      <span>Physician-in-the-Loop Architecture</span>
+      <span>Physician-in-the-Loop</span>
     </div>
   </div>
 
-  <!-- Main Navigation Bar -->
+  <!-- Navigation Bar -->
   <nav class="navbar">
     <div class="brand-wrapper" onclick="window.location.href='/physician'">
-      <img src="/logo.png?v=3" alt="MediKiosk Logo" class="brand-logo-img" style="height:52px; width:auto; object-fit:contain; border-radius:10px;" onerror="this.onerror=null; this.src='/logo.png';">
+      <img src="/logo.png?v=3" alt="MediKiosk Logo" class="brand-logo-img" onerror="this.onerror=null; this.src='/logo.png';">
       <div class="brand-text-block">
-        <span class="brand-name">MediKiosk <span style="font-size:0.95rem; font-weight:500; color:var(--brand-accent); font-family:sans-serif;">Physician Portal</span></span>
+        <span class="brand-name">MediKiosk <span style="font-size:0.85rem; font-weight:500; color:var(--brand-accent);">Physician Portal</span></span>
         <span class="brand-tagline-text">Clinical Command Center & Patient Triage Queue</span>
       </div>
     </div>
 
     <div class="nav-actions">
-      <div id="physician-opd-mode-pill" onclick="PhysicianDashboard.togglePortalOpdMode()" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; background:#f0fdf4; border:1px solid #86efac; color:#166534; padding:0.35rem 0.85rem; border-radius:20px; font-weight:700; font-size:0.85rem;" title="Click to toggle Doctor Dashboard OPD Mode">
+      <div id="physician-opd-mode-pill" onclick="PhysicianDashboard.togglePortalOpdMode()" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; background:var(--brand-primary-soft); color:var(--brand-primary); padding:0.4rem 1rem; border-radius:var(--radius-pill); font-weight:700; font-size:0.82rem; box-shadow:var(--shadow-sm); transition:var(--transition);" title="Click to toggle Doctor Dashboard OPD Mode">
         🏥 GENERAL OPD ⚙️
       </div>
-      <div style="display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; padding:0.25rem 0.6rem; border-radius:var(--radius-sm);">
-        <span style="font-size:0.85rem;">🌐</span>
-        <select id="physician-lang-select" style="background:transparent; border:none; font-size:0.85rem; font-weight:600; color:var(--text-main); outline:none; cursor:pointer;" onchange="PhysicianDashboard.changeLanguage(this.value)">
+      <div style="display:flex; align-items:center; gap:6px; background:var(--bg-surface); padding:0.35rem 0.75rem; border-radius:var(--radius-pill); box-shadow:var(--shadow-sm);">
+        <span style="font-size:0.82rem;">🌐</span>
+        <select id="physician-lang-select" style="background:transparent; border:none; font-size:0.82rem; font-weight:600; color:var(--text-main); outline:none; cursor:pointer; font-family:'Plus Jakarta Sans', sans-serif;" onchange="PhysicianDashboard.changeLanguage(this.value)">
           <option value="en">English (EN)</option>
           <option value="hi">हिन्दी (HI)</option>
           <option value="kn">ಕನ್ನಡ (KN)</option>
@@ -116,28 +61,25 @@
           <option value="pa">ਪੰਜਾਬੀ (PA)</option>
         </select>
       </div>
-      <div class="lang-pill-indicator">
+      <div class="lang-pill-indicator" style="cursor:default;">
         <span>👨‍⚕️</span>
         <span id="physician-user-badge">Dr. A. Sharma (Cardiology)</span>
       </div>
-      <a href="/diagnostics" class="btn-secondary-action" style="font-size:0.85rem; padding:0.4rem 0.85rem; text-decoration:none;">
+      <a href="/diagnostics" class="btn-secondary-action" style="font-size:0.82rem; min-height:40px; padding:0 0.85rem; text-decoration:none;">
         ⚙️ Diagnostics
       </a>
-      <a href="/" class="btn-secondary-action" style="font-size:0.85rem; padding:0.4rem 0.85rem; text-decoration:none;">
+      <a href="/" class="btn-secondary-action" style="font-size:0.82rem; min-height:40px; padding:0 0.85rem; text-decoration:none;">
         🏥 Patient Kiosk
       </a>
     </div>
   </nav>
 
-  <!-- Main Content Wrapper -->
-  <main class="main-wrapper">
+  <!-- Main Content -->
+  <main class="main-wrapper" style="max-width:1200px;">
 
-    <!-- ========================================================= -->
-    <!-- PHYSICIAN COMMAND CENTER VIEWS -->
-    <!-- ========================================================= -->
     <section id="section-physician" class="view-section active" style="display:block;">
 
-      <!-- Department Selection View -->
+      <!-- ─── Department Selection View ─── -->
       <div id="physician-dept-view">
         <div class="card-box">
           <div class="card-box-header">
@@ -154,7 +96,7 @@
         </div>
       </div>
 
-      <!-- Department Priority Queue Dashboard -->
+      <!-- ─── Department Priority Queue Dashboard ─── -->
       <div id="physician-queue-view" style="display:none;">
         
         <!-- Top Metrics Bar -->
@@ -162,22 +104,22 @@
           <div class="metric-stat-card">
             <span class="metric-label" data-i18n="waiting_patients">Waiting Patients</span>
             <span class="metric-value" id="stat-queue-count">0</span>
-            <div class="metric-sparkline" style="background:linear-gradient(90deg, #fef3c7, #d97706); height:4px; border-radius:2px;"></div>
+            <div class="metric-sparkline" style="background:linear-gradient(90deg, var(--medium-bg), var(--medium-badge)); height:4px; border-radius:var(--radius-pill);"></div>
           </div>
           <div class="metric-stat-card">
             <span class="metric-label" data-i18n="critical_red_flags">Critical Red Flags</span>
-            <span class="metric-value" id="stat-urgent-count" style="color:#b91c1c;">0</span>
-            <div class="metric-sparkline" style="background:linear-gradient(90deg, #fee2e2, #dc2626); height:4px; border-radius:2px;"></div>
+            <span class="metric-value" id="stat-urgent-count" style="color:var(--critical-badge);">0</span>
+            <div class="metric-sparkline" style="background:linear-gradient(90deg, var(--critical-bg), var(--critical-badge)); height:4px; border-radius:var(--radius-pill);"></div>
           </div>
           <div class="metric-stat-card">
             <span class="metric-label" data-i18n="in_review">In Review</span>
             <span class="metric-value" id="stat-in-review-count">0</span>
-            <div class="metric-sparkline" style="background:linear-gradient(90deg, #e0f2fe, #0369a1); height:4px; border-radius:2px;"></div>
+            <div class="metric-sparkline" style="background:linear-gradient(90deg, var(--brand-purple-soft), var(--brand-purple)); height:4px; border-radius:var(--radius-pill);"></div>
           </div>
           <div class="metric-stat-card">
             <span class="metric-label" data-i18n="completed_today">Completed Today</span>
             <span class="metric-value" id="stat-audited-count">0</span>
-            <div class="metric-sparkline" style="background:linear-gradient(90deg, #dcfce7, #15803d); height:4px; border-radius:2px;"></div>
+            <div class="metric-sparkline" style="background:linear-gradient(90deg, var(--brand-primary-soft), var(--brand-primary)); height:4px; border-radius:var(--radius-pill);"></div>
           </div>
         </div>
 
@@ -187,7 +129,7 @@
               <h2 id="selected-dept-title" class="card-box-title">Cardiology Department</h2>
               <p class="card-box-subtitle" data-i18n="queue_priority_sub">Deterministic Queue Priority: 🚨 Critical &rarr; ⚠️ High &rarr; Medium &rarr; Normal</p>
             </div>
-            <div style="display:flex; gap:0.75rem;">
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
               <button class="btn-secondary-action" onclick="PhysicianDashboard.loadQueue()" data-i18n="sync_queue">🔄 Sync Queue</button>
               <button class="btn-secondary-action" onclick="PhysicianDashboard.showDepartmentSelection()" data-i18n="switch_dept">← Switch Department</button>
             </div>
@@ -232,13 +174,13 @@
         </div>
       </div>
 
-      <!-- Patient Case Inspector & Clinical Workspace -->
+      <!-- ─── Patient Case Inspector & Clinical Workspace ─── -->
       <div id="physician-case-view" style="display:none;">
         
         <!-- Red Flag Alert Banner -->
-        <div id="case-redflag-banner" style="display:none; background:#fef2f2; border:2px solid #ef4444; border-radius:var(--radius-md); padding:1.25rem; margin-bottom:1.5rem;">
-          <h3 id="rf-banner-title" style="color:#991b1b; font-size:1.15rem;">🚨 HIGH PRIORITY RED FLAG</h3>
-          <p id="rf-banner-desc" style="color:#7f1d1d; margin-top:0.35rem; font-size:0.925rem;"></p>
+        <div id="case-redflag-banner" style="display:none; background:var(--critical-bg); border-radius:var(--radius); padding:1.25rem; margin-bottom:1.5rem; box-shadow:var(--shadow-sm);">
+          <h3 id="rf-banner-title" style="color:var(--critical-text); font-size:1.1rem; font-weight:800;">🚨 HIGH PRIORITY RED FLAG</h3>
+          <p id="rf-banner-desc" style="color:var(--critical-text); margin-top:0.35rem; font-size:0.9rem; opacity:0.9;"></p>
         </div>
 
         <div class="card-box">
@@ -250,49 +192,49 @@
           <!-- Explainable AI Decision Support Cards -->
           <div class="explainable-grid">
             <div class="explainable-card">
-              <div class="explainable-title" style="color:#0369a1;">
+              <div class="explainable-title" style="color:var(--brand-purple);">
                 <span>🎯</span> <span data-i18n="why_dept">Why This Department?</span>
               </div>
-              <div id="explain-routing-content" style="font-size:0.875rem; color:#334155;">
+              <div id="explain-routing-content" style="font-size:0.85rem; color:var(--text-body);">
                 Analyzing routing criteria...
               </div>
             </div>
 
             <div class="explainable-card">
-              <div class="explainable-title" style="color:#b91c1c;">
+              <div class="explainable-title" style="color:var(--critical-badge);">
                 <span>⚡</span> <span data-i18n="triage_urgency">Triage Urgency Basis</span>
               </div>
-              <div id="explain-priority-content" style="font-size:0.875rem; color:#334155;">
+              <div id="explain-priority-content" style="font-size:0.85rem; color:var(--text-body);">
                 Evaluating red flag rules...
               </div>
             </div>
 
             <div class="explainable-card">
-              <div class="explainable-title" style="color:#d97706;">
+              <div class="explainable-title" style="color:var(--brand-accent-dark);">
                 <span>🔎</span> <span data-i18n="info_gaps">Information Gaps & Actions</span>
               </div>
-              <div id="explain-gaps-content" style="font-size:0.875rem; color:#334155;">
+              <div id="explain-gaps-content" style="font-size:0.85rem; color:var(--text-body);">
                 Scanning intake completeness...
               </div>
-              <div style="margin-top:0.5rem;">
-                <button class="btn-secondary-action" style="font-size:0.75rem; padding:0.25rem 0.65rem;" onclick="PhysicianDashboard.openAskPatientModal()" data-i18n="ask_clarification">+ Ask Patient Clarification</button>
+              <div style="margin-top:0.65rem;">
+                <button class="btn-secondary-action" style="font-size:0.75rem; min-height:36px; padding:0 0.75rem;" onclick="PhysicianDashboard.openAskPatientModal()" data-i18n="ask_clarification">+ Ask Patient Clarification</button>
               </div>
             </div>
           </div>
 
-          <!-- Dedicated Detailed Clinical Summary Card -->
-          <div class="card-box" style="margin-bottom:1.5rem; border:1.5px solid #0284c7; background:linear-gradient(180deg, #f0f9ff 0%, #ffffff 100%); box-shadow:0 4px 6px -1px rgba(0,0,0,0.06); padding:1.5rem;">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #bae6fd; padding-bottom:0.85rem; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.5rem;">
+          <!-- Detailed Clinical Summary Card -->
+          <div class="card-box" style="margin-bottom:1.5rem; background:var(--bg-main); padding:1.5rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:1rem; margin-bottom:1.25rem; border-bottom:1px solid var(--border-color); flex-wrap:wrap; gap:0.5rem;">
               <div>
                 <div style="display:flex; align-items:center; gap:0.5rem;">
-                  <span style="font-size:1.35rem;">📋</span>
-                  <h3 style="color:#0369a1; font-size:1.2rem; font-weight:800; margin:0;">Detailed Clinical Intake Summary & Socratic Synthesis</h3>
+                  <span style="font-size:1.3rem;">📋</span>
+                  <h3 style="color:var(--brand-primary); font-size:1.15rem; font-weight:800; margin:0;">Detailed Clinical Intake Summary</h3>
                 </div>
-                <p style="color:#0284c7; font-size:0.85rem; margin-top:0.25rem; margin-bottom:0;">Synthesized structured patient profile from adaptive voice intake, pain triage, and digitized medical records.</p>
+                <p style="color:var(--text-muted); font-size:0.82rem; margin-top:0.25rem;">Synthesized patient profile from adaptive intake, pain triage, and medical records.</p>
               </div>
               <div style="display:flex; align-items:center; gap:0.5rem;">
-                <span id="summary-badge-priority" class="lang-tile-badge lang-badge-connected" style="background:#0284c7; color:white; font-size:0.75rem;">GEMMA & AI SYNTHESIS</span>
-                <button type="button" id="btn-toggle-det-edit" class="btn-secondary-action" style="font-size:0.8rem; padding:0.35rem 0.75rem; border-color:#0284c7; color:#0369a1; background:white; font-weight:600;" onclick="PhysicianDashboard.toggleDetailedSummaryEdit()">
+                <span id="summary-badge-priority" class="lang-tile-badge lang-badge-connected" style="font-size:0.72rem;">AI SYNTHESIS</span>
+                <button type="button" id="btn-toggle-det-edit" class="btn-secondary-action" style="font-size:0.78rem; min-height:36px; padding:0 0.75rem;" onclick="PhysicianDashboard.toggleDetailedSummaryEdit()">
                   ✏️ Edit Summary
                 </button>
               </div>
@@ -300,181 +242,178 @@
 
             <div id="detailed-summary-content">
               <!-- Top 4 Metrics Row -->
-              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:1rem; margin-bottom:1.25rem;">
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; margin-bottom:1.25rem;">
                 
-                <!-- Chief Complaint & Onset -->
-                <div style="background:white; border:1px solid #e0f2fe; border-radius:var(--radius-md); padding:1rem; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                  <span style="font-size:0.75rem; font-weight:700; color:#0369a1; text-transform:uppercase; letter-spacing:0.5px;">🎯 Primary Complaint</span>
-                  <p id="det-chief-complaint" style="font-size:1.05rem; font-weight:700; color:#0f172a; margin-top:0.35rem; line-height:1.4;">--</p>
+                <!-- Chief Complaint -->
+                <div style="background:var(--bg-surface-elevated); border-radius:var(--radius-sm); padding:1rem; box-shadow:var(--shadow-sm);">
+                  <span style="font-size:0.72rem; font-weight:700; color:var(--brand-primary); text-transform:uppercase; letter-spacing:0.04em;">🎯 Primary Complaint</span>
+                  <p id="det-chief-complaint" style="font-size:1rem; font-weight:700; color:var(--text-main); margin-top:0.35rem; line-height:1.4;">--</p>
                   <div style="margin-top:0.4rem;" id="det-symptom-tags"></div>
                 </div>
 
-                <!-- Pain Severity & Distress Index -->
-                <div style="background:white; border:1px solid #e0f2fe; border-radius:var(--radius-md); padding:1rem; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+                <!-- Pain Severity -->
+                <div style="background:var(--bg-surface-elevated); border-radius:var(--radius-sm); padding:1rem; box-shadow:var(--shadow-sm);">
                   <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:0.75rem; font-weight:700; color:#0369a1; text-transform:uppercase; letter-spacing:0.5px;">⚡ Pain & Severity Index</span>
-                    <span id="det-pain-score-badge" class="gap-pill" style="font-weight:700; background:#ffedd5; color:#c2410c; border-color:#fdba74; margin:0;">Level 7 / 10</span>
+                    <span style="font-size:0.72rem; font-weight:700; color:var(--brand-primary); text-transform:uppercase; letter-spacing:0.04em;">⚡ Pain & Severity Index</span>
+                    <span id="det-pain-score-badge" class="gap-pill" style="font-weight:700; background:var(--high-bg); color:var(--high-text); margin:0;">Level 7 / 10</span>
                   </div>
-                  <div style="background:#f1f5f9; height:8px; border-radius:4px; margin-top:0.75rem; overflow:hidden;">
-                    <div id="det-pain-progress-bar" style="width:70%; height:100%; background:linear-gradient(90deg, #f59e0b, #ef4444); border-radius:4px;"></div>
+                  <div style="background:var(--bg-subtle); height:8px; border-radius:var(--radius-pill); margin-top:0.75rem; overflow:hidden;">
+                    <div id="det-pain-progress-bar" style="width:70%; height:100%; background:linear-gradient(90deg, var(--medium-badge), var(--critical-badge)); border-radius:var(--radius-pill);"></div>
                   </div>
-                  <p id="det-pain-description" style="font-size:0.78rem; color:#64748b; margin-top:0.5rem; margin-bottom:0;">Severe distress reported at triage kiosk.</p>
+                  <p id="det-pain-description" style="font-size:0.75rem; color:var(--text-muted); margin-top:0.5rem; margin-bottom:0;">Severe distress reported at triage kiosk.</p>
                 </div>
 
-                <!-- Chronology & Trajectory -->
-                <div style="background:white; border:1px solid #e0f2fe; border-radius:var(--radius-md); padding:1rem; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                  <span style="font-size:0.75rem; font-weight:700; color:#0369a1; text-transform:uppercase; letter-spacing:0.5px;">⏱️ Symptom Trajectory</span>
-                  <p id="det-trajectory" style="font-size:0.95rem; font-weight:600; color:#1e293b; margin-top:0.35rem; line-height:1.4;">Active Investigation</p>
-                  <p id="det-duration-info" style="font-size:0.78rem; color:#64748b; margin-top:0.25rem; margin-bottom:0;">Progression captured in clinical interview</p>
+                <!-- Chronology -->
+                <div style="background:var(--bg-surface-elevated); border-radius:var(--radius-sm); padding:1rem; box-shadow:var(--shadow-sm);">
+                  <span style="font-size:0.72rem; font-weight:700; color:var(--brand-primary); text-transform:uppercase; letter-spacing:0.04em;">⏱️ Symptom Trajectory</span>
+                  <p id="det-trajectory" style="font-size:0.92rem; font-weight:600; color:var(--text-main); margin-top:0.35rem; line-height:1.4;">Active Investigation</p>
+                  <p id="det-duration-info" style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem; margin-bottom:0;">Progression captured in clinical interview</p>
                 </div>
 
-                <!-- Known History & Meds -->
-                <div style="background:white; border:1px solid #e0f2fe; border-radius:var(--radius-md); padding:1rem; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                  <span style="font-size:0.75rem; font-weight:700; color:#0369a1; text-transform:uppercase; letter-spacing:0.5px;">💊 Known Conditions & Meds</span>
-                  <p id="det-medical-history" style="font-size:0.9rem; color:#1e293b; margin-top:0.35rem; font-weight:500; line-height:1.4;">None reported</p>
+                <!-- Known History -->
+                <div style="background:var(--bg-surface-elevated); border-radius:var(--radius-sm); padding:1rem; box-shadow:var(--shadow-sm);">
+                  <span style="font-size:0.72rem; font-weight:700; color:var(--brand-primary); text-transform:uppercase; letter-spacing:0.04em;">💊 Known Conditions & Meds</span>
+                  <p id="det-medical-history" style="font-size:0.88rem; color:var(--text-main); margin-top:0.35rem; font-weight:500; line-height:1.4;">None reported</p>
                 </div>
-
               </div>
 
-              <!-- AI-Synthesized Clinical Narrative -->
-              <div style="background:white; border:1.5px solid #cbd5e1; border-radius:var(--radius-md); padding:1.25rem;">
+              <!-- AI-Synthesized Narrative -->
+              <div style="background:var(--bg-surface-elevated); border-radius:var(--radius-sm); padding:1.25rem; box-shadow:var(--shadow-sm);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-                  <h4 style="font-size:0.95rem; font-weight:700; color:#0f172a; margin:0; display:flex; align-items:center; gap:6px;">
+                  <h4 style="font-size:0.92rem; font-weight:700; color:var(--text-main); margin:0; display:flex; align-items:center; gap:6px;">
                     <span>📝</span> <span>AI-Synthesized Clinical Narrative (HPI)</span>
                   </h4>
-                  <span style="font-size:0.7rem; background:#ecfdf5; color:#065f46; padding:0.15rem 0.5rem; border-radius:10px; font-weight:600; border:1px solid #a7f3d0;">Gemma 4 Synthesized</span>
+                  <span style="font-size:0.68rem; background:var(--brand-primary-soft); color:var(--brand-primary); padding:0.15rem 0.5rem; border-radius:var(--radius-pill); font-weight:600;">Gemma 4 Synthesized</span>
                 </div>
-                <p id="det-hpi-narrative" style="font-size:0.95rem; color:#334155; line-height:1.65; margin:0; white-space:pre-line;">
+                <p id="det-hpi-narrative" style="font-size:0.92rem; color:var(--text-body); line-height:1.65; margin:0; white-space:pre-line;">
                   Intake recorded. Summary synthesizes patient statements, associated symptom investigations, and clinical red flags.
                 </p>
               </div>
 
-              <!-- Narrative Inline Edit Form (Hidden by default) -->
-              <div id="det-edit-mode-box" style="display:none; background:#ffffff; border:2px solid #0284c7; border-radius:var(--radius-md); padding:1.25rem; margin-top:1rem;">
-                <label class="form-label" style="font-weight:700; color:#0369a1; margin-bottom:0.4rem;">Edit Full Clinical Intake Summary</label>
-                <textarea id="det-edit-narrative-textarea" class="form-textarea-field" rows="4" style="font-size:0.9rem; line-height:1.5;"></textarea>
+              <!-- Inline Edit Form -->
+              <div id="det-edit-mode-box" style="display:none; background:var(--bg-surface-elevated); border:2px solid var(--brand-primary); border-radius:var(--radius-sm); padding:1.25rem; margin-top:1rem;">
+                <label class="form-label" style="font-weight:700; color:var(--brand-primary); margin-bottom:0.4rem;">Edit Full Clinical Intake Summary</label>
+                <textarea id="det-edit-narrative-textarea" class="form-textarea-field" rows="4" style="font-size:0.88rem;"></textarea>
                 <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.75rem;">
                   <button type="button" class="btn-secondary-action" onclick="PhysicianDashboard.toggleDetailedSummaryEdit(false)">Cancel</button>
-                  <button type="button" class="btn-primary-action" onclick="PhysicianDashboard.saveDetailedSummaryEdit()">✓ Save Summary Changes</button>
+                  <button type="button" class="btn-primary-action" style="min-height:44px;" onclick="PhysicianDashboard.saveDetailedSummaryEdit()">✓ Save Summary Changes</button>
                 </div>
               </div>
-
             </div>
           </div>
 
           <!-- Side-by-Side Clinical Perspectives -->
           <div class="clinical-comparison-grid">
-            <!-- Left: Modern Clinical Intake -->
+            <!-- Left: Modern Clinical -->
             <div class="clinical-pane">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.85rem; flex-wrap:wrap; gap:0.4rem;">
                 <h4 style="font-size:1rem; font-weight:700; color:var(--brand-primary); margin:0; display:flex; align-items:center; gap:6px;">
                   <span>🩺</span> <span data-i18n="modern_clinical_summary">Clinical Details & Assessment</span>
                 </h4>
-                <button type="button" id="btn-toggle-hpi-edit" class="btn-secondary-action" style="font-size:0.75rem; padding:0.25rem 0.65rem; border-color:#94a3b8; background:#f8fafc;" onclick="PhysicianDashboard.toggleHpiEdit()" data-i18n="edit_summary_btn">
+                <button type="button" id="btn-toggle-hpi-edit" class="btn-secondary-action" style="font-size:0.72rem; min-height:32px; padding:0 0.65rem;" onclick="PhysicianDashboard.toggleHpiEdit()" data-i18n="edit_summary_btn">
                   ✏️ Edit Summary
                 </button>
               </div>
               
               <!-- Display Mode -->
               <div id="hpi-display-container">
-                <div style="margin-bottom:0.75rem;">
-                  <strong style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;" data-i18n="chief_complaint_label">Chief Complaint:</strong>
-                  <p id="case-chief-complaint-text" style="font-weight:600; color:#1e293b; margin-top:0.2rem;"></p>
+                <div style="margin-bottom:0.85rem;">
+                  <strong style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em;" data-i18n="chief_complaint_label">Chief Complaint:</strong>
+                  <p id="case-chief-complaint-text" style="font-weight:600; color:var(--text-main); margin-top:0.2rem;"></p>
                 </div>
 
-                <div style="margin-bottom:0.75rem;">
-                  <strong style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;" data-i18n="associated_prog_label">Associated Symptoms & Progression:</strong>
-                  <p id="case-progression-text" style="font-size:0.875rem; color:#334155; margin-top:0.2rem;"></p>
+                <div style="margin-bottom:0.85rem;">
+                  <strong style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em;" data-i18n="associated_prog_label">Associated Symptoms & Progression:</strong>
+                  <p id="case-progression-text" style="font-size:0.85rem; color:var(--text-body); margin-top:0.2rem;"></p>
                 </div>
 
                 <div>
-                  <strong style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;" data-i18n="known_meds_label">Known Conditions / Medications:</strong>
-                  <p id="case-medical-history-text" style="font-size:0.875rem; color:#334155; margin-top:0.2rem;"></p>
+                  <strong style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em;" data-i18n="known_meds_label">Known Conditions / Medications:</strong>
+                  <p id="case-medical-history-text" style="font-size:0.85rem; color:var(--text-body); margin-top:0.2rem;"></p>
                 </div>
               </div>
-              <!-- Hidden HPI text element (used by edit form and sign-off) -->
+              <!-- Hidden HPI text -->
               <p id="case-hpi-text" style="display:none;"></p>
 
-              <!-- Inline Edit Form (Hidden by default) -->
-              <div id="hpi-edit-form-container" style="display:none; background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:var(--radius-sm); padding:0.85rem; margin-top:0.5rem;">
+              <!-- Inline Edit Form -->
+              <div id="hpi-edit-form-container" style="display:none; background:var(--bg-main); border-radius:var(--radius-sm); padding:0.85rem; margin-top:0.5rem;">
                 <div style="margin-bottom:0.65rem;">
-                  <label class="form-label" style="font-size:0.75rem; font-weight:700;" data-i18n="chief_complaint_label">Chief Complaint</label>
-                  <input type="text" id="edit-chief-complaint-input" class="form-input-field" style="font-size:0.85rem; padding:0.4rem 0.65rem; background:white;">
+                  <label class="form-label" style="font-size:0.72rem;" data-i18n="chief_complaint_label">Chief Complaint</label>
+                  <input type="text" id="edit-chief-complaint-input" class="form-input-field" style="font-size:0.85rem; padding:0.5rem 0.75rem;">
                 </div>
                 <div style="margin-bottom:0.65rem;">
-                  <label class="form-label" style="font-size:0.75rem; font-weight:700;" data-i18n="hpi_label">History of Present Illness (HPI)</label>
-                  <textarea id="edit-hpi-narrative-input" class="form-textarea-field" rows="3" style="font-size:0.85rem; padding:0.4rem 0.65rem; background:white;"></textarea>
+                  <label class="form-label" style="font-size:0.72rem;" data-i18n="hpi_label">History of Present Illness (HPI)</label>
+                  <textarea id="edit-hpi-narrative-input" class="form-textarea-field" rows="3" style="font-size:0.85rem; padding:0.5rem 0.75rem;"></textarea>
                 </div>
                 <div style="margin-bottom:0.65rem;">
-                  <label class="form-label" style="font-size:0.75rem; font-weight:700;" data-i18n="associated_prog_label">Associated Symptoms</label>
-                  <input type="text" id="edit-associated-symptoms-input" class="form-input-field" style="font-size:0.85rem; padding:0.4rem 0.65rem; background:white;" placeholder="e.g. Nausea, fatigue">
+                  <label class="form-label" style="font-size:0.72rem;" data-i18n="associated_prog_label">Associated Symptoms</label>
+                  <input type="text" id="edit-associated-symptoms-input" class="form-input-field" style="font-size:0.85rem; padding:0.5rem 0.75rem;" placeholder="e.g. Nausea, fatigue">
                 </div>
                 <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.75rem;">
-                  <button type="button" class="btn-secondary-action" style="font-size:0.75rem; padding:0.25rem 0.65rem;" onclick="PhysicianDashboard.toggleHpiEdit(false)" data-i18n="cancel">Cancel</button>
-                  <button type="button" class="btn-primary-action" style="font-size:0.75rem; padding:0.25rem 0.75rem;" onclick="PhysicianDashboard.saveHpiInlineEdit()" data-i18n="save_changes">✓ Save Changes</button>
+                  <button type="button" class="btn-secondary-action" style="font-size:0.72rem; min-height:32px; padding:0 0.65rem;" onclick="PhysicianDashboard.toggleHpiEdit(false)" data-i18n="cancel">Cancel</button>
+                  <button type="button" class="btn-primary-action" style="font-size:0.72rem; min-height:32px; padding:0 0.75rem;" onclick="PhysicianDashboard.saveHpiInlineEdit()" data-i18n="save_changes">✓ Save Changes</button>
                 </div>
               </div>
             </div>
 
-            <!-- Right: Ayurvedic & Integrative Perspective with AyurGenixAI & AyurParam RAG -->
+            <!-- Right: Ayurvedic Perspective -->
             <div class="ayurvedic-pane">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.4rem;">
-                <h4 style="font-size:1rem; font-weight:700; color:#854d0e; margin:0; display:flex; align-items:center; gap:6px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.85rem; flex-wrap:wrap; gap:0.4rem;">
+                <h4 style="font-size:1rem; font-weight:700; color:var(--brand-accent-dark); margin:0; display:flex; align-items:center; gap:6px;">
                   <span>🌿</span> <span data-i18n="ayurvedic_perspective">Ayurvedic & Holistic Perspective</span>
                 </h4>
                 <div style="display:flex; gap:0.35rem; align-items:center;">
-                  <span class="gap-pill" style="font-size:0.68rem; background:#fef08a; color:#854d0e; border-color:#fde047; font-weight:700;">AyurGenixAI Dataset</span>
-                  <span class="gap-pill" style="font-size:0.68rem; background:#fed7aa; color:#9a3412; border-color:#fdba74; font-weight:700;">AyurParam RAG</span>
+                  <span class="gap-pill" style="font-size:0.65rem; background:var(--brand-accent-soft); color:var(--brand-accent-dark); font-weight:700;">AyurGenixAI Dataset</span>
+                  <span class="gap-pill" style="font-size:0.65rem; background:var(--high-bg); color:var(--high-text); font-weight:700;">AyurParam RAG</span>
                 </div>
               </div>
 
-              <div id="case-ayurvedic-details" style="font-size:0.875rem; color:#713f12; line-height:1.55;">
-                <!-- Populated dynamically by PhysicianDashboard with Dosha, Agni, Pathya, Apathya & Samhita citations -->
+              <div id="case-ayurvedic-details" style="font-size:0.85rem; color:var(--brand-accent-dark); line-height:1.55;">
+                <!-- Populated dynamically -->
               </div>
 
-              <div style="margin-top:0.85rem; padding-top:0.75rem; border-top:1px solid #fef08a; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-                <button type="button" class="btn-secondary-action" style="font-size:0.75rem; padding:0.25rem 0.65rem; background:#fffbeb; border-color:#fde68a; color:#854d0e;" onclick="PhysicianDashboard.openAyurvedicRagModal()">
+              <div style="margin-top:0.85rem; padding-top:0.75rem; border-top:1px solid rgba(216,157,126,0.2); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                <button type="button" class="btn-secondary-action" style="font-size:0.72rem; min-height:32px; padding:0 0.65rem; background:var(--brand-accent-soft); color:var(--brand-accent-dark);" onclick="PhysicianDashboard.openAyurvedicRagModal()">
                   🔍 Explore Ayurvedic RAG Knowledge Base
                 </button>
-                <span style="font-size:0.72rem; color:#a16207; font-style:italic;">Charaka & Sushruta Grounded</span>
+                <span style="font-size:0.68rem; color:var(--brand-accent); font-style:italic;">Charaka & Sushruta Grounded</span>
               </div>
 
-              <p style="font-size:0.72rem; color:#a16207; margin-top:0.6rem; margin-bottom:0; font-style:italic;">
+              <p style="font-size:0.68rem; color:var(--brand-accent); margin-top:0.65rem; margin-bottom:0; font-style:italic;">
                 ⚠️ Notice: Ayurvedic findings are dynamically synthesized from AyurGenixAI (447 conditions) and AyurParam RAG for integrative clinical reference.
               </p>
             </div>
           </div>
 
-          <!-- Bottom Grid: Intake Transcript & Evidence Traceability & Decision Panel -->
-          <div style="display:grid; grid-template-columns: 1.15fr 0.85fr; gap:1.75rem;">
+          <!-- Bottom Grid: Transcript & Evidence & Decision Panel -->
+          <div style="display:grid; grid-template-columns: 1.15fr 0.85fr; gap:1.5rem;">
             
-            <!-- Left Column: Q&A Transcript & Chronological Timeline -->
+            <!-- Left: Q&A Transcript -->
             <div>
-              <h4 style="font-size:1.05rem; font-weight:700; margin-bottom:0.75rem;" data-i18n="socratic_transcript">Interactive Socratic Transcript</h4>
+              <h4 style="font-size:1rem; font-weight:700; margin-bottom:0.85rem; color:var(--text-main);" data-i18n="socratic_transcript">Interactive Socratic Transcript</h4>
               <div id="case-qa-list" style="margin-bottom:1.5rem;"></div>
 
-              <h4 style="font-size:1.05rem; font-weight:700; margin-bottom:0.75rem;" data-i18n="audit_timeline">Chronological Audit Timeline</h4>
+              <h4 style="font-size:1rem; font-weight:700; margin-bottom:0.85rem; color:var(--text-main);" data-i18n="audit_timeline">Chronological Audit Timeline</h4>
               <div id="case-timeline-list" class="timeline-container"></div>
             </div>
 
-            <!-- Right Column: Document Evidence Traceability & Doctor Sign-Off -->
+            <!-- Right: Document Evidence & Doctor Sign-Off -->
             <div>
-              <!-- OCR Document Evidence Box -->
+              <!-- OCR Document Evidence -->
               <div class="ocr-evidence-box">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.85rem;">
                   <h4 style="font-size:1rem; font-weight:700; color:var(--brand-primary); margin:0;" data-i18n="doc_evidence">Document Evidence Traceability</h4>
                   <span class="lang-tile-badge lang-badge-ready">GENUINE OCR</span>
                 </div>
-                
                 <div id="case-ocr-documents-list">
                   <!-- Uploaded documents, lab values, prescriptions, confidence badges -->
                 </div>
               </div>
 
-              <!-- Doctor Clinical Confirmation & Override Panel -->
-              <div style="background:white; border:2px solid var(--brand-primary); border-radius:var(--radius-md); padding:1.5rem; margin-top:1.25rem;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
-                  <h4 style="font-size:1.1rem; font-weight:700; color:var(--brand-primary); margin:0;" data-i18n="physician_decision">Physician Decision & Sign-Off</h4>
+              <!-- Doctor Clinical Confirmation & Sign-Off -->
+              <div style="background:var(--bg-surface-elevated); border:2px solid var(--brand-primary); border-radius:var(--radius); padding:1.5rem; margin-top:1.25rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.85rem;">
+                  <h4 style="font-size:1.05rem; font-weight:700; color:var(--brand-primary); margin:0;" data-i18n="physician_decision">Physician Decision & Sign-Off</h4>
                   <span id="decision-status-pill" class="lang-tile-badge lang-badge-ready">PENDING REVIEW</span>
                 </div>
                 
@@ -509,7 +448,7 @@
                   </div>
 
                   <div id="override-reason-container" class="override-box">
-                    <label class="form-label" for="override-reason-input" style="color:#92400e;">⚠️ Mandatory Override Rationale *</label>
+                    <label class="form-label" for="override-reason-input" style="color:var(--medium-text);">⚠️ Mandatory Override Rationale *</label>
                     <input type="text" id="override-reason-input" class="form-input-field" placeholder="Explain why AI routing or priority was modified...">
                   </div>
 
@@ -528,17 +467,16 @@
                       <button type="submit" id="btn-confirm-record" class="btn-primary-action" style="flex:1; justify-content:center;">
                         ✓ Confirm & Sign Record
                       </button>
-                      <button type="button" class="btn-secondary-action" style="color:#b91c1c; border-color:#fca5a5;" onclick="PhysicianDashboard.escalateToEmergency()">
+                      <button type="button" class="btn-secondary-action" style="color:var(--critical-text);" onclick="PhysicianDashboard.escalateToEmergency()">
                         🚨 Escalate
                       </button>
                     </div>
-                    <button type="button" class="btn-secondary-action" style="width:100%; justify-content:center; color:#0369a1; border-color:#93c5fd; background:#f0f9ff;" onclick="PhysicianDashboard.handleDirectReassign()">
+                    <button type="button" class="btn-secondary-action" style="width:100%; justify-content:center; color:var(--brand-purple); background:var(--brand-purple-soft);" onclick="PhysicianDashboard.handleDirectReassign()">
                       🔄 Transfer / Reassign Department Only
                     </button>
                   </div>
                 </form>
               </div>
-
             </div>
 
           </div>
@@ -551,15 +489,15 @@
   </main>
 
   <!-- Transfer Department Modal -->
-  <div id="transfer-patient-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
-    <div style="background:white; border-radius:12px; max-width:540px; width:92%; padding:26px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.15);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
-        <h3 style="margin:0; color:var(--brand-primary); font-size:1.25rem; display:flex; align-items:center; gap:8px;">
+  <div id="transfer-patient-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(44,62,54,0.4); backdrop-filter:blur(12px); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:var(--bg-surface-elevated); border-radius:var(--radius-lg); max-width:560px; width:92%; padding:2rem; box-shadow:var(--shadow-xl);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.85rem;">
+        <h3 style="margin:0; color:var(--brand-primary); font-size:1.2rem; font-weight:800; display:flex; align-items:center; gap:8px;">
           <span>🔄</span> Transfer / Reassign Department
         </h3>
-        <button type="button" onclick="PhysicianDashboard.closeTransferModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:#64748b;">×</button>
+        <button type="button" onclick="PhysicianDashboard.closeTransferModal()" style="background:var(--bg-subtle); border:none; font-size:1.2rem; cursor:pointer; color:var(--text-muted); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;">×</button>
       </div>
-      <p style="font-size:0.875rem; color:var(--text-muted); margin-bottom:1.25rem;">
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.25rem;">
         Choose the exact department to transfer this patient to. The patient will immediately appear in the new department's active waiting queue.
       </p>
 
@@ -600,12 +538,12 @@
 
         <div style="margin-bottom:1.5rem;">
           <label class="form-label" for="transfer-reason-input">Clinical Transfer Reason / Handover Notes *</label>
-          <textarea id="transfer-reason-input" class="form-textarea-field" rows="3" placeholder="Explain why patient is being transferred (e.g. Needs pediatric specialist evaluation, abnormal vitals, ECG findings)..." required></textarea>
+          <textarea id="transfer-reason-input" class="form-textarea-field" rows="3" placeholder="Explain why patient is being transferred..." required></textarea>
         </div>
 
         <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
           <button type="button" class="btn-secondary-action" onclick="PhysicianDashboard.closeTransferModal()">Cancel</button>
-          <button type="submit" id="btn-submit-transfer" class="btn-primary-action" style="background:#0369a1; border-color:#0284c7;">
+          <button type="submit" id="btn-submit-transfer" class="btn-primary-action" style="min-height:48px;">
             Confirm Transfer & Move Patient ↗
           </button>
         </div>
@@ -614,10 +552,10 @@
   </div>
 
   <!-- Targeted Question Modal -->
-  <div id="ask-patient-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
-    <div style="background:white; border-radius:12px; max-width:500px; width:90%; padding:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);">
-      <h3 style="margin-top:0; color:var(--brand-primary); font-size:1.2rem;">Dispatch Targeted Question to Patient</h3>
-      <p style="font-size:0.875rem; color:var(--text-muted); margin-bottom:1rem;">Send a direct clinical inquiry to the patient kiosk to resolve specific information gaps.</p>
+  <div id="ask-patient-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(44,62,54,0.4); backdrop-filter:blur(12px); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:var(--bg-surface-elevated); border-radius:var(--radius-lg); max-width:520px; width:90%; padding:2rem; box-shadow:var(--shadow-xl);">
+      <h3 style="margin-top:0; color:var(--brand-primary); font-size:1.15rem; font-weight:800;">Dispatch Targeted Question to Patient</h3>
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.25rem;">Send a direct clinical inquiry to the patient kiosk to resolve specific information gaps.</p>
       
       <div style="margin-bottom:1rem;">
         <label class="form-label">Inquiry Category</label>
@@ -638,46 +576,43 @@
 
       <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
         <button class="btn-secondary-action" onclick="PhysicianDashboard.closeAskPatientModal()">Cancel</button>
-        <button class="btn-primary-action" onclick="PhysicianDashboard.submitTargetedQuestion()">Send to Kiosk ↗</button>
+        <button class="btn-primary-action" style="min-height:48px;" onclick="PhysicianDashboard.submitTargetedQuestion()">Send to Kiosk ↗</button>
       </div>
     </div>
   </div>
 
   <!-- Ayurvedic RAG Knowledge Base Explorer Modal -->
-  <div id="ayur-rag-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.8); z-index:10000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
-    <div style="background:white; border-radius:12px; max-width:850px; width:95%; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:1.25rem 1.5rem; background:linear-gradient(135deg, #fefce8 0%, #fef08a 100%); border-bottom:1.5px solid #fde047;">
+  <div id="ayur-rag-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(44,62,54,0.5); z-index:10000; align-items:center; justify-content:center; backdrop-filter:blur(8px);">
+    <div style="background:var(--bg-surface-elevated); border-radius:var(--radius-lg); max-width:850px; width:95%; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:var(--shadow-xl);">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:1.25rem 1.5rem; background:var(--brand-accent-soft); border-bottom:1px solid rgba(216,157,126,0.2);">
         <div>
           <div style="display:flex; align-items:center; gap:0.5rem;">
             <span style="font-size:1.4rem;">🌿</span>
-            <h3 style="margin:0; font-size:1.15rem; color:#854d0e; font-weight:800;">Ayurvedic Clinical RAG Knowledge Explorer</h3>
+            <h3 style="margin:0; font-size:1.1rem; color:var(--brand-accent-dark); font-weight:800;">Ayurvedic Clinical RAG Knowledge Explorer</h3>
           </div>
-          <span style="font-size:0.75rem; color:#a16207; font-weight:600;">Grounded on AyurGenixAI (447 Conditions) & BharatGenAI AyurParam (2.9B LLM)</span>
+          <span style="font-size:0.72rem; color:var(--brand-accent); font-weight:600;">Grounded on AyurGenixAI (447 Conditions) & BharatGenAI AyurParam (2.9B LLM)</span>
         </div>
-        <button onclick="PhysicianDashboard.closeAyurvedicRagModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:#854d0e; padding:0 8px; line-height:1;">
+        <button onclick="PhysicianDashboard.closeAyurvedicRagModal()" style="background:var(--bg-subtle); border:none; font-size:1.2rem; cursor:pointer; color:var(--brand-accent-dark); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
           ✕
         </button>
       </div>
 
       <div style="padding:1.25rem; overflow-y:auto; flex:1;">
-        <!-- Query Input -->
         <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
-          <input type="text" id="ayur-rag-search-input" class="form-input-field" placeholder="Search condition, herb, dosha (e.g., chest pain, Sandhigata Vata, Arjuna, acidity)..." style="flex:1;">
-          <button type="button" class="btn-primary-action" onclick="PhysicianDashboard.executeAyurvedicRagSearch()">
+          <input type="text" id="ayur-rag-search-input" class="form-input-field" placeholder="Search condition, herb, dosha (e.g., chest pain, Sandhigata Vata, Arjuna)..." style="flex:1;">
+          <button type="button" class="btn-primary-action" style="min-height:48px;" onclick="PhysicianDashboard.executeAyurvedicRagSearch()">
             🔍 Search RAG
           </button>
         </div>
 
-        <!-- Provenance Info Bar -->
-        <div style="background:#faf8f5; border:1px solid #e7dcce; border-radius:var(--radius-sm); padding:0.6rem 0.85rem; margin-bottom:1rem; font-size:0.75rem; color:#78350f; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.4rem;">
+        <div style="background:var(--bg-main); border-radius:var(--radius-sm); padding:0.65rem 1rem; margin-bottom:1rem; font-size:0.72rem; color:var(--brand-accent-dark); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.4rem;">
           <span><strong>Dataset:</strong> AyurGenixAI (35 Parameters, 447 Records)</span>
           <span><strong>Foundation LLM:</strong> BharatGenAI / AyurParam</span>
-          <span class="gap-pill" style="font-size:0.7rem; background:#ecfdf5; color:#065f46; border-color:#a7f3d0; margin:0;">Zero-Hallucination Verified</span>
+          <span class="gap-pill" style="font-size:0.68rem; background:var(--brand-primary-soft); color:var(--brand-primary); margin:0;">Zero-Hallucination Verified</span>
         </div>
 
-        <!-- Results Container -->
         <div id="ayur-rag-results-container">
-          <p style="text-align:center; color:var(--text-muted); font-size:0.875rem; padding:2rem 0;">
+          <p style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:2rem 0;">
             Type a clinical symptom or condition above to query classical Ayurvedic knowledge.
           </p>
         </div>
@@ -685,42 +620,42 @@
     </div>
   </div>
 
-  <!-- Document Scan High-Resolution Preview Modal -->
-  <div id="doc-scan-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.85); z-index:10000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
-    <div style="background:white; border-radius:12px; max-width:950px; width:95%; max-height:92vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.3);">
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:1rem 1.5rem; background:#0f172a; color:white;">
+  <!-- Document Scan Preview Modal -->
+  <div id="doc-scan-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(44,62,54,0.6); z-index:10000; align-items:center; justify-content:center; backdrop-filter:blur(8px);">
+    <div style="background:var(--bg-surface-elevated); border-radius:var(--radius-lg); max-width:950px; width:95%; max-height:92vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:var(--shadow-xl);">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:1rem 1.5rem; background:var(--text-main); color:white; border-radius:var(--radius-lg) var(--radius-lg) 0 0;">
         <div>
-          <h3 id="scan-modal-title" style="margin:0; font-size:1.1rem; color:white; font-weight:700;">📄 Medical Document</h3>
-          <p id="scan-modal-meta" style="margin:0; font-size:0.75rem; color:#94a3b8;">Verified Medical Record Scan</p>
+          <h3 id="scan-modal-title" style="margin:0; font-size:1.05rem; color:white; font-weight:700;">📄 Medical Document</h3>
+          <p id="scan-modal-meta" style="margin:0; font-size:0.72rem; color:var(--text-faint);">Verified Medical Record Scan</p>
         </div>
         <div style="display:flex; align-items:center; gap:0.75rem;">
-          <a id="scan-modal-external-btn" href="#" target="_blank" class="btn-scan-preview" style="background:#0284c7; color:white; border:none; text-decoration:none; padding:6px 12px; font-size:0.8rem; border-radius:6px; font-weight:600;">↗ Open Original</a>
-          <button onclick="PhysicianDashboard.closeDocumentScanModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#94a3b8; padding:0 8px; line-height:1;">✕</button>
+          <a id="scan-modal-external-btn" href="#" target="_blank" class="btn-scan-preview" style="background:var(--brand-primary); color:white; border:none; text-decoration:none; padding:6px 12px; font-size:0.78rem; border-radius:var(--radius-sm); font-weight:600;">↗ Open Original</a>
+          <button onclick="PhysicianDashboard.closeDocumentScanModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:var(--text-faint); padding:0 8px; line-height:1;">✕</button>
         </div>
       </div>
-      <div id="scan-modal-body" style="padding:1rem; overflow:auto; flex:1; background:#1e293b; display:flex; justify-content:center; align-items:center;">
+      <div id="scan-modal-body" style="padding:1rem; overflow:auto; flex:1; background:var(--text-main); display:flex; justify-content:center; align-items:center;">
       </div>
     </div>
   </div>
 
-  <!-- Interactive "Why?" AYUSH Evidence Breakdown Modal -->
-  <div id="ayush-why-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.65); backdrop-filter:blur(6px); z-index:9999; align-items:center; justify-content:center;">
-    <div class="modal-box" style="background:#fff; width:90%; max-width:680px; max-height:85vh; overflow-y:auto; border-radius:24px; padding:28px; box-shadow:0 20px 40px rgba(0,0,0,0.25); position:relative;">
-      <button onclick="PhysicianDashboard.closeWhyModal()" style="position:absolute; top:20px; right:20px; border:none; background:rgba(0,0,0,0.05); border-radius:50%; width:36px; height:36px; cursor:pointer; font-size:1.1rem;">✕</button>
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+  <!-- AYUSH Evidence Breakdown Modal -->
+  <div id="ayush-why-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-box" style="max-width:680px; max-height:85vh; overflow-y:auto;">
+      <button onclick="PhysicianDashboard.closeWhyModal()" style="position:absolute; top:20px; right:20px; border:none; background:var(--bg-subtle); border-radius:50%; width:36px; height:36px; cursor:pointer; font-size:1.1rem; color:var(--text-muted);">✕</button>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:1rem;">
         <span style="font-size:2rem;">🔬</span>
         <div>
-          <h2 style="font-size:1.35rem; font-weight:800; color:#0f172a; margin:0;">AYUSH Assessment Evidence Trace</h2>
-          <p style="font-size:0.85rem; color:#64748b; margin-top:2px; margin-bottom:0;">Transparent 4-layer feature scoring, dosha weights, and raw patient evidence</p>
+          <h2 style="font-size:1.3rem; font-weight:800; color:var(--text-main); margin:0;">AYUSH Assessment Evidence Trace</h2>
+          <p style="font-size:0.82rem; color:var(--text-muted); margin-top:0.15rem; margin-bottom:0;">Transparent 4-layer feature scoring, dosha weights, and raw patient evidence</p>
         </div>
       </div>
 
-      <div id="why-modal-content" style="margin-top:16px;">
-        <!-- Populated dynamically with feature weights & patient response matches -->
+      <div id="why-modal-content" style="margin-top:1rem;">
+        <!-- Populated dynamically -->
       </div>
 
-      <div style="display:flex; justify-content:flex-end; margin-top:20px;">
-        <button onclick="PhysicianDashboard.closeWhyModal()" style="padding:10px 24px; border-radius:12px; border:none; background:#0d9488; color:#fff; font-weight:700; cursor:pointer;">Close Evidence Breakdown</button>
+      <div style="display:flex; justify-content:flex-end; margin-top:1.5rem;">
+        <button onclick="PhysicianDashboard.closeWhyModal()" class="btn-primary-action" style="min-height:48px;">Close Evidence Breakdown</button>
       </div>
     </div>
   </div>
