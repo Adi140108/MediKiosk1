@@ -768,8 +768,8 @@ const SpeechManager = {
     const targetLang = (lang || this.currentLanguage || 'en').toLowerCase().trim();
     const assignedVoice = this.getIndianFemaleVoice(targetLang);
 
-    // Primary: Browser SpeechSynthesis for ALL 10 Indian languages
-    if (this.synth) {
+    // Primary: Browser SpeechSynthesis ONLY if browser actually has a matching voice for targetLang
+    if (this.synth && assignedVoice) {
       try {
         this.synth.cancel();
         this.synth.resume();
@@ -777,11 +777,8 @@ const SpeechManager = {
         utterance.lang = this.langLocaleMap[targetLang] || `${targetLang}-IN`;
         utterance.rate = 0.92;
         utterance.pitch = 1.0;
-        if (assignedVoice) {
-          utterance.voice = assignedVoice;
-        }
+        utterance.voice = assignedVoice;
 
-        // Track whether onstart actually fired (audio actually began playing)
         let audioStarted = false;
 
         utterance.onstart = () => {
@@ -791,11 +788,16 @@ const SpeechManager = {
         };
 
         utterance.onend = () => {
-          this.isSpeaking = false;
           if (this._speechWatchdog) {
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
           }
+          if (!audioStarted) {
+            console.warn("Browser voice ended instantly without starting audio for", targetLang, "- playing server audio stream");
+            this._playServerAudioStream(text, targetLang, onEndCallback);
+            return;
+          }
+          this.isSpeaking = false;
           this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
           if (typeof onEndCallback === 'function') {
             onEndCallback();
@@ -809,7 +811,6 @@ const SpeechManager = {
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
           }
-          // CRITICAL: Fall back to server TTS instead of giving up silently
           this._playServerAudioStream(text, targetLang, onEndCallback);
         };
 
@@ -817,8 +818,6 @@ const SpeechManager = {
         this.updateButtonStates('playing');
         this.synth.speak(utterance);
 
-        // Chrome watchdog to prevent audio suspension mid-speech
-        // Also detects cases where speech ends instantly without producing audio
         if (this._speechWatchdog) clearInterval(this._speechWatchdog);
         let watchdogTicks = 0;
         this._speechWatchdog = setInterval(() => {
@@ -826,7 +825,6 @@ const SpeechManager = {
           if (this.synth && this.synth.speaking) {
             try { this.synth.resume(); } catch(e) {}
           } else if (watchdogTicks <= 1 && !audioStarted) {
-            // Speech ended instantly without ever starting - voice didn't work
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
             console.warn("Browser voice produced no audio for", targetLang, "- falling back to server TTS");
@@ -835,7 +833,7 @@ const SpeechManager = {
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
           }
-        }, 1200);
+        }, 800);
 
         return;
       } catch (err) {
@@ -843,7 +841,7 @@ const SpeechManager = {
       }
     }
 
-    // Fallback: Server Indic Neural TTS via edge_tts / Google Translate HTTP TTS stream
+    // Fallback: Server Indic Neural TTS stream for all languages without a matching browser voice
     this._playServerAudioStream(text, targetLang, onEndCallback);
   },
 
