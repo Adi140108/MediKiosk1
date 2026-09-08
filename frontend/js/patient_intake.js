@@ -144,6 +144,15 @@ const PatientIntake = {
   },
 
   bindEvents() {
+    // Begin check-in button binding
+    const beginBtn = document.getElementById("btn-begin-checkin");
+    if (beginBtn) {
+      beginBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.goToStep(2);
+      });
+    }
+
     // Patient registration form
     const regForm = document.getElementById("patient-reg-form");
     if (regForm) {
@@ -183,24 +192,54 @@ const PatientIntake = {
       this.autoAdvanceTimer = null;
     }
 
-    if (typeof SpeechManager !== "undefined" && SpeechManager.stopAllAudio) {
-      SpeechManager.stopAllAudio();
+    try {
+      if (typeof SpeechManager !== "undefined" && SpeechManager.stopAllAudio) {
+        SpeechManager.stopAllAudio();
+      }
+    } catch (e) {
+      console.warn("Speech stop notice:", e);
     }
 
+    // Ensure section-patient container is active and visible
+    const patientSec = document.getElementById("section-patient");
+    if (patientSec) {
+      patientSec.style.display = "block";
+      patientSec.classList.add("active");
+    }
+
+    // Toggle wizard steps display
     for (let i = 1; i <= 8; i++) {
       const el = document.getElementById(`kiosk-step-${i}`);
-      if (el) el.style.display = i === stepNum ? "block" : "none";
+      if (el) {
+        el.style.display = i === stepNum ? "block" : "none";
+      }
     }
     this.currentStep = stepNum;
-    this.updateStepIndicator(stepNum);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    try {
+      this.updateStepIndicator(stepNum);
+    } catch (e) {
+      console.warn("Step indicator notice:", e);
+    }
+
+    try {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (e) {}
 
     // Step 2: Refresh language grid UI and continue button
     if (stepNum === 2) {
-      this.updateLanguageGridUI(this.language);
-      this.updateStep2ContinueBtn(this.language);
+      try {
+        this.updateLanguageGridUI(this.language);
+        this.updateStep2ContinueBtn(this.language);
+      } catch (e) {
+        console.warn("Step 2 UI update notice:", e);
+      }
       setTimeout(() => {
-        SpeechManager.resumeAudioAndSpeak(2, this.language);
+        try {
+          if (typeof SpeechManager !== "undefined" && SpeechManager.resumeAudioAndSpeak) {
+            SpeechManager.resumeAudioAndSpeak(2, this.language);
+          }
+        } catch (e) {}
       }, 300);
       return;
     }
@@ -217,7 +256,11 @@ const PatientIntake = {
       }
     } else {
       setTimeout(() => {
-        SpeechManager.resumeAudioAndSpeak(stepNum, this.language);
+        try {
+          if (typeof SpeechManager !== "undefined" && SpeechManager.resumeAudioAndSpeak) {
+            SpeechManager.resumeAudioAndSpeak(stepNum, this.language);
+          }
+        } catch (e) {}
       }, 350);
     }
   },
