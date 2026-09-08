@@ -85,9 +85,10 @@ app.include_router(ayurveda_router, prefix="/api/v1")
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FRONTEND_DIR = os.path.join(REPO_ROOT, "frontend")
 PUBLIC_DIR = os.path.join(REPO_ROOT, "public")
+REACT_DIST_DIR = os.path.join(REPO_ROOT, "frontend-react", "dist")
 
 def get_html_content(filename: str, fallback_content: str) -> str:
-    for base in [FRONTEND_DIR, PUBLIC_DIR, "frontend", "public"]:
+    for base in [REACT_DIST_DIR, FRONTEND_DIR, PUBLIC_DIR, "frontend-react/dist", "frontend", "public"]:
         p = os.path.join(base, filename)
         if os.path.exists(p):
             try:
@@ -96,6 +97,7 @@ def get_html_content(filename: str, fallback_content: str) -> str:
             except Exception:
                 pass
     return fallback_content
+
 
 @app.get("/", include_in_schema=False)
 async def serve_patient_kiosk():
@@ -142,6 +144,20 @@ async def serve_js(file_path: str):
     if js_content:
         return Response(content=js_content, media_type="application/javascript")
     return Response(content="// JS not found", status_code=404, media_type="application/javascript")
+
+@app.get("/assets/{file_path:path}", include_in_schema=False)
+async def serve_assets(file_path: str):
+    for base in [REACT_DIST_DIR, PUBLIC_DIR, FRONTEND_DIR, "frontend-react/dist", "public", "frontend"]:
+        asset_file = os.path.join(base, "assets", file_path)
+        if os.path.exists(asset_file):
+            try:
+                media_type = "application/javascript" if asset_file.endswith(".js") else ("text/css" if asset_file.endswith(".css") else None)
+                with open(asset_file, "rb") as f:
+                    return Response(content=f.read(), media_type=media_type)
+            except Exception:
+                pass
+    return Response(content="Asset not found", status_code=404)
+
 
 @app.get("/logo.png", include_in_schema=False)
 async def serve_logo_png():

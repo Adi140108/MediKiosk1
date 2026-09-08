@@ -39,9 +39,7 @@ def sync():
         s = os.path.join(FRONTEND_DIR, item)
         d = os.path.join(PUBLIC_DIR, item)
         if os.path.isdir(s):
-            if os.path.exists(d):
-                shutil.rmtree(d)
-            shutil.copytree(s, d)
+            shutil.copytree(s, d, dirs_exist_ok=True)
         else:
             shutil.copy2(s, d)
     print(f"Synced {FRONTEND_DIR} to {PUBLIC_DIR}")
