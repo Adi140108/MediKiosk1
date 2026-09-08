@@ -1152,7 +1152,7 @@ const PatientIntake = {
           this.renderQuestion(retryRes.next_question);
         }
       } catch (retryErr) {
-        alert("⚠️ Please tap Submit Answer once more to proceed.");
+        console.warn("Retry submit answer failed:", retryErr.message);
       }
     } finally {
       if (btn) {

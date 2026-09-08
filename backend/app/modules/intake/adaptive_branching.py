@@ -64,6 +64,24 @@ class AdaptiveBranchingEngine:
             missing.append("associated_symptoms")
         return missing
 
+    def calculate_confidence_score(self, context: PatientContextState) -> float:
+        score = 0.0
+        if context.chief_complaint:
+            score += 0.25
+        if context.location:
+            score += 0.15
+        if context.onset:
+            score += 0.15
+        if context.duration:
+            score += 0.15
+        if context.severity is not None:
+            score += 0.10
+        if context.character:
+            score += 0.10
+        if context.associated_symptoms and len(context.associated_symptoms) > 0:
+            score += 0.10
+        return min(1.0, score)
+
     def select_next_question_candidate(
         self,
         context: PatientContextState,
@@ -72,29 +90,33 @@ class AdaptiveBranchingEngine:
         """
         Dynamically chooses the next question candidate based on symptom branching,
         missing information, red-flag priorities, and Ayurvedic relevance.
+        Enforces a minimum of 4-5 questions and increases questions if confidence is < 0.85.
         """
         complaint = (context.chief_complaint or "").lower()
         missing = self.identify_missing_information(context)
         context.missing_information = missing
 
-        # 1. Check if we should stop based on OPD mode and questioning depth
+        # Calculate clinical confidence score
+        confidence = self.calculate_confidence_score(context)
+
+        # Count actual interview questions asked (excluding initial_chief_complaint)
+        asked_interview_ids = [qid for qid in asked_question_ids if qid != "initial_chief_complaint"]
+        asked_count = len(asked_interview_ids)
         mode_str = str(getattr(context, "opd_mode", "GENERAL_OPD")).upper()
-        if "AYUSH" in mode_str:
-            # AYUSH OPD Mode requires comprehensive multi-domain exploration:
-            # Must ask at least 6 to 8 questions across Track A & B until confidence threshold (>= 0.85) is met.
-            if context.question_count >= 10:
-                context.is_sufficient = True
-                return None
-            if context.question_count >= 6:
-                ayush_eval = getattr(context, "ayush_assessment", {}) or {}
-                evidence_cnt = ayush_eval.get("evidence_count", 0)
-                if evidence_cnt >= 5 or context.question_count >= 8:
-                    context.is_sufficient = True
-                    return None
-        else:
-            if context.question_count >= 10 or (len(missing) == 0 and context.question_count >= 4):
-                context.is_sufficient = True
-                return None
+
+        # Termination Logic:
+        # 1. Hard cap at 10 interview questions
+        if asked_count >= 10:
+            context.is_sufficient = True
+            return None
+
+        # 2. Minimum 4 interview questions required before stopping in GENERAL OPD mode (or 6 in AYUSH mode)
+        min_required = 6 if "AYUSH" in mode_str else 4
+
+        # 3. Stop only if minimum questions are asked AND confidence >= 0.85 AND no critical missing fields
+        if asked_count >= min_required and confidence >= 0.85 and len(missing) == 0:
+            context.is_sufficient = True
+            return None
 
         candidates: List[Dict[str, Any]] = []
 
@@ -111,12 +133,12 @@ class AdaptiveBranchingEngine:
         joint_keywords = [
             "joint", "knee", "back", "bone", "spine", "arthritis", "जोड़", "घुटने", "कमर", "पीठ", "हड्डी", "कंधा",
             "ಕೀಲು", "ಮೊಣಕಾಲು", "ಬೆನ್ನು", "ಮೂಳೆ", "ಕೀಲುನೋವು", "மூட்டு", "மூட்டுவலி", "முழங்கால்", "முதுகு",
-            "కీలు", "మోకాలు", "వెన్ను", "కీళ్లనొప్పి", "സന്ധി", "മുട്ട്", "സന്ധിവേദന", "হাঁটু", "জয়েন্ট",
+            "కీలు", "మోకాలు", "వెన్ను", "కీళ్లనొప్పి", "സന്ധി", "മുട്ട്", "സന്ധിവೇദന", "হাঁটু", "জয়েন্ট",
             "સાંધા", "ઘૂંટણ", "સાંધાનો દુખાવો", "ਜੋੜ", "ਗੋਡੇ"
         ]
         abdo_keywords = [
             "stomach", "abdo", "abdomen", "belly", "gastric", "acidity", "पेट", "आमाशय", "जठर", "होट्टे",
-            "ಹೊಟ್ಟೆ", "ಹೊಟ್ಟೆನೋವು", "വയிறு", "வயிற்றுவலி", "కడుపు", "కడుపునొప్పి", "വയർ", "വയറുവേദന",
+            "ಹೊಟ್ಟೆ", "ಹೊಟ್ಟೆನೋವು", "വയிறு", "வயிற்றுவலி", "కడుపు", "కడుపునొప్పి", "വയർ", "വയറുവೇദന",
             "પેટ", "પેટનો દુખાવો", "ਪੇਟ", "ਪੇਟ ਦਰਦ", "পেট", "পেটে ব্যথা"
         ]
 
@@ -133,14 +155,10 @@ class AdaptiveBranchingEngine:
         for pathway_key in matched_pathways:
             if pathway_key in SYMPTOM_PATHWAYS:
                 for item in SYMPTOM_PATHWAYS[pathway_key]:
-                    field = item.get("field")
-                    if field and getattr(context, field, None) and item["id"] in asked_question_ids:
-                        continue
                     if item["id"] not in asked_question_ids:
                         candidates.append(item)
 
         # 3. Add relevant Ayurvedic candidates ONLY if kiosk is in AYUSH OPD mode
-        mode_str = str(getattr(context, "opd_mode", "GENERAL_OPD")).upper()
         if "AYUSH" in mode_str:
             state = AyushAssessmentSessionState(
                 session_id=getattr(context, "session_id", "active_session"),
@@ -167,22 +185,55 @@ class AdaptiveBranchingEngine:
             # Strictly exclude any Ayurvedic candidates in GENERAL OPD mode
             candidates = [c for c in candidates if c.get("category") != "AYURVEDIC" and not c.get("ayurvedic_domain")]
 
-        # 4. Fallback general clinical questions if no candidate from pathway
-        if not candidates:
-            if "duration" in missing and "gen_duration" not in asked_question_ids:
-                candidates.append({
-                    "id": "gen_duration",
-                    "objective": "Determine duration",
-                    "category": "CHIEF_COMPLAINT",
-                    "question": "How many days or hours have you been experiencing this?"
-                })
-            elif "severity" in missing and "gen_severity" not in asked_question_ids:
-                candidates.append({
-                    "id": "gen_severity",
-                    "objective": "Determine severity",
-                    "category": "SYMPTOM_CHARACTER",
-                    "question": "On a scale from 1 (mild) to 10 (unbearable), how severe is your discomfort right now?"
-                })
+        # 4. Fallback general clinical exploration questions to ensure 4-5+ questions are always asked
+        fallback_pool = [
+            {
+                "id": "gen_duration",
+                "objective": "Determine duration",
+                "category": "CHIEF_COMPLAINT",
+                "question": "How many days or hours have you been experiencing this health problem?"
+            },
+            {
+                "id": "gen_severity",
+                "objective": "Determine severity",
+                "category": "SYMPTOM_CHARACTER",
+                "question": "On a scale from 1 (mild) to 10 (unbearable), how severe is your discomfort right now?"
+            },
+            {
+                "id": "gen_aggravating",
+                "objective": "Assess aggravating factors",
+                "category": "LIFESTYLE",
+                "question": "What specific activities, foods, movements, or postures make your symptoms worse or better?"
+            },
+            {
+                "id": "gen_impact",
+                "objective": "Assess daily life impact",
+                "category": "LIFESTYLE",
+                "question": "How is this health issue affecting your sleep, daily work, appetite, or energy levels?"
+            },
+            {
+                "id": "gen_prev_episodes",
+                "objective": "Assess previous history",
+                "category": "HISTORY",
+                "question": "Have you ever experienced similar health problems or symptoms in the past?"
+            },
+            {
+                "id": "gen_med_relief",
+                "objective": "Assess medication response",
+                "category": "MEDICATION",
+                "question": "Have you taken any medicines or home remedies for this today, and did they provide any relief?"
+            },
+            {
+                "id": "gen_systemic_assoc",
+                "objective": "Check associated systemic symptoms",
+                "category": "SYSTEMIC_EXPLORATION",
+                "question": "Are you experiencing any other symptoms like fever, fatigue, dizziness, nausea, or sweating?"
+            }
+        ]
+
+        for fallback_item in fallback_pool:
+            if fallback_item["id"] not in asked_question_ids:
+                candidates.append(fallback_item)
 
         if not candidates:
             context.is_sufficient = True
