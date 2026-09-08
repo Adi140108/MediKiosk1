@@ -17,27 +17,47 @@ const PatientIntake = {
 
   hasSpokenInitialWelcome: false,
 
+  getStorageItem(key, defaultVal) {
+    try {
+      return localStorage.getItem(key) || defaultVal;
+    } catch (e) {
+      return defaultVal;
+    }
+  },
+
+  setStorageItem(key, val) {
+    try {
+      localStorage.setItem(key, val);
+    } catch (e) {}
+  },
+
   init() {
     // 1. Restore saved language if user previously chose one
-    const savedLang = localStorage.getItem("medikiosk_lang");
-    if (savedLang) {
-      this.language = savedLang;
-    }
+    try {
+      const savedLang = this.getStorageItem("medikiosk_lang", "en");
+      if (savedLang) {
+        this.language = savedLang;
+      }
+    } catch (e) {}
 
-    this.updateModeUI();
-    this.bindEvents();
-    SpeechManager.init();
-    I18n.setLanguage(this.language);
-    SpeechManager.setLanguage(this.language);
-    this.updateStepIndicator(1);
-    this.updateLanguageGridUI(this.language);
+    try { this.updateModeUI(); } catch (e) { console.warn("updateModeUI notice:", e); }
+    try { this.bindEvents(); } catch (e) { console.warn("bindEvents notice:", e); }
+    try { if (typeof SpeechManager !== "undefined" && SpeechManager.init) SpeechManager.init(); } catch (e) {}
+    try { if (typeof I18n !== "undefined" && I18n.setLanguage) I18n.setLanguage(this.language); } catch (e) {}
+    try { if (typeof SpeechManager !== "undefined" && SpeechManager.setLanguage) SpeechManager.setLanguage(this.language); } catch (e) {}
+    try { this.updateStepIndicator(1); } catch (e) {}
+    try { this.updateLanguageGridUI(this.language); } catch (e) {}
 
     // 2. IMMEDIATE WELCOMING AUTO-SPEECH
     const triggerWelcomeSpeech = () => {
-      if (this.currentStep === 1 && !this.hasSpokenInitialWelcome && !SpeechManager.isMuted) {
-        this.hasSpokenInitialWelcome = true;
-        SpeechManager.resumeAudioAndSpeak(1, this.language);
-      }
+      try {
+        if (this.currentStep === 1 && !this.hasSpokenInitialWelcome && typeof SpeechManager !== "undefined" && !SpeechManager.isMuted) {
+          this.hasSpokenInitialWelcome = true;
+          if (SpeechManager.resumeAudioAndSpeak) {
+            SpeechManager.resumeAudioAndSpeak(1, this.language);
+          }
+        }
+      } catch (e) {}
     };
 
     // Immediate attempt on load (50ms)
@@ -47,26 +67,30 @@ const PatientIntake = {
     // Unlock audio instantly on any first micro-interaction
     const unlockAndSpeak = () => {
       try {
-        if (SpeechManager.synth) SpeechManager.synth.resume();
-        const ctx = SpeechManager.getAudioContext();
-        if (ctx && ctx.state === 'suspended') ctx.resume();
+        if (typeof SpeechManager !== "undefined") {
+          if (SpeechManager.synth) SpeechManager.synth.resume();
+          const ctx = SpeechManager.getAudioContext();
+          if (ctx && ctx.state === 'suspended') ctx.resume();
+        }
       } catch(e) {}
       triggerWelcomeSpeech();
     };
 
     ['click', 'touchstart', 'touchend', 'pointerdown', 'pointermove', 'mousemove', 'keydown', 'scroll', 'focus'].forEach(evt => {
-      window.addEventListener(evt, unlockAndSpeak, { once: true, passive: true });
+      try {
+        window.addEventListener(evt, unlockAndSpeak, { once: true, passive: true });
+      } catch (e) {}
     });
   },
 
   getActiveOpdMode() {
-    return localStorage.getItem("medikiosk_active_mode") || "GENERAL_OPD";
+    return this.getStorageItem("medikiosk_active_mode", "GENERAL_OPD");
   },
 
   setActiveOpdMode(mode) {
     const validMode = (mode === "AYUSH_OPD") ? "AYUSH_OPD" : "GENERAL_OPD";
-    localStorage.setItem("medikiosk_active_mode", validMode);
-    this.updateModeUI();
+    this.setStorageItem("medikiosk_active_mode", validMode);
+    try { this.updateModeUI(); } catch (e) {}
   },
 
   selectedTempMode: null,

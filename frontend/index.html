@@ -9,6 +9,24 @@
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <script>
+    function goToStep(num) {
+      if (window.PatientIntake && typeof window.PatientIntake.goToStep === 'function') {
+        try {
+          window.PatientIntake.goToStep(num);
+          return;
+        } catch(e) {}
+      }
+      for (var i = 1; i <= 8; i++) {
+        var el = document.getElementById('kiosk-step-' + i);
+        if (el) el.style.display = (i === num) ? 'block' : 'none';
+      }
+      var sec = document.getElementById('section-patient');
+      if (sec) { sec.style.display = 'block'; sec.classList.add('active'); }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    window.goToStep = goToStep;
+  </script>
 </head>
 <body class="notranslate" translate="no">
 
@@ -89,7 +107,7 @@
               Complete your pre-consultation intake before you see your doctor. MediKiosk collects your symptoms using AI and hands-free voice — in your language.
             </p>
             <div class="hero-action-row">
-              <button id="btn-begin-checkin" class="btn-primary-action" onclick="PatientIntake.goToStep(2)">
+              <button id="btn-begin-checkin" class="btn-primary-action" onclick="goToStep(2)">
                 <span data-i18n="begin_checkin">Begin Check-In</span> →
               </button>
               <button class="btn-icon-round" onclick="SpeechManager.toggleSpeakForStep(1)" title="Listen / Mute Audio Preview">
