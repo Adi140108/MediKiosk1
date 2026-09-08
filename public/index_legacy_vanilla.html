@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en" class="notranslate" translate="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google" content="notranslate">
+  <title>MediKiosk — AI-Assisted Clinical Intake & Triage System</title>
+  <link rel="icon" type="image/png" href="/logo.png?v=2">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <script>
+    function goToStep(num) {
+      if (window.PatientIntake && typeof window.PatientIntake.goToStep === 'function') {
+        try {
+          window.PatientIntake.goToStep(num);
+          return;
+        } catch(e) {}
+      }
+      for (var i = 1; i <= 8; i++) {
+        var el = document.getElementById('kiosk-step-' + i);
+        if (el) el.style.display = (i === num) ? 'block' : 'none';
+      }
+      var stepBar = document.getElementById('kiosk-step-indicator');
+      if (stepBar) stepBar.style.display = (num === 1) ? 'none' : 'flex';
+      var sec = document.getElementById('section-patient');
+      if (sec) { sec.style.display = 'block'; sec.classList.add('active'); }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    window.goToStep = goToStep;
+  </script>
+</head>
+<body class="notranslate" translate="no">
+
+  <!-- Ambient Moving Greenish Hue Background Layer -->
+  <div class="ambient-hue-background" aria-hidden="true">
+    <div class="hue-orb hue-orb-1"></div>
+    <div class="hue-orb hue-orb-2"></div>
+    <div class="hue-orb hue-orb-3"></div>
+    <div class="hue-orb hue-orb-4"></div>
+  </div>
+
+  <!-- Safety Top Notice Banner -->
+  <div class="safety-top-banner">
+    <div class="safety-notice-content">
+      <span class="safety-warn-icon">⚠️</span>
+      <span data-i18n="safety_notice">Safety Notice: MediKiosk does not diagnose conditions or prescribe medications. Your healthcare provider reviews all information.</span>
+    </div>
+    <div class="physician-loop-pill">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+      <span data-i18n="physician_in_loop">Physician-in-the-Loop</span>
+    </div>
+  </div>
+
+  <!-- Main Navigation Bar -->
+  <nav class="navbar">
+    <div class="brand-wrapper" onclick="window.location.reload()">
+      <img src="/logo.png?v=3" alt="MediKiosk Logo" class="brand-logo-img" style="height:52px; width:auto; object-fit:contain; border-radius:12px; box-shadow:0 2px 8px rgba(13,56,45,0.12);" onerror="this.onerror=null; this.src='/logo.png';">
+      <div class="brand-text-block">
+        <span class="brand-name">MediKiosk</span>
+        <span class="brand-tagline-text" data-i18n="brand_tagline" style="color:#965b26; font-size:0.72rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">TRADITIONAL WISDOM. MODERN CARE.</span>
+      </div>
+    </div>
+
+    <div class="nav-actions" style="display:flex; align-items:center; gap:14px;">
+      <!-- How does this work? Trigger -->
+      <button type="button" class="nav-help-btn" onclick="openHelpModal()" title="Learn how MediKiosk works">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>How does this work?</span>
+      </button>
+
+      <!-- Staff OPD Mode Switcher Pill -->
+      <div class="opd-mode-pill" id="kiosk-opd-mode-pill" onclick="PatientIntake.openStaffModeModal()" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; font-weight:700; font-size:0.85rem; box-shadow:0 2px 10px rgba(0,0,0,0.06); background:linear-gradient(135deg, #0d9488, #0f766e); color:#fff; transition:all 0.3s ease;" title="Staff: Click to change OPD Mode">
+        <span>🏥</span>
+        <span id="opd-mode-pill-text">GENERAL OPD</span>
+        <span style="font-size:0.75rem; opacity:0.8; margin-left:2px;">⚙️</span>
+      </div>
+
+      <div class="lang-pill-indicator" onclick="PatientIntake.goToStep(2)" style="cursor:pointer;" title="Tap to Select / Change Language">
+        <span>🌐</span>
+        <span id="current-lang-pill">EN</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Wrapper -->
+  <main class="main-wrapper">
+
+    <!-- ========================================================= -->
+    <!-- SECTION 1: PATIENT KIOSK (8-STEP WIZARD) -->
+    <!-- ========================================================= -->
+    <section id="section-patient" class="view-section active">
+
+      <!-- Wizard Steps Indicator (Hidden on Step 1 landing to match mockup, displayed on Step 2+) -->
+      <div class="wizard-steps-bar" id="kiosk-step-indicator" style="display:none;">
+        <div class="wizard-step-node active" id="step-node-1">1</div>
+        <div class="wizard-step-line" id="step-line-1"></div>
+        <div class="wizard-step-node" id="step-node-2">2</div>
+        <div class="wizard-step-line" id="step-line-2"></div>
+        <div class="wizard-step-node" id="step-node-3">3</div>
+        <div class="wizard-step-line" id="step-line-3"></div>
+        <div class="wizard-step-node" id="step-node-4">4</div>
+        <div class="wizard-step-line" id="step-line-4"></div>
+        <div class="wizard-step-node" id="step-node-5">5</div>
+        <div class="wizard-step-line" id="step-line-5"></div>
+        <div class="wizard-step-node" id="step-node-6">6</div>
+        <div class="wizard-step-line" id="step-line-6"></div>
+        <div class="wizard-step-node" id="step-node-7">7</div>
+        <div class="wizard-step-line" id="step-line-7"></div>
+        <div class="wizard-step-node" id="step-node-8">8</div>
+      </div>
+
+      <!-- Step 1: Welcome & Landing -->
+      <div id="kiosk-step-1" class="card-box hero-consult-outer">
+        <div class="hero-split-grid">
+          <!-- Left Content -->
+          <div class="hero-left-content">
+            <div class="hero-badge-speech">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 2.4 3.4-.6 1.4 3.1 3.1 1.4-.6 3.4 2.4 2.4-2.4 2.4.6 3.4-3.1 1.4-1.4 3.1-3.4-.6-2.4 2.4-2.4-2.4-3.4.6-1.4-3.1-3.1-1.4.6-3.4L2 12l2.4-2.4-.6-3.4 3.1-1.4 1.4-3.1 3.4.6L12 2z"/></svg>
+              <span data-i18n="speech_ready">Speech-to-Speech Ready</span>
+            </div>
+
+            <!-- Typewriter Headline -->
+            <h1 class="hero-headline font-serif">
+              <span id="typewriter-headline" class="typewriter-text">Ready for a smarter check in?</span><span class="typewriter-cursor">|</span>
+            </h1>
+
+            <p class="hero-description" data-i18n="hero_sub">
+              Complete your pre-consultation intake before you see your doctor. MediKiosk collects your symptoms using AI and hands-free voice — in your language.
+            </p>
+
+            <div class="hero-action-row">
+              <button id="btn-begin-checkin" class="btn-primary-action btn-checkin-pill" onclick="goToStep(2)">
+                <span data-i18n="begin_checkin">Begin Check-In</span> <span class="cta-arrow">→</span>
+              </button>
+              <button class="btn-icon-squircle btn-sound-toggle" onclick="SpeechManager.toggleSpeakForStep(1)" title="Listen / Mute Audio Guidance" aria-label="Toggle Audio Guidance">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Column: Dark Emerald Card with Leaf, ECG Pulse & Frosted Tab -->
+          <div class="hero-right-container">
+            <div class="hero-consult-card">
+              <!-- Decorative ECG Heartbeat & Botanical Leaf Outline -->
+              <svg class="consult-card-deco-svg" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <!-- ECG Heartbeat Pulse Line -->
+                <path d="M -20,280 L 70,280 L 90,260 L 105,305 L 125,235 L 145,315 L 165,280 L 520,280" stroke="rgba(52, 211, 153, 0.28)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                <!-- Delicate Botanical Leaf Outline -->
+                <path d="M 400,60 C 460,140 475,310 380,425 C 295,400 265,270 320,155 C 342,110 378,75 400,60 Z" stroke="rgba(167, 243, 208, 0.22)" stroke-width="1.6" fill="none"/>
+                <path d="M 400,60 C 375,205 352,310 380,425" stroke="rgba(167, 243, 208, 0.16)" stroke-width="1.2" fill="none"/>
+                <path d="M 378,165 C 342,180 318,205 318,220" stroke="rgba(167, 243, 208, 0.14)" stroke-width="1" fill="none"/>
+                <path d="M 370,235 C 332,255 315,285 318,305" stroke="rgba(167, 243, 208, 0.14)" stroke-width="1" fill="none"/>
+                <path d="M 378,185 C 412,200 438,225 442,245" stroke="rgba(167, 243, 208, 0.14)" stroke-width="1" fill="none"/>
+                <!-- Constellation Glow Dots -->
+                <circle cx="80" cy="130" r="3" fill="rgba(110, 231, 183, 0.5)"/>
+                <circle cx="210" cy="95" r="2.5" fill="rgba(110, 231, 183, 0.4)"/>
+                <circle cx="430" cy="130" r="3" fill="rgba(110, 231, 183, 0.45)"/>
+                <circle cx="445" cy="380" r="2.5" fill="rgba(110, 231, 183, 0.4)"/>
+                <circle cx="170" cy="390" r="3" fill="rgba(110, 231, 183, 0.45)"/>
+              </svg>
+
+              <!-- Inset Floating Frosted Glass Tab -->
+              <div class="consult-glass-tab">
+                <div class="consult-heart-badge">
+                  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                </div>
+                <h3 class="consult-tab-title font-serif" data-i18n="secure_private">Secure &amp; Private</h3>
+                <p class="consult-tab-desc" data-i18n="secure_sub">
+                  All information is encrypted and securely transmitted directly to your physician.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- How MediKiosk Helps You Section (Scroll-Reveal) -->
+        <div class="landing-flow-wrapper scroll-reveal">
+          <div class="flow-header">
+            <h2 class="flow-title font-serif">How MediKiosk Helps You</h2>
+            <p class="flow-subtitle">A smarter, faster patient intake experience for everyone.</p>
+          </div>
+
+          <!-- Connected Visual Journey Flow (Interactive Process Pipeline) -->
+          <div class="journey-flow-track">
+            <!-- Animated Glowing Energy Line Connector -->
+            <div class="journey-connector-line" aria-hidden="true">
+              <div class="journey-pulse-beam"></div>
+            </div>
+
+            <div class="journey-cards-grid">
+              <!-- Stage 1 -->
+              <div class="journey-card scroll-reveal stagger-1">
+                <div class="journey-card-glow"></div>
+                <div class="journey-card-top">
+                  <span class="journey-step-badge">STEP 01</span>
+                  <span class="journey-pill-tag">Effortless Entrance</span>
+                </div>
+                <div class="journey-icon-wrap">
+                  <div class="journey-icon-squircle">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                      <line x1="12" y1="19" x2="12" y2="23"/>
+                      <line x1="8" y1="23" x2="16" y2="23"/>
+                    </svg>
+                  </div>
+                  <div class="journey-icon-sub">
+                    <span class="pulse-dot"></span>
+                    <span>10 Languages Voice &amp; Touch</span>
+                  </div>
+                </div>
+                <h3 class="journey-card-title font-serif">Voice &amp; Touch Intake</h3>
+                <p class="journey-card-desc">
+                  Arrive at the kiosk and speak comfortably in your native tongue. Our automated microphone countdown listens and transcribes without medical jargon.
+                </p>
+                <div class="journey-card-footer">
+                  <span class="journey-feature-chip">🎙️ Hands-Free Voice</span>
+                  <span class="journey-feature-chip">🌐 10 Indian Tongues</span>
+                </div>
+              </div>
+
+              <!-- Stage 2 -->
+              <div class="journey-card scroll-reveal stagger-2">
+                <div class="journey-card-glow"></div>
+                <div class="journey-card-top">
+                  <span class="journey-step-badge">STEP 02</span>
+                  <span class="journey-pill-tag">Adaptive Clinical AI</span>
+                </div>
+                <div class="journey-icon-wrap">
+                  <div class="journey-icon-squircle">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 2l2.4 2.4 3.4-.6 1.4 3.1 3.1 1.4-.6 3.4 2.4 2.4-2.4 2.4.6 3.4-3.1 1.4-1.4 3.1-3.4-.6-2.4 2.4-2.4-2.4-3.4.6-1.4-3.1-3.1-1.4.6-3.4L2 12l2.4-2.4-.6-3.4 3.1-1.4 1.4-3.1 3.4.6L12 2z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </div>
+                  <div class="journey-icon-sub">
+                    <span class="pulse-dot"></span>
+                    <span>AYUSH &amp; Clinical Triage</span>
+                  </div>
+                </div>
+                <h3 class="journey-card-title font-serif">Intelligent Assessment</h3>
+                <p class="journey-card-desc">
+                  Socratic clinical inquiry dynamically adapts questions to your symptoms, reviewing dosha equilibrium, pain severity, and duration in real time.
+                </p>
+                <div class="journey-card-footer">
+                  <span class="journey-feature-chip">🌿 26 AYUSH Domains</span>
+                  <span class="journey-feature-chip">⚡ Socratic Branching</span>
+                </div>
+              </div>
+
+              <!-- Stage 3 -->
+              <div class="journey-card scroll-reveal stagger-3">
+                <div class="journey-card-glow"></div>
+                <div class="journey-card-top">
+                  <span class="journey-step-badge">STEP 03</span>
+                  <span class="journey-pill-tag">Document AI</span>
+                </div>
+                <div class="journey-icon-wrap">
+                  <div class="journey-icon-squircle">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                  </div>
+                  <div class="journey-icon-sub">
+                    <span class="pulse-dot"></span>
+                    <span>Camera OCR Scanner</span>
+                  </div>
+                </div>
+                <h3 class="journey-card-title font-serif">Instant Paper OCR</h3>
+                <p class="journey-card-desc">
+                  Hold past prescriptions, test reports, or discharge slips up to the camera. Document AI extracts diagnosis history and lab values instantly.
+                </p>
+                <div class="journey-card-footer">
+                  <span class="journey-feature-chip">📸 Kiosk Camera Snap</span>
+                  <span class="journey-feature-chip">📄 Prescription AI</span>
+                </div>
+              </div>
+
+              <!-- Stage 4 -->
+              <div class="journey-card scroll-reveal stagger-4">
+                <div class="journey-card-glow"></div>
+                <div class="journey-card-top">
+                  <span class="journey-step-badge">STEP 04</span>
+                  <span class="journey-pill-tag">Direct Doctor Sync</span>
+                </div>
+                <div class="journey-icon-wrap">
+                  <div class="journey-icon-squircle">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                      <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                      <path d="M9 14l2 2 4-4"/>
+                    </svg>
+                  </div>
+                  <div class="journey-icon-sub">
+                    <span class="pulse-dot"></span>
+                    <span>ABDM FHIR Bundle</span>
+                  </div>
+                </div>
+                <h3 class="journey-card-title font-serif">Physician Fast-Track</h3>
+                <p class="journey-card-desc">
+                  Your physician receives an organized, prioritized clinical summary before you walk in. Zero waiting, zero repeating your medical history.
+                </p>
+                <div class="journey-card-footer">
+                  <span class="journey-feature-chip">🩺 Doctor Dashboard</span>
+                  <span class="journey-feature-chip">🛡️ ABDM Compliant</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Action Banner inside Flow -->
+            <div class="journey-cta-banner scroll-reveal">
+              <div class="journey-cta-text">
+                <h4 style="font-family:'Playfair Display', serif; font-size:1.35rem; color:#0d382d; margin-bottom:4px; font-weight:800;">Ready to experience intelligent consultation check-in?</h4>
+                <p style="color:#475569; font-size:0.95rem; margin:0;">Takes less than 3 minutes. Completely secure, private, and assisted by AI.</p>
+              </div>
+              <button class="btn-primary-action btn-checkin-pill" onclick="goToStep(2)">
+                <span>Begin Your Check-In Now</span> →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Language Selection (Mockup layout from media_1788868752356.png) -->
+      <div id="kiosk-step-2" class="card-box step-clean-card" style="display:none;">
+        <div class="card-box-header">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div class="header-icon-squircle">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0d382d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </div>
+            <div>
+              <h2 class="card-box-title font-serif" data-i18n="step_lang_title">Select Intake Language</h2>
+              <p class="card-box-subtitle" data-i18n="step_lang_sub">Choose your preferred language for voice and text intake</p>
+            </div>
+          </div>
+          <button class="btn-icon-squircle btn-sound-toggle" onclick="SpeechManager.toggleSpeakForStep(2)" title="Listen / Mute Audio Guidance">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+          </button>
+        </div>
+
+        <div class="lang-grid-2col" id="lang-selection-grid">
+          <!-- English (Default selected) -->
+          <div class="lang-tile-card selected" onclick="PatientIntake.selectLanguage('en')" data-lang="en">
+            <div class="lang-card-title">English <span class="lang-check-badge">✓</span></div>
+            <div class="lang-card-latin">English</div>
+            <span class="lang-status-pill pill-connected">FULLY CONNECTED</span>
+          </div>
+
+          <!-- Hindi -->
+          <div class="lang-tile-card" onclick="PatientIntake.selectLanguage('hi')" data-lang="hi">
+            <div class="lang-card-title">हिन्दी <span class="lang-check-badge" style="display:none;">✓</span></div>
+            <div class="lang-card-latin">Hindi</div>
+            <span class="lang-status-pill pill-ready">TRANSLATION READY</span>
+          </div>
+
+          <!-- Kannada -->
+          <div class="lang-tile-card" onclick="PatientIntake.selectLanguage('kn')" data-lang="kn">
+            <div class="lang-card-title">ಕನ್ನಡ <span class="lang-check-badge" style="display:none;">✓</span></div>
+            <div class="lang-card-latin">Kannada</div>
+            <span class="lang-status-pill pill-fallback">TEXT FALLBACK</span>
+          </div>
+
+          <!-- Tamil -->
+          <div class="lang-tile-card" onclick="PatientIntake.selectLanguage('ta')" data-lang="ta">
+            <div class="lang-card-title">தமிழ் <span class="lang-check-badge" style="display:none;">✓</span></div>
+            <div class="lang-card-latin">Tamil</div>
+            <span class="lang-status-pill pill-fallback">TEXT FALLBACK</span>
+          </div>
+
+          <!-- Telugu -->
+          <div class="lang-tile-card" onclick="PatientIntake.selectLanguage('te')" data-lang="te">
+            <div class="lang-card-title">తెలుగు <span class="lang-check-badge" style="display:none;">✓</span></div>
+            <div class="lang-card-latin">Telugu</div>
+            <span class="lang-status-pill pill-fallback">TEXT FALLBACK</span>
+          </div>
+
+          <!-- Bengali -->
+          <div class="lang-tile-card" onclick="PatientIntake.selectLanguage('bn')" data-lang="bn">
+            <div class="lang-card-title">বাংলা <span class="lang-check-badge" style="display:none;">✓</span></div>
+            <div class="lang-card-latin">Bengali</div>
+            <span class="lang-status-pill pill-fallback">TEXT FALLBACK</span>
+          </div>
+
+          <!-- Marathi -->
+          <div class="lang-tile-card" onclick="PatientIntake.selectLanguage('mr')" data-lang="mr">
+            <div class="lang-card-title">मराठी <span class="lang-check-badge" style="display:none;">✓</span></div>
+            <div class="lang-card-latin">Marathi</div>
+            <span class="lang-status-pill pill-fallback">TEXT FALLBACK</span>
+          </div>
+
+          <!-- Gujarati -->
+          <div class="lang-tile-card" onclick="PatientIntake.selectLanguage('gu')" data-lang="gu">
+            <div class="lang-card-title">ગુજરાતી <span class="lang-check-badge" style="display:none;">✓</span></div>
+            <div class="lang-card-latin">Gujarati</div>
+            <span class="lang-status-pill pill-fallback">TEXT FALLBACK</span>
+          </div>
+
+          <!-- Malayalam -->
+          <div class="lang-tile-card" onclick="PatientIntake.selectLanguage('ml')" data-lang="ml">
+            <div class="lang-card-title">മലയാളം <span class="lang-check-badge" style="display:none;">✓</span></div>
+            <div class="lang-card-latin">Malayalam</div>
+            <span class="lang-status-pill pill-fallback">TEXT FALLBACK</span>
+          </div>
+
+          <!-- Punjabi -->
+          <div class="lang-tile-card" onclick="PatientIntake.selectLanguage('pa')" data-lang="pa">
+            <div class="lang-card-title">ਪੰਜਾਬੀ <span class="lang-check-badge" style="display:none;">✓</span></div>
+            <div class="lang-card-latin">Punjabi</div>
+            <span class="lang-status-pill pill-fallback">TEXT FALLBACK</span>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2rem;">
+          <button class="btn-secondary-action" onclick="PatientIntake.goToStep(1)">← Back</button>
+          <button id="step2-continue-btn" class="btn-primary-action btn-checkin-pill" onclick="PatientIntake.goToStep(3)">
+            <span data-i18n="continue_btn">Continue</span> →
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: Patient Consent (Theme from media_1788868364903.png with EXACT words preserved) -->
+      <div id="kiosk-step-3" class="card-box step-clean-card" style="display:none;">
+        <div class="card-box-header">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div class="consent-shield-badge">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0d382d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <div>
+              <h2 class="card-box-title font-serif" data-i18n="step_consent_title">Patient Consent</h2>
+            </div>
+          </div>
+          <button class="btn-icon-squircle btn-sound-toggle" onclick="SpeechManager.toggleSpeakForStep(3)" title="Listen / Mute Consent Audio Guidance">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+          </button>
+        </div>
+
+        <div class="consent-intro-text">
+          <p style="font-size:0.95rem; color:#475569; line-height:1.6; margin-bottom:0.85rem;">
+            Before starting your pre-consultation intake, please review and accept how your medical information will be processed.
+          </p>
+          <p style="font-size:0.92rem; color:#334155; line-height:1.6; margin-bottom:1.25rem;">
+            By proceeding, you consent to MediKiosk processing your health symptoms and medical documents using AI to prepare a clinical summary for your attending physician. MediKiosk does not replace medical advice.
+          </p>
+        </div>
+
+        <!-- Consent Bullet Box styled matching media_1788868364903.png -->
+        <div class="consent-inner-box">
+          <div class="consent-bullet-item">
+            <span class="bullet-dot">●</span>
+            <div>
+              <strong>Physician-in-the-Loop Care:</strong> MediKiosk is an intake assistant, not a doctor. Your consultation physician personally evaluates your symptoms, performs examinations, and writes all prescriptions.
+            </div>
+          </div>
+
+          <div class="consent-bullet-item">
+            <span class="bullet-dot">●</span>
+            <div>
+              <strong>ABDM Privacy &amp; Confidentiality:</strong> Your health records and Ayushman Bharat Health Account (ABHA) details are strictly confidential and shared only with your treating hospital doctors.
+            </div>
+          </div>
+
+          <div class="consent-bullet-item">
+            <span class="bullet-dot">●</span>
+            <div>
+              <strong>Voice &amp; Accessibility Assistance:</strong> Clear spoken voice guidance and speech recognition are provided so all patients, regardless of literacy level, can comfortably complete check-in.
+            </div>
+          </div>
+
+          <div class="consent-bullet-item">
+            <span class="bullet-dot">●</span>
+            <div>
+              <strong>Urgent Emergency Priority:</strong> If severe or critical symptoms (such as acute chest pressure or severe breathing difficulty) are detected, you will be flagged for immediate emergency priority attention.
+            </div>
+          </div>
+
+          <div class="consent-bullet-item">
+            <span class="bullet-dot">●</span>
+            <div>
+              <strong>Attendant &amp; Staff Support:</strong> A family member or attendant is welcome to assist you with registration, and hospital helpdesk staff are available at any time.
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden checkbox for backward compatibility with existing JS validation -->
+        <div id="consent-checkbox-wrapper" style="display:none;">
+          <input type="checkbox" id="consent-checkbox" checked>
+        </div>
+
+        <!-- Footnote matching mockup -->
+        <div class="consent-prototype-notice">
+          * Notice: This is a prototype pre-consultation intake consent interface designed for hackathon demonstration.
+        </div>
+
+        <div style="margin-top:1.5rem;">
+          <button class="btn-primary-action btn-consent-action" onclick="PatientIntake.acceptConsent()">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span data-i18n="btn_i_consent">I Consent</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 4: Patient Registration & Attendant Mode -->
+      <div id="kiosk-step-4" class="card-box" style="display:none;">
+        <div class="card-box-header">
+          <div>
+            <h2 class="card-box-title" data-i18n="step_patient_title">Patient Details</h2>
+            <p class="card-box-subtitle" data-i18n="step_patient_sub">Enter your identification or Ayushman Bharat Health Account (ABHA)</p>
+          </div>
+        </div>
+
+        <form id="patient-reg-form">
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.25rem; margin-bottom:1rem;">
+            <div>
+              <label class="form-label" for="reg-name" data-i18n="full_name">Full Name *</label>
+              <input type="text" id="reg-name" class="form-input-field" placeholder="e.g. Ramesh Sharma" required>
+            </div>
+            <div>
+              <label class="form-label" for="reg-age" data-i18n="age">Age *</label>
+              <input type="number" id="reg-age" class="form-input-field" placeholder="e.g. 48" required min="1" max="120">
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.25rem; margin-bottom:1rem;">
+            <div>
+              <label class="form-label" for="reg-gender" data-i18n="gender">Gender *</label>
+              <select id="reg-gender" class="form-select-field" required>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="reg-phone" data-i18n="phone">Phone Number</label>
+              <input type="tel" id="reg-phone" class="form-input-field" placeholder="+91 98765 43210">
+            </div>
+          </div>
+
+          <div style="margin-bottom:1.5rem;">
+            <label class="form-label" for="reg-abha" data-i18n="abha_id">ABHA ID (Ayushman Bharat Health Account)</label>
+            <input type="text" id="reg-abha" class="form-input-field" placeholder="e.g. 91-4829-1049-2810 or username@abdm">
+          </div>
+
+          <!-- Attendant-Assisted Mode -->
+          <div style="background:#fdfcf9; border:1.5px dashed #d8cbba; border-radius:var(--radius-md); padding:1.25rem; margin-bottom:1.5rem;">
+            <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; font-weight:700; color:var(--brand-primary);">
+              <input type="checkbox" id="is-attendant-assisted">
+              <span data-i18n="attendant_toggle">Attendant / Family Member Assisting Patient</span>
+            </label>
+
+            <div id="attendant-fields" style="display:none; margin-top:1rem; padding-top:1rem; border-top:1px solid #e7dcce;">
+              <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:1rem;">
+                <div>
+                  <label class="form-label" for="att-name" data-i18n="attendant_name">Attendant Name</label>
+                  <input type="text" id="att-name" class="form-input-field" placeholder="e.g. Sunita Sharma">
+                </div>
+                <div>
+                  <label class="form-label" for="att-phone" data-i18n="attendant_phone">Attendant Phone</label>
+                  <input type="tel" id="att-phone" class="form-input-field" placeholder="Phone">
+                </div>
+                <div>
+                  <select id="att-rel" class="form-select-field">
+                    <option value="Spouse">Spouse</option>
+                    <option value="Parent">Parent</option>
+                    <option value="Child">Child</option>
+                    <option value="Sibling">Sibling</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between;">
+            <button type="button" class="btn-secondary-action" onclick="PatientIntake.goToStep(3)">← Back</button>
+            <button type="submit" class="btn-primary-action">
+              <span data-i18n="continue_btn">Continue to Symptoms</span> →
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Step 5: Chief Complaint, Known Conditions & Ongoing Medications -->
+      <div id="kiosk-step-5" class="card-box" style="display:none;">
+        <div class="card-box-header">
+          <div>
+            <h2 class="card-box-title" data-i18n="step_complaint_title">Chief Health Complaint & Past Medical History</h2>
+            <p class="card-box-subtitle" data-i18n="step_complaint_sub">What brings you to the clinic today? Tell us about your symptoms and medicines.</p>
+          </div>
+          <button class="btn-icon-round" onclick="SpeechManager.toggleSpeakForStep(5)" title="Listen / Mute Audio">🔊</button>
+        </div>
+
+        <!-- 1. Chief Complaint -->
+        <div style="margin-bottom:1.5rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+            <label class="form-label" for="chief-complaint-input" style="font-weight:700; color:var(--brand-primary); margin:0;">
+              Primary Health Concern / Main Symptoms *
+            </label>
+            <button type="button" id="btn-mic-complaint" class="mic-action-btn" style="padding:0.35rem 0.85rem; font-size:0.8rem;" onclick="SpeechManager.toggleListeningForInput('chief-complaint-input', 'btn-mic-complaint')">
+              <span>🎙️</span>
+              <span>Speak Symptoms</span>
+            </button>
+          </div>
+          <textarea id="chief-complaint-input" class="form-textarea-field" rows="3" placeholder="e.g. Severe throbbing headache for 3 days and occasional chest tightness" data-i18n-ph="complaint_placeholder"></textarea>
+          
+          <div style="margin-top:0.75rem;">
+            <span style="font-size:0.825rem; font-weight:700; color:var(--text-muted);" data-i18n="quick_tags">Common Symptoms:</span>
+            <div class="tags-cloud">
+              <span class="symptom-tag-pill" onclick="PatientIntake.appendTag('Chest pain')">🫀 Chest Discomfort</span>
+              <span class="symptom-tag-pill" onclick="PatientIntake.appendTag('Severe headache')">🧠 Severe Headache</span>
+              <span class="symptom-tag-pill" onclick="PatientIntake.appendTag('High fever')">🌡️ Fever & Chills</span>
+              <span class="symptom-tag-pill" onclick="PatientIntake.appendTag('Breathlessness')">🫁 Shortness of Breath</span>
+              <span class="symptom-tag-pill" onclick="PatientIntake.appendTag('Joint swelling')">🦴 Joint Pain</span>
+              <span class="symptom-tag-pill" onclick="PatientIntake.appendTag('Abdominal cramps')">🩺 Stomach Pain</span>
+              <span class="symptom-tag-pill" onclick="PatientIntake.appendTag('Skin rash')">🩹 Skin Itching/Rash</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Known Medical Conditions / Chronic Diseases Multi-Select -->
+        <div style="margin-bottom:1.5rem; background:#faf8f5; border:1px solid var(--border-color); border-radius:var(--radius-md); padding:1.25rem;">
+          <label class="form-label" style="font-weight:700; color:var(--brand-primary); margin-bottom:0.25rem;" data-i18n="known_conditions_label">
+            Known Medical Conditions & Chronic Illnesses
+          </label>
+          <p style="font-size:0.825rem; color:var(--text-muted); margin-bottom:0.75rem;" data-i18n="known_conditions_sub">
+            Touch all conditions that apply to you:
+          </p>
+          <div class="condition-cloud" id="chronic-conditions-grid">
+            <span class="condition-pill" onclick="PatientIntake.toggleCondition(this, 'Diabetes')">
+              <span data-i18n="cond_diabetes">🩸 Diabetes / Sugar</span>
+            </span>
+            <span class="condition-pill" onclick="PatientIntake.toggleCondition(this, 'Hypertension')">
+              <span data-i18n="cond_hypertension">💓 High BP / Hypertension</span>
+            </span>
+            <span class="condition-pill" onclick="PatientIntake.toggleCondition(this, 'Heart Disease')">
+              <span data-i18n="cond_heart">🫀 Heart Disease</span>
+            </span>
+            <span class="condition-pill" onclick="PatientIntake.toggleCondition(this, 'Asthma')">
+              <span data-i18n="cond_asthma">🫁 Asthma / Breathing</span>
+            </span>
+            <span class="condition-pill" onclick="PatientIntake.toggleCondition(this, 'Thyroid')">
+              <span data-i18n="cond_thyroid">🦋 Thyroid</span>
+            </span>
+            <span class="condition-pill" onclick="PatientIntake.toggleCondition(this, 'Arthritis')">
+              <span data-i18n="cond_arthritis">🦴 Arthritis / Joint Pain</span>
+            </span>
+            <span class="condition-pill" onclick="PatientIntake.toggleCondition(this, 'Kidney Condition')">
+              <span data-i18n="cond_kidney">🩺 Kidney Condition</span>
+            </span>
+            <span class="condition-pill" onclick="PatientIntake.toggleCondition(this, 'None')">
+              <span data-i18n="cond_none">🚫 No Chronic Conditions</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- 3. Ongoing Daily Medications & Dosages (For patients who forgot physical prescription) -->
+        <div style="margin-bottom:1.5rem; background:#ffffff; border:1.5px solid #dcd4c6; border-radius:var(--radius-md); padding:1.25rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem; flex-wrap:wrap; gap:0.5rem;">
+            <div>
+              <label class="form-label" for="current-medications-input" style="font-weight:700; color:var(--brand-primary); margin:0;" data-i18n="medications_label">
+                Current Daily Medications & Dosages
+              </label>
+              <p style="font-size:0.8rem; color:var(--text-muted); margin:0;" data-i18n="medications_sub">
+                Forgot your prescription? Speak or type your daily medicines and doses here:
+              </p>
+            </div>
+            <button type="button" id="btn-mic-meds" class="mic-action-btn" style="padding:0.4rem 1rem; font-size:0.85rem;" onclick="SpeechManager.toggleListeningForInput('current-medications-input', 'btn-mic-meds')">
+              <span>🎙️</span>
+              <span data-i18n="speak_meds_btn">Dictate Medications</span>
+            </button>
+          </div>
+          <textarea id="current-medications-input" class="form-textarea-field" rows="2" placeholder="e.g. Metformin 500mg (twice daily), Telmisartan 40mg in morning, Inhaler as needed" data-i18n-ph="medications_placeholder" style="margin-top:0.5rem;"></textarea>
+        </div>
+
+        <!-- 4. Past Surgeries, Hospitalizations, or Drug Allergies -->
+        <div style="margin-bottom:1.5rem;">
+          <label class="form-label" for="past-medical-history-input" style="font-size:0.875rem; font-weight:700; color:#334155;" data-i18n="past_history_label">
+            Past Surgeries, Hospitalizations, or Drug Allergies (Optional)
+          </label>
+          <input type="text" id="past-medical-history-input" class="form-input-field" placeholder="e.g. Gallbladder surgery in 2021, allergic to penicillin or sulfa drugs" data-i18n-ph="past_history_placeholder">
+        </div>
+
+        <!-- 5. Pain Severity Scale (1 to 10) -->
+        <div style="margin-bottom:1.5rem; background:#faf8f5; border:1px solid var(--border-color); border-radius:var(--radius-md); padding:1.25rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+            <label class="form-label" style="margin:0; font-size:0.95rem; font-weight:700; color:var(--brand-primary);" data-i18n="pain_level">
+              Symptom Severity / Pain Scale (1 to 10):
+            </label>
+            <span id="pain-val-display" class="lang-tile-badge" style="background:#ffedd5; color:#9a3412; border:1px solid #f97316; font-size:0.875rem; padding:0.3rem 0.75rem; font-weight:700;">
+              Level 7 — Severe Pain
+            </span>
+          </div>
+          <p style="font-size:0.825rem; color:var(--text-muted); margin-bottom:0.85rem;">
+            Touch the number that matches your pain level (1 = Very Mild, 10 = Maximum / Critical):
+          </p>
+
+          <div class="pain-number-grid" id="pain-scale-selector">
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(1)" data-val="1">1</button>
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(2)" data-val="2">2</button>
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(3)" data-val="3">3</button>
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(4)" data-val="4">4</button>
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(5)" data-val="5">5</button>
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(6)" data-val="6">6</button>
+            <button type="button" class="pain-num-btn selected" onclick="PatientIntake.selectPainLevel(7)" data-val="7">7</button>
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(8)" data-val="8">8</button>
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(9)" data-val="9">9</button>
+            <button type="button" class="pain-num-btn" onclick="PatientIntake.selectPainLevel(10)" data-val="10">10</button>
+          </div>
+          <input type="hidden" id="pain-range" value="7">
+        </div>
+
+        <div style="display:flex; justify-content:space-between;">
+          <button type="button" class="btn-secondary-action" onclick="PatientIntake.goToStep(4)">← Back</button>
+          <button type="button" class="btn-primary-action" onclick="PatientIntake.handleComplaintNext()">
+            <span data-i18n="continue_btn">Continue to Documents / Prescriptions</span> →
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 6: Medical Document Upload OR Dictate Previous Prescription -->
+      <div id="kiosk-step-6" class="card-box" style="display:none;">
+        <div class="card-box-header">
+          <div>
+            <h2 class="card-box-title" data-i18n="step_docs_title">Previous Medical Documents & Prescriptions</h2>
+            <p class="card-box-subtitle" data-i18n="step_docs_sub">Upload physical documents OR speak/write your previous prescription if you forgot the paper</p>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+          <!-- Option A: Upload Physical Paper / Photo -->
+          <div style="background:#faf8f5; border:1.5px solid #d8cbba; border-radius:var(--radius-md); padding:1.25rem; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <h4 style="color:var(--brand-primary); font-size:1rem; margin-bottom:0.4rem;">📄 Option A: Upload Paper or Snap Camera Photo</h4>
+              <p style="font-size:0.825rem; color:var(--text-muted); margin-bottom:0.85rem;">
+                Upload file or snap a photo of prescriptions, lab reports, or discharge summaries.
+              </p>
+
+              <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+                <button type="button" class="btn-primary-action" style="background:linear-gradient(135deg, #059669, #047857); padding:0.55rem 0.9rem; font-size:0.825rem; flex:1; display:flex; align-items:center; justify-content:center; gap:0.35rem;" onclick="PatientIntake.triggerCameraCapture()">
+                  📷 <span>Snap Photo with Camera</span>
+                </button>
+                <button type="button" class="btn-secondary-action" style="padding:0.55rem 0.9rem; font-size:0.825rem; flex:1; display:flex; align-items:center; justify-content:center; gap:0.35rem;" onclick="document.getElementById('doc-file-input').click()">
+                  📁 <span>Browse Files</span>
+                </button>
+              </div>
+
+              <form id="doc-upload-form">
+                <input type="file" id="doc-file-input" class="form-input-field" accept="image/*,application/pdf" style="padding:0.75rem; border:2px dashed var(--border-color); text-align:center; background:white;" onchange="PatientIntake.handleFileSelect(event)">
+                <input type="file" id="doc-camera-input" accept="image/*" capture="environment" style="display:none;" onchange="PatientIntake.handleFileSelect(event)">
+                <div id="doc-file-selected-preview" style="display:none;"></div>
+                <div id="doc-ocr-result" style="margin-top:0.75rem;"></div>
+                <div style="margin-top:1rem; text-align:right;">
+                  <button type="submit" id="btn-upload-doc" class="btn-primary-action" style="padding:0.6rem 1.25rem; font-size:0.875rem;">
+                    <span data-i18n="upload_doc_btn">Upload & Run OCR</span> →
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Option B: Dictate / Type Previous Advice (No Prescription with Patient) -->
+          <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:var(--radius-md); padding:1.25rem; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.4rem;">
+                <h4 style="color:#166534; font-size:1rem; margin:0;" data-i18n="no_prescription_card_title">
+                  🗣️ Option B: Forgot Your Prescription?
+                </h4>
+                <button type="button" id="btn-mic-prescription" class="mic-action-btn" style="padding:0.35rem 0.85rem; font-size:0.8rem; background:white;" onclick="SpeechManager.toggleListeningForInput('prescription-dictation-input', 'btn-mic-prescription')">
+                  <span>🎙️</span>
+                  <span data-i18n="dictate_rx_btn">Dictate Details</span>
+                </button>
+              </div>
+              <p style="font-size:0.825rem; color:#15803d; margin-bottom:0.75rem;" data-i18n="no_prescription_card_sub">
+                No physical prescription with you? Speak or write whatever you recall from your previous doctor consultation or tests:
+              </p>
+              <textarea id="prescription-dictation-input" class="form-textarea-field" rows="4" placeholder="e.g. Doctor previously prescribed blood pressure tablets, advised low-salt diet, and mentioned borderline sugar levels..." data-i18n-ph="rx_placeholder" style="background:white; border-color:#86efac;"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-top:1.5rem; gap:0.5rem; flex-wrap:wrap;">
+          <button type="button" class="btn-secondary-action" onclick="PatientIntake.goToStep(5)">← Back</button>
+          <button type="button" class="btn-primary-action" onclick="PatientIntake.handleStep6Continue()">
+            <span>Proceed to AI Clinical Interview</span> →
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 7: Socratic & Ayurvedic Intake Interview with Speech-to-Speech -->
+      <div id="kiosk-step-7" class="card-box" style="display:none;">
+        <div class="card-box-header">
+          <div>
+            <h2 class="card-box-title" data-i18n="step_intake_title">AI Clinical Intake Interview</h2>
+            <div style="display:flex; gap:0.5rem; margin-top:0.35rem;">
+              <span id="current-question-badge" class="lang-tile-badge lang-badge-ready">Objective: Broad Exploration</span>
+              <span id="current-ayur-badge" class="lang-tile-badge lang-badge-connected" style="display:none;">Ayurveda: Agni / Prakriti</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <button id="btn-speak-question" class="btn-icon-round" title="Listen to Question" onclick="PatientIntake.speakCurrentQuestion()">
+              🔊
+            </button>
+          </div>
+        </div>
+
+        <!-- Question Bubble Box -->
+        <div style="background:linear-gradient(180deg, #faf8f5 0%, #f4ede2 100%); border:1.5px solid #d8cbba; border-radius:var(--radius-lg); padding:2rem; margin-bottom:1.5rem;">
+          <h3 id="current-question-text" style="font-size:1.35rem; font-weight:700; color:var(--brand-primary); line-height:1.5;">
+            What is the main health concern bringing you here today?
+          </h3>
+
+          <div id="live-summary-box" style="display:none; margin-top:1.25rem; background:#ecfdf5; border:1px solid #a7f3d0; padding:0.85rem; border-radius:var(--radius-md); font-size:0.9rem; color:#065f46;">
+          </div>
+        </div>
+
+        <!-- Audio Waves Visualizer (When Recording) -->
+        <div class="audio-waves-container" id="audio-wave-bars" style="display:none;">
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+        </div>
+
+        <!-- Patient Answer Input & Speech Controls -->
+        <div style="margin-bottom:1.5rem;">
+          <textarea id="patient-answer-input" class="form-textarea-field" rows="3" placeholder="Type your answer or tap the microphone to speak..." data-i18n-ph="answer_placeholder"></textarea>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+          <div style="display:flex; align-items:center; gap:0.75rem;">
+            <button type="button" class="btn-secondary-action" onclick="PatientIntake.goToStep(5)" title="Go back to edit symptoms">
+              ← Back
+            </button>
+            <button id="btn-mic-toggle" type="button" class="mic-action-btn" onclick="SpeechManager.toggleListening()">
+              <span>🎙️</span>
+              <span id="mic-status-label" data-i18n="mic_speak_btn">Tap to Speak Answer</span>
+            </button>
+          </div>
+
+          <button id="btn-submit-answer" class="btn-primary-action" onclick="PatientIntake.handleAnswerSubmit()">
+            <span data-i18n="submit_answer">Submit Answer</span> →
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 8: Triage Receipt & Summary Ticket -->
+      <div id="kiosk-step-8" class="card-box" style="display:none;">
+        <div class="ticket-receipt-card">
+          <div class="ticket-header-pill">
+            <div>
+              <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted);" data-i18n="ticket_num">Consultation Ticket #</span>
+              <h2 id="ticket-number-display" style="font-size:1.8rem; color:var(--brand-primary); font-family:monospace;">MK-30378350</h2>
+            </div>
+            <div id="ticket-triage-badge">
+              <span class="lang-tile-badge lang-badge-ready" style="font-size:0.9rem; padding:0.35rem 0.85rem;">STABLE</span>
+            </div>
+          </div>
+
+          <div id="ticket-details-body" style="line-height:1.7;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.25rem; margin-bottom:1rem;">
+              <div>
+                <span style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">PATIENT NAME</span>
+                <p id="ticket-patient-name" style="font-weight:700; font-size:1.05rem;">Registered Patient</p>
+              </div>
+              <div>
+                <span style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">ASSIGNED DEPARTMENT</span>
+                <p id="ticket-assigned-dept" style="font-weight:700; font-size:1.05rem; color:var(--brand-primary);">GENERAL MEDICINE</p>
+              </div>
+            </div>
+            <div style="margin-bottom:1rem;">
+              <span style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">CHIEF COMPLAINT NARRATIVE</span>
+              <p id="ticket-complaint-narrative" style="font-style:italic; color:#334155;">"Clinical intake successfully recorded and routed for physician review."</p>
+            </div>
+            <div style="background:#faf8f5; border:1px solid #e5e0d5; padding:0.85rem; border-radius:var(--radius-sm); font-size:0.875rem;">
+              <p id="ticket-routing-reason"><strong>Routing Assessment:</strong> Patient triaged and queued for attending physician consultation.</p>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; margin-top:1.5rem; flex-wrap:wrap; gap:0.75rem;">
+            <button type="button" class="btn-secondary-action" onclick="PatientIntake.goToStep(5)">
+              ← Review / Edit Intake
+            </button>
+            <button class="btn-primary-action" onclick="window.location.reload()" data-i18n="start_new">Start New Patient Intake</button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Staff OPD Mode Switcher Modal -->
+  <div id="staff-mode-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.65); backdrop-filter:blur(6px); z-index:9999; align-items:center; justify-content:center;">
+    <div class="modal-box" style="background:#fff; width:90%; max-width:540px; border-radius:24px; padding:28px; box-shadow:0 20px 40px rgba(0,0,0,0.25); text-align:center; position:relative;">
+      <button onclick="PatientIntake.closeStaffModeModal()" style="position:absolute; top:20px; right:20px; border:none; background:rgba(0,0,0,0.05); border-radius:50%; width:36px; height:36px; cursor:pointer; font-size:1.1rem;">✕</button>
+      <div style="font-size:2.5rem; margin-bottom:8px;">🏥</div>
+      <h2 style="font-size:1.4rem; font-weight:800; color:#0f172a; margin-bottom:4px;">Kiosk OPD Mode Configuration</h2>
+      <p style="font-size:0.88rem; color:#64748b; margin-bottom:20px;">Staff-only configuration. Select the clinical intake workflow for this physical kiosk.</p>
+      
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:12px 16px; margin-bottom:20px; text-align:left;">
+        <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Currently Active Mode</div>
+        <div id="modal-active-mode-badge" style="font-size:1.15rem; font-weight:800; color:#0d9488; margin-top:2px;">GENERAL OPD</div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:24px;">
+        <!-- General OPD Option -->
+        <div id="mode-opt-general" onclick="PatientIntake.selectKioskMode('GENERAL_OPD')" style="border:2px solid #0d9488; background:#f0fdf4; border-radius:18px; padding:18px 12px; cursor:pointer; transition:all 0.2s ease; text-align:center;">
+          <div style="font-size:1.8rem; margin-bottom:6px;">🩺</div>
+          <div style="font-weight:800; color:#0f172a; font-size:0.95rem;">GENERAL OPD</div>
+          <div style="font-size:0.75rem; color:#475569; margin-top:4px;">Standard Clinical Intake (Allopathy)</div>
+        </div>
+
+        <!-- AYUSH OPD Option -->
+        <div id="mode-opt-ayush" onclick="PatientIntake.selectKioskMode('AYUSH_OPD')" style="border:2px solid #cbd5e1; background:#ffffff; border-radius:18px; padding:18px 12px; cursor:pointer; transition:all 0.2s ease; text-align:center;">
+          <div style="font-size:1.8rem; margin-bottom:6px;">🌿</div>
+          <div style="font-weight:800; color:#0f172a; font-size:0.95rem;">AYUSH OPD</div>
+          <div style="font-size:0.75rem; color:#475569; margin-top:4px;">Ayurvedic Clinical Assessment</div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button onclick="PatientIntake.closeStaffModeModal()" style="padding:10px 20px; border-radius:12px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; font-weight:600; cursor:pointer;">Cancel</button>
+        <button onclick="PatientIntake.confirmKioskModeChange()" style="padding:10px 24px; border-radius:12px; border:none; background:linear-gradient(135deg, #0d9488, #0f766e); color:#fff; font-weight:700; cursor:pointer; box-shadow:0 4px 14px rgba(13,148,136,0.35);">Apply & Save Mode</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Camera Capture Modal for WebCam / Kiosk Scan -->
+  <div id="camera-capture-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:10000; align-items:center; justify-content:center; padding:1rem;">
+    <div style="background:white; border-radius:16px; max-width:540px; width:100%; padding:1.25rem; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.4);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+        <h3 style="margin:0; font-size:1.1rem; color:var(--brand-primary); font-weight:800;">📷 Document Camera Scanner</h3>
+        <button type="button" onclick="PatientIntake.closeCameraModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#64748b;">✕</button>
+      </div>
+      <div style="position:relative; background:#000; border-radius:12px; overflow:hidden; width:100%; height:320px; display:flex; align-items:center; justify-content:center;">
+        <video id="camera-video-feed" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+        <canvas id="camera-canvas" style="display:none;"></canvas>
+      </div>
+      <div style="display:flex; gap:0.75rem; justify-content:center; margin-top:1rem;">
+        <button type="button" class="btn-secondary-action" style="padding:0.6rem 1.25rem;" onclick="PatientIntake.closeCameraModal()">Cancel</button>
+        <button type="button" class="btn-primary-action" style="background:linear-gradient(135deg, #059669, #047857); padding:0.65rem 1.5rem; font-size:0.95rem; font-weight:700;" onclick="PatientIntake.capturePhotoFromWebcam()">
+          📸 Snap Photo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- How It Works Modal -->
+  <div id="help-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.65); backdrop-filter:blur(6px); z-index:9999; align-items:center; justify-content:center; padding:1.25rem;">
+    <div class="modal-box" style="background:#fff; width:90%; max-width:560px; border-radius:24px; padding:32px; box-shadow:0 24px 48px rgba(0,0,0,0.25); text-align:left; position:relative;">
+      <button onclick="closeHelpModal()" style="position:absolute; top:20px; right:20px; border:none; background:rgba(0,0,0,0.05); border-radius:50%; width:36px; height:36px; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center; transition:all 0.2s ease;" aria-label="Close Modal">✕</button>
+      
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:#ecfdf5; display:flex; align-items:center; justify-content:center; font-size:1.5rem;">🩺</div>
+        <div>
+          <h2 style="font-family:'Playfair Display', serif; font-size:1.45rem; font-weight:800; color:#0d382d; margin:0;">How MediKiosk Works</h2>
+          <p style="font-size:0.85rem; color:#64748b; margin:2px 0 0 0;">Intelligent pre-consultation clinical check-in</p>
+        </div>
+      </div>
+
+      <div style="margin:24px 0; display:flex; flex-direction:column; gap:18px;">
+        <div style="display:flex; gap:14px; align-items:flex-start;">
+          <div style="width:32px; height:32px; border-radius:50%; background:#0d382d; color:#fff; font-weight:800; font-size:0.9rem; display:flex; align-items:center; justify-content:center; flex-shrink:0;">1</div>
+          <div>
+            <h4 style="font-size:1rem; font-weight:700; color:#0f172a; margin:0 0 4px 0;">Select Language &amp; Verification</h4>
+            <p style="font-size:0.88rem; color:#475569; line-height:1.5; margin:0;">Choose from 10 Indian regional languages. MediKiosk communicates fluently in voice and text in your preferred language.</p>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:14px; align-items:flex-start;">
+          <div style="width:32px; height:32px; border-radius:50%; background:#0d382d; color:#fff; font-weight:800; font-size:0.9rem; display:flex; align-items:center; justify-content:center; flex-shrink:0;">2</div>
+          <div>
+            <h4 style="font-size:1rem; font-weight:700; color:#0f172a; margin:0 0 4px 0;">Interactive Symptom &amp; AYUSH Intake</h4>
+            <p style="font-size:0.88rem; color:#475569; line-height:1.5; margin:0;">Speak hands-free with automated microphone countdown or tap to answer adaptive clinical questions. You can also scan physical prescriptions.</p>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:14px; align-items:flex-start;">
+          <div style="width:32px; height:32px; border-radius:50%; background:#0d382d; color:#fff; font-weight:800; font-size:0.9rem; display:flex; align-items:center; justify-content:center; flex-shrink:0;">3</div>
+          <div>
+            <h4 style="font-size:1rem; font-weight:700; color:#0f172a; margin:0 0 4px 0;">Physician-Ready Summary</h4>
+            <p style="font-size:0.88rem; color:#475569; line-height:1.5; margin:0;">All symptoms are structured, risk-triaged, and transmitted securely to your doctor's dashboard before your consultation begins.</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; border-top:1px solid #e2e8f0; padding-top:18px;">
+        <button onclick="closeHelpModal()" class="btn-primary-action" style="padding:10px 24px; border-radius:12px; font-weight:700; background:#0d382d; color:#fff;">Got It, Let's Begin</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="/js/i18n.js?v=14"></script>
+  <script src="/js/speech.js?v=14"></script>
+  <script src="/js/api.js?v=14"></script>
+  <script src="/js/patient_intake.js?v=14"></script>
+  <script src="/js/app.js?v=14"></script>
+</body>
+</html>

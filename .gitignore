@@ -26,6 +26,11 @@ frontend/uploads/
 backend/uploads/
 *.log
 
+# Node / Frontend
+node_modules/
+**/node_modules/
+frontend-react/dist/
+
 # IDE & OS
 .vscode/
 .idea/
