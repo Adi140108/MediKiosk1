@@ -51,8 +51,8 @@ const api = {
     return data;
   },
 
-  async getDepartmentDashboard(deptId) {
-    const res = await fetchWithTimeout(`${API_BASE}/physician/departments/${deptId}/dashboard`, {}, 12000);
+  async getDepartmentDashboard(deptId, opdMode = "GENERAL_OPD") {
+    const res = await fetchWithTimeout(`${API_BASE}/physician/departments/${deptId}/dashboard?opd_mode=${encodeURIComponent(opdMode)}`, {}, 12000);
     if (!res.ok) throw new Error("Failed to fetch department dashboard");
     return res.json();
   },
@@ -122,7 +122,7 @@ const api = {
         past_medical_history: pastMedicalHistory || null,
         prescription_notes: prescriptionNotes || null
       })
-    }, 8000);
+    }, 25000);
     if (!res.ok) throw new Error("Failed to start intake session");
     return res.json();
   },
@@ -137,7 +137,7 @@ const api = {
         new_answer: newAnswer,
         physician_id: physicianId
       })
-    }, 6000);
+    }, 15000);
     if (!res.ok) throw new Error("Failed to update answer");
     return res.json();
   },
@@ -154,7 +154,7 @@ const api = {
         attendant_id: attendantId,
         language: language
       })
-    }, 5000);
+    }, 25000);
     if (!res.ok) throw new Error("Failed to submit answer");
     return res.json();
   },
@@ -167,7 +167,7 @@ const api = {
         session_id: sessionId,
         patient_id: patientId
       })
-    }, 6000);
+    }, 25000);
     if (!res.ok) throw new Error("Failed to complete intake");
     return res.json();
   },

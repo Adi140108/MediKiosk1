@@ -278,7 +278,7 @@ const PhysicianDashboard = {
     try {
       const [items, dashData] = await Promise.all([
         api.getDepartmentQueue(this.currentDepartment, search, severity, status, this.opdMode),
-        api.getDepartmentDashboard(this.currentDepartment).catch(() => null)
+        api.getDepartmentDashboard(this.currentDepartment, this.opdMode).catch(() => null)
       ]);
 
       const tableBody = document.getElementById("priority-queue-table-body");

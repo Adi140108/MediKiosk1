@@ -33,48 +33,21 @@ intake_repo = IntakeRepository()
 patient_repo = PatientRepository()
 timeline_repo = TimelineRepository()
 
-GENERAL_OPD_DEPARTMENTS = [
-    {"id": "general-medicine", "display_name": "General Medicine", "icon": "🩺", "description": "General physician, fever, metabolic, and multi-system triage."},
-    {"id": "cardiology", "display_name": "Cardiology", "icon": "🫀", "description": "Cardiac emergencies, chest pain, arrhythmias & hypertension triage."},
-    {"id": "pulmonology", "display_name": "Pulmonology", "icon": "🫁", "description": "Respiratory distress, persistent cough, dyspnea, asthma and chronic airway disorders."},
-    {"id": "neurology", "display_name": "Neurology", "icon": "🧠", "description": "Stroke, seizures, acute migraines, neurological deficits."},
-    {"id": "gastroenterology", "display_name": "Gastroenterology", "icon": "🍽️", "description": "Acute abdomen, GI bleed, severe gastritis & hepatic disorders."},
-    {"id": "orthopedics", "display_name": "Orthopedics", "icon": "🦴", "description": "Fractures, dislocations, acute joint and spinal pain."},
-    {"id": "pediatrics", "display_name": "Pediatrics", "icon": "👶", "description": "Dedicated care for infants, children, and adolescents (Age 0-18)."},
-    {"id": "emergency", "display_name": "Emergency / Trauma", "icon": "🚨", "description": "Life-threatening emergencies, trauma, and acute resuscitation."},
-    {"id": "dermatology", "display_name": "Dermatology", "icon": "🧴", "description": "Acute skin eruptions, infections, and allergic dermatoses."},
-    {"id": "ent", "display_name": "ENT", "icon": "👂", "description": "Ear, nose, throat emergencies, foreign bodies, airway triage."},
-    {"id": "ophthalmology", "display_name": "Ophthalmology", "icon": "👁", "description": "Eye trauma, visual loss, acute red eye."},
-    {"id": "psychiatry", "display_name": "Psychiatry", "icon": "🧩", "description": "Acute crisis, panic, behavioral triage."},
-    {"id": "unspecified", "display_name": "Unspecified / Triage Desk", "icon": "📋", "description": "Ambiguous symptoms, complex presentations & manual allocation."}
-]
-
-AYUSH_OPD_DEPARTMENTS = [
-    {"id": "ayush", "display_name": "AYUSH / Ayurveda Main OPD", "icon": "🌿", "description": "Ayurvedic general outpatient care, Prakriti constitution assessment and holistic triage."},
-    {"id": "kayachikitsa", "display_name": "Kayachikitsa (Internal Medicine)", "icon": "🍵", "description": "Agni, Dhatu, Ama, systemic illnesses, digestive and metabolic disorders."},
-    {"id": "panchakarma", "display_name": "Panchakarma (Detox & Purification)", "icon": "🪔", "description": "Shodhana therapy, Vamana, Virechana, Basti, Nasya and bio-cleansing evaluations."},
-    {"id": "shalya", "display_name": "Shalya Tantra (General & Structural Care)", "icon": "🗡️", "description": "Musculoskeletal, joint pain, spinal care, and structural Ayurvedic management."},
-    {"id": "shalakya", "display_name": "Shalakya Tantra (ENT & Eye / Urdhvanga)", "icon": "👁️", "description": "Head, ear, nose, throat, and ocular disorders in Ayurveda."},
-    {"id": "prasuti-stri", "display_name": "Prasuti Tantra & Stree Roga", "icon": "🌺", "description": "Ayurvedic women's health, maternal wellness, and gynecological care."},
-    {"id": "kaumarabhritya", "display_name": "Kaumarabhritya (Pediatrics)", "icon": "👶", "description": "Balaroga, infant care, pediatric growth and immune health in Ayurveda."},
-    {"id": "swasthavritta", "display_name": "Swasthavritta & Yoga (Preventive Care)", "icon": "🧘", "description": "Dinacharya, Ritucharya, Ahara, Vihara, preventive health and lifestyle medicine."},
-    {"id": "agadatantra", "display_name": "Agada Tantra (Toxicology & Allergies)", "icon": "🧪", "description": "Environmental allergies, toxicities, skin hypersensitivities and insect bites."}
-]
-
-DEPARTMENTS = GENERAL_OPD_DEPARTMENTS
-
 @router.get("/departments")
 def list_departments(opd_mode: Optional[str] = "GENERAL_OPD"):
+    """Returns single source of truth department registry from department_config.py."""
     depts = get_departments_for_mode(opd_mode)
     return [d.model_dump() for d in depts]
 
 @router.get("/departments/{department}/dashboard")
-def get_department_dashboard(department: str):
+def get_department_dashboard(department: str, opd_mode: Optional[str] = Query("GENERAL_OPD")):
+    """Mode-aware department dashboard metrics and queue."""
     dept_enum = queue_service.get_department_enum(department)
-    metrics = queue_service.get_department_metrics(dept_enum)
-    recent_items = queue_service.get_department_queue(dept_enum)
+    metrics = queue_service.get_department_metrics(dept_enum, opd_mode=opd_mode)
+    recent_items = queue_service.get_department_queue(dept_enum, opd_mode_filter=opd_mode)
     return {
         "department": department,
+        "opd_mode": opd_mode,
         "metrics": metrics.model_dump(),
         "recent_queue": [i.model_dump() for i in recent_items[:10]]
     }
@@ -122,46 +95,36 @@ async def get_patient_case_workspace(session_id: str):
     answers = intake_repo.get_answers_by_session(session_id) or []
     context = intake_repo.get_context_state(session_id)
     timeline = timeline_repo.get_session_timeline(session_id)
-    raw_mode = context.opd_mode if (context and context.opd_mode) else (queue_item.opd_mode if queue_item else "GENERAL_OPD")
-    opd_mode_val = str(getattr(raw_mode, "value", raw_mode)).upper()
-    is_ayush = "AYUSH" in opd_mode_val
 
-    raw_intake_mode = context.mode_at_intake if (context and context.mode_at_intake) else opd_mode_val
+    raw_intake_mode = context.mode_at_intake if (context and context.mode_at_intake) else (
+        context.opd_mode if (context and context.opd_mode) else (queue_item.opd_mode if queue_item else "GENERAL_OPD")
+    )
     mode_at_intake_val = str(getattr(raw_intake_mode, "value", raw_intake_mode)).upper()
+    is_ayush = "AYUSH" in mode_at_intake_val
 
-    # Dynamically evaluate authentic Ayurvedic RAG assessment ONLY when in AYUSH OPD mode
-    if is_ayush and draft_summary:
-        complaint_terms = []
-        if draft_summary.chief_complaint:
-            complaint_terms.append(draft_summary.chief_complaint)
-        if context and context.chief_complaint:
-            complaint_terms.append(context.chief_complaint)
-        if context and hasattr(context, "associated_symptoms") and context.associated_symptoms:
-            for s in context.associated_symptoms:
-                if s not in complaint_terms:
-                    complaint_terms.append(s)
-        for a in answers:
-            ans_text = a.answer or a.original_answer or ""
-            if ans_text and len(ans_text) < 80 and ans_text not in complaint_terms:
-                complaint_terms.append(ans_text)
+    # Strict Physician Dashboard Mode Isolation:
+    # 1. GENERAL_OPD: NEVER calculate or dynamically generate any AYUSH assessment. Clear draft summary ayurvedic fields.
+    # 2. AYUSH_OPD: Only display stored assessment from intake. Never trigger fresh LLM/RAG recalculation.
+    if not is_ayush:
+        if draft_summary:
+            draft_summary.ayurvedic_assessment = {}
+        ayush_assessment_dict = {}
+        ayurvedic_findings_dict = {}
+    else:
+        stored_ayush = context.ayush_assessment if (context and context.ayush_assessment) else None
+        if stored_ayush:
+            ayush_assessment_dict = stored_ayush if isinstance(stored_ayush, dict) else stored_ayush.model_dump()
+            if draft_summary:
+                draft_summary.ayurvedic_assessment = ayush_assessment_dict
+        else:
+            ayush_assessment_dict = {
+                "status": "INSUFFICIENT_DATA",
+                "summary": "AYUSH assessment unavailable / insufficient data"
+            }
+            if draft_summary:
+                draft_summary.ayurvedic_assessment = ayush_assessment_dict
+        ayurvedic_findings_dict = context.ayurvedic_findings if (context and context.ayurvedic_findings) else {}
 
-        full_complaint = ", ".join(complaint_terms) if complaint_terms else "General clinical evaluation"
-        assoc_syms = draft_summary.associated_symptoms or (context.associated_symptoms if context else [])
-        
-        try:
-            dyn_ayurvedic = ayurparam_adapter.synthesize_ayurvedic_report(
-                chief_complaint=full_complaint,
-                associated_symptoms=assoc_syms,
-                pain_score=context.severity if context else None
-            )
-            if dyn_ayurvedic:
-                draft_summary.ayurvedic_assessment = dyn_ayurvedic
-        except Exception as e:
-            logger.warning(f"Dynamic Ayurvedic evaluation notice: {e}")
-    elif not is_ayush and draft_summary:
-        draft_summary.ayurvedic_assessment = {}
-
-    # Fetch genuine documents uploaded for this session
     raw_docs = doc_service.get_documents_by_session(session_id)
     if not raw_docs and patient:
         raw_docs = doc_service.get_documents_by_patient(patient.patient_id)
@@ -176,11 +139,9 @@ async def get_patient_case_workspace(session_id: str):
             doc_copy["access_url"] = doc.get("provider_metadata", {}).get("secure_url") or doc.get("storage_key")
         documents_with_urls.append(doc_copy)
 
-    # If queue item was WAITING, move to IN_REVIEW
     if queue_item and queue_item.status == QueueStatus.WAITING:
         queue_service.update_patient_status(queue_item.queue_id, QueueStatus.IN_REVIEW)
 
-    # Identify information gaps
     missing_gaps = []
     if context:
         if not context.medications: missing_gaps.append({"field": "medications", "label": "Medication History", "status": "Not provided"})
@@ -188,7 +149,6 @@ async def get_patient_case_workspace(session_id: str):
         if not context.family_history: missing_gaps.append({"field": "family_history", "label": "Family History", "status": "Not recorded"})
         if not documents_with_urls: missing_gaps.append({"field": "documents", "label": "Previous Medical Records", "status": "No documents uploaded"})
 
-    # Red flag & Routing safety fallback synthesis
     if not rf_result:
         rf_sev = queue_item.overall_severity.value if (queue_item and hasattr(queue_item.overall_severity, 'value')) else (queue_item.overall_severity if queue_item else "NONE")
         is_rf = rf_sev in ("CRITICAL", "HIGH")
@@ -210,7 +170,7 @@ async def get_patient_case_workspace(session_id: str):
             )
 
     if not routing:
-        target_dept = queue_item.assigned_department.value if (queue_item and hasattr(queue_item.assigned_department, 'value')) else (queue_item.assigned_department if queue_item else "general-medicine")
+        target_dept = queue_item.assigned_department.value if (queue_item and hasattr(queue_item.assigned_department, 'value')) else (queue_item.assigned_department if queue_item else ("ayush-unspecified" if is_ayush else "general-medicine"))
         routing_dict = {
             "recommended_department": target_dept,
             "assigned_department": target_dept,
@@ -238,11 +198,9 @@ async def get_patient_case_workspace(session_id: str):
             draft_dict["hpi_narrative"] = draft_dict["hpi"]
         elif "hpi_narrative" in draft_dict and not draft_dict.get("hpi"):
             draft_dict["hpi"] = draft_dict["hpi_narrative"]
-        if not is_ayush:
-            draft_dict["ayurvedic_assessment"] = {}
 
     return {
-        "opd_mode": opd_mode_val,
+        "opd_mode": mode_at_intake_val,
         "mode_at_intake": mode_at_intake_val,
         "patient": patient_dict,
         "queue_item": queue_item.model_dump() if queue_item else None,
@@ -262,8 +220,8 @@ async def get_patient_case_workspace(session_id: str):
             "provenance_map": context.provenance_map if context else {}
         },
         "documents": documents_with_urls,
-        "ayurvedic_findings": (context.ayurvedic_findings if (context and is_ayush) else {}),
-        "ayush_assessment": (context.ayush_assessment if (context and is_ayush and context.ayush_assessment) else {}),
+        "ayurvedic_findings": ayurvedic_findings_dict,
+        "ayush_assessment": ayush_assessment_dict,
         "questions": [q.model_dump() for q in questions],
         "answers": [a.model_dump() for a in answers],
         "timeline": [t.model_dump() for t in timeline],
@@ -287,7 +245,8 @@ def override_ayush_assessment(session_id: str, req: OverrideAyushRequest):
     context = intake_repo.get_context_state(session_id)
     if not context:
         raise HTTPException(status_code=400, detail="Intake context not found")
-    if "AYUSH" not in str(context.opd_mode).upper():
+    raw_mode = context.mode_at_intake or context.opd_mode
+    if "AYUSH" not in str(raw_mode).upper():
         raise HTTPException(status_code=400, detail="AYUSH assessment override is rejected for GENERAL_OPD patients.")
     
     current_eval = context.ayush_assessment or {}
@@ -319,7 +278,6 @@ def override_ayush_assessment(session_id: str, req: OverrideAyushRequest):
     context.ayush_assessment = current_eval
     intake_repo.save_context_state(session_id, context)
 
-    # Record Timeline Event
     event = TimelineEvent(
         event_id=f"evt_override_{session_id}_{uuid.uuid4().hex[:4]}",
         patient_id=req.physician_id,
@@ -343,14 +301,10 @@ def reassign_patient_department(
     physician_id: str = Query("attending_physician"),
     reason: Optional[str] = Query(None)
 ):
-    """
-    Directly reassigns a patient to another clinical department queue or escalates to Emergency.
-    Validates that the target department is permitted for the patient's OPD mode.
-    """
     context = intake_repo.get_context_state(session_id)
     queue_item = queue_service.repo.get_by_session_id(session_id)
-    raw_mode = context.opd_mode if (context and context.opd_mode) else (queue_item.opd_mode if queue_item else "GENERAL_OPD")
-    opd_mode_str = (raw_mode.value if hasattr(raw_mode, "value") else str(raw_mode).split(".")[-1]).upper()
+    raw_mode = context.mode_at_intake if (context and context.mode_at_intake) else (context.opd_mode if (context and context.opd_mode) else (queue_item.opd_mode if queue_item else "GENERAL_OPD"))
+    opd_mode_str = str(getattr(raw_mode, "value", raw_mode)).upper()
 
     if not is_department_valid_for_mode(target_department, opd_mode_str):
         raise HTTPException(
@@ -359,7 +313,6 @@ def reassign_patient_department(
         )
 
     target_dept_enum = queue_service.get_department_enum(target_department)
-    queue_item = queue_service.repo.get_by_session_id(session_id)
     if not queue_item:
         patient = patient_repo.get_patient_by_session(session_id)
         draft_summary = intake_repo.get_draft_summary_by_session(session_id)
@@ -375,6 +328,7 @@ def reassign_patient_department(
             age=pat_age,
             gender=pat_gender,
             arrival_time=datetime.now(timezone.utc),
+            opd_mode=opd_mode_str,
             assigned_department=target_dept_enum,
             recommended_department=target_dept_enum,
             status=QueueStatus.WAITING,
@@ -397,14 +351,12 @@ def reassign_patient_department(
 
     queue_service.repo.upsert_queue_item(queue_item)
 
-    # Update routing
     routing = intake_repo.get_routing_by_session(session_id)
     if routing:
         routing.confirmed_department = target_dept_enum
         routing.confirmed_by_physician_id = physician_id
         intake_repo.save_routing_recommendation(routing)
 
-    # Log timeline event
     event = TimelineEvent(
         event_id=f"evt_reassign_{session_id}_{uuid.uuid4().hex[:4]}",
         patient_id=queue_item.patient_id,
@@ -425,10 +377,6 @@ def reassign_patient_department(
 @router.post("/cases/{session_id}/decision")
 @router.post("/sessions/{session_id}/decision")
 def submit_physician_decision(session_id: str, payload: PhysicianDecisionPayload):
-    """
-    Physician clinical decision and sign-off endpoint.
-    Accepts, modifies, or overrides the AI recommendation with mandatory audit trail.
-    """
     try:
         result = review_service.record_physician_decision(session_id, payload)
         return {
@@ -442,9 +390,6 @@ def submit_physician_decision(session_id: str, payload: PhysicianDecisionPayload
 @router.post("/cases/{session_id}/ask-question")
 @router.post("/sessions/{session_id}/ask_patient")
 def ask_patient_targeted_question(session_id: str, payload: AskPatientQuestionPayload):
-    """
-    Physician sends a focused clarification question to the patient's active session.
-    """
     try:
         q = review_service.ask_patient_targeted_question(session_id, payload)
         return {
