@@ -51,8 +51,8 @@ const api = {
     return data;
   },
 
-  async getDepartmentDashboard(deptId) {
-    const res = await fetchWithTimeout(`${API_BASE}/physician/departments/${deptId}/dashboard`, {}, 12000);
+  async getDepartmentDashboard(deptId, opdMode = "GENERAL_OPD") {
+    const res = await fetchWithTimeout(`${API_BASE}/physician/departments/${deptId}/dashboard?opd_mode=${encodeURIComponent(opdMode)}`, {}, 12000);
     if (!res.ok) throw new Error("Failed to fetch department dashboard");
     return res.json();
   },
