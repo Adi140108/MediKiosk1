@@ -24,16 +24,6 @@ class SynthesizeRequest(BaseModel):
     language: str
     gender: Optional[str] = "female"
 
-async def fetch_tts_audio_bytes(text: str, language: str) -> Optional[bytes]:
-    """
-    Fetches high-quality TTS audio bytes for Indian languages.
-    """
-    if not text or not text.strip():
-        return None
-
-    cache_key = f"{language}_{text.strip()}"
-    if cache_key in _tts_cache:
-        return _tts_cache[cache_key]
 
 INDIC_VOICE_MAP = {
     "kn": "kn-IN-SapnaNeural",

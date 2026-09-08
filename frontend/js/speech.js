@@ -768,8 +768,9 @@ const SpeechManager = {
     const targetLang = (lang || this.currentLanguage || 'en').toLowerCase().trim();
     const assignedVoice = this.getIndianFemaleVoice(targetLang);
 
-    // Enable browser SpeechSynthesis for all 10 supported Indian languages
-    if (this.synth) {
+    // Browser SpeechSynthesis only reliably works for English and Hindi.
+    // All other Indian languages use server-side edge_tts neural voices for guaranteed audio.
+    if (this.synth && assignedVoice && (targetLang === 'en' || targetLang === 'hi')) {
       try {
         this.synth.cancel();
         this.synth.resume();
@@ -777,11 +778,13 @@ const SpeechManager = {
         utterance.lang = this.langLocaleMap[targetLang] || `${targetLang}-IN`;
         utterance.rate = 0.92;
         utterance.pitch = 1.0;
-        if (assignedVoice) {
-          utterance.voice = assignedVoice;
-        }
+        utterance.voice = assignedVoice;
+
+        // Track whether onstart actually fired (audio actually began playing)
+        let audioStarted = false;
 
         utterance.onstart = () => {
+          audioStarted = true;
           this.isSpeaking = true;
           this.updateButtonStates('playing');
         };
@@ -799,16 +802,14 @@ const SpeechManager = {
         };
 
         utterance.onerror = (e) => {
-          console.warn("Browser SpeechSynthesis notice:", e);
+          console.warn("Browser SpeechSynthesis failed for", targetLang, "- falling back to server TTS:", e);
           this.isSpeaking = false;
           if (this._speechWatchdog) {
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
           }
-          this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
-          if (typeof onEndCallback === 'function') {
-            onEndCallback();
-          }
+          // CRITICAL: Fall back to server TTS instead of giving up silently
+          this._playServerAudioStream(text, targetLang, onEndCallback);
         };
 
         this.isSpeaking = true;
@@ -816,15 +817,24 @@ const SpeechManager = {
         this.synth.speak(utterance);
 
         // Chrome watchdog to prevent audio suspension mid-speech
+        // Also detects cases where speech ends instantly without producing audio
         if (this._speechWatchdog) clearInterval(this._speechWatchdog);
+        let watchdogTicks = 0;
         this._speechWatchdog = setInterval(() => {
+          watchdogTicks++;
           if (this.synth && this.synth.speaking) {
             try { this.synth.resume(); } catch(e) {}
+          } else if (watchdogTicks <= 1 && !audioStarted) {
+            // Speech ended instantly without ever starting - voice didn't work
+            clearInterval(this._speechWatchdog);
+            this._speechWatchdog = null;
+            console.warn("Browser voice produced no audio for", targetLang, "- falling back to server TTS");
+            this._playServerAudioStream(text, targetLang, onEndCallback);
           } else {
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
           }
-        }, 3500);
+        }, 1500);
 
         return;
       } catch (err) {
@@ -832,7 +842,8 @@ const SpeechManager = {
       }
     }
 
-    // Option B: Server Indic Neural TTS (Kannada, Tamil, Telugu, Malayalam, Marathi, Bengali, Gujarati, Punjabi, Hindi, English)
+    // Server Indic Neural TTS via edge_tts — guaranteed support for all 10 Indian languages:
+    // English, Hindi, Kannada, Tamil, Telugu, Malayalam, Marathi, Bengali, Gujarati, Punjabi
     this._playServerAudioStream(text, targetLang, onEndCallback);
   },
 
