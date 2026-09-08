@@ -1,5 +1,6 @@
 import uuid
 import logging
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -16,6 +17,7 @@ from app.modules.physician.queue_service import PriorityQueueService
 from app.modules.physician.review_service import PhysicianReviewService
 from app.modules.documents.firestore_service import FirestoreDocumentService
 from app.modules.documents.storage_service import StorageService
+from app.modules.routing.department_config import get_departments_for_mode, is_department_valid_for_mode
 from app.db.repositories.intake_repository import IntakeRepository
 from app.db.repositories.patient_repository import PatientRepository
 from app.db.repositories.timeline_repository import TimelineRepository
@@ -63,9 +65,8 @@ DEPARTMENTS = GENERAL_OPD_DEPARTMENTS
 
 @router.get("/departments")
 def list_departments(opd_mode: Optional[str] = "GENERAL_OPD"):
-    if opd_mode and "AYUSH" in opd_mode.upper():
-        return AYUSH_OPD_DEPARTMENTS
-    return GENERAL_OPD_DEPARTMENTS
+    depts = get_departments_for_mode(opd_mode)
+    return [d.model_dump() for d in depts]
 
 @router.get("/departments/{department}/dashboard")
 def get_department_dashboard(department: str):
@@ -121,9 +122,15 @@ async def get_patient_case_workspace(session_id: str):
     answers = intake_repo.get_answers_by_session(session_id) or []
     context = intake_repo.get_context_state(session_id)
     timeline = timeline_repo.get_session_timeline(session_id)
+    raw_mode = context.opd_mode if (context and context.opd_mode) else (queue_item.opd_mode if queue_item else "GENERAL_OPD")
+    opd_mode_val = str(getattr(raw_mode, "value", raw_mode)).upper()
+    is_ayush = "AYUSH" in opd_mode_val
 
-    # Dynamically evaluate authentic Ayurvedic RAG assessment based on patient symptoms
-    if draft_summary:
+    raw_intake_mode = context.mode_at_intake if (context and context.mode_at_intake) else opd_mode_val
+    mode_at_intake_val = str(getattr(raw_intake_mode, "value", raw_intake_mode)).upper()
+
+    # Dynamically evaluate authentic Ayurvedic RAG assessment ONLY when in AYUSH OPD mode
+    if is_ayush and draft_summary:
         complaint_terms = []
         if draft_summary.chief_complaint:
             complaint_terms.append(draft_summary.chief_complaint)
@@ -151,6 +158,8 @@ async def get_patient_case_workspace(session_id: str):
                 draft_summary.ayurvedic_assessment = dyn_ayurvedic
         except Exception as e:
             logger.warning(f"Dynamic Ayurvedic evaluation notice: {e}")
+    elif not is_ayush and draft_summary:
+        draft_summary.ayurvedic_assessment = {}
 
     # Fetch genuine documents uploaded for this session
     raw_docs = doc_service.get_documents_by_session(session_id)
@@ -229,12 +238,12 @@ async def get_patient_case_workspace(session_id: str):
             draft_dict["hpi_narrative"] = draft_dict["hpi"]
         elif "hpi_narrative" in draft_dict and not draft_dict.get("hpi"):
             draft_dict["hpi"] = draft_dict["hpi_narrative"]
-
-    opd_mode_val = context.opd_mode if (context and context.opd_mode) else (queue_item.opd_mode if queue_item else "GENERAL_OPD")
+        if not is_ayush:
+            draft_dict["ayurvedic_assessment"] = {}
 
     return {
         "opd_mode": opd_mode_val,
-        "mode_at_intake": context.mode_at_intake if (context and context.mode_at_intake) else opd_mode_val,
+        "mode_at_intake": mode_at_intake_val,
         "patient": patient_dict,
         "queue_item": queue_item.model_dump() if queue_item else None,
         "draft_summary": draft_dict,
@@ -253,8 +262,8 @@ async def get_patient_case_workspace(session_id: str):
             "provenance_map": context.provenance_map if context else {}
         },
         "documents": documents_with_urls,
-        "ayurvedic_findings": context.ayurvedic_findings if context else {},
-        "ayush_assessment": context.ayush_assessment if (context and context.ayush_assessment) else {},
+        "ayurvedic_findings": (context.ayurvedic_findings if (context and is_ayush) else {}),
+        "ayush_assessment": (context.ayush_assessment if (context and is_ayush and context.ayush_assessment) else {}),
         "questions": [q.model_dump() for q in questions],
         "answers": [a.model_dump() for a in answers],
         "timeline": [t.model_dump() for t in timeline],
@@ -278,6 +287,8 @@ def override_ayush_assessment(session_id: str, req: OverrideAyushRequest):
     context = intake_repo.get_context_state(session_id)
     if not context:
         raise HTTPException(status_code=400, detail="Intake context not found")
+    if "AYUSH" not in str(context.opd_mode).upper():
+        raise HTTPException(status_code=400, detail="AYUSH assessment override is rejected for GENERAL_OPD patients.")
     
     current_eval = context.ayush_assessment or {}
     override_log = current_eval.get("physician_overrides", [])
@@ -334,7 +345,19 @@ def reassign_patient_department(
 ):
     """
     Directly reassigns a patient to another clinical department queue or escalates to Emergency.
+    Validates that the target department is permitted for the patient's OPD mode.
     """
+    context = intake_repo.get_context_state(session_id)
+    queue_item = queue_service.repo.get_by_session_id(session_id)
+    raw_mode = context.opd_mode if (context and context.opd_mode) else (queue_item.opd_mode if queue_item else "GENERAL_OPD")
+    opd_mode_str = (raw_mode.value if hasattr(raw_mode, "value") else str(raw_mode).split(".")[-1]).upper()
+
+    if not is_department_valid_for_mode(target_department, opd_mode_str):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot assign patient in mode '{opd_mode_str}' to department '{target_department}'. Department is invalid for this OPD mode."
+        )
+
     target_dept_enum = queue_service.get_department_enum(target_department)
     queue_item = queue_service.repo.get_by_session_id(session_id)
     if not queue_item:

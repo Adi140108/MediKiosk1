@@ -623,10 +623,94 @@ const PatientIntake = {
     }
   },
 
+  cameraStream: null,
+  capturedCameraFile: null,
+
+  triggerCameraCapture() {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    if (isMobile) {
+      const camInput = document.getElementById("doc-camera-input");
+      if (camInput) {
+        camInput.click();
+        return;
+      }
+    }
+    this.openCameraModal();
+  },
+
+  async openCameraModal() {
+    const modal = document.getElementById("camera-capture-modal");
+    const video = document.getElementById("camera-video-feed");
+    if (!modal || !video) return;
+
+    modal.style.display = "flex";
+
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        this.cameraStream = stream;
+        video.srcObject = stream;
+      } else {
+        const camInput = document.getElementById("doc-camera-input");
+        if (camInput) camInput.click();
+      }
+    } catch (err) {
+      console.warn("Camera access error:", err);
+      this.closeCameraModal();
+      const camInput = document.getElementById("doc-camera-input");
+      if (camInput) camInput.click();
+    }
+  },
+
+  closeCameraModal() {
+    if (this.cameraStream) {
+      try {
+        this.cameraStream.getTracks().forEach(track => track.stop());
+      } catch (e) {}
+      this.cameraStream = null;
+    }
+    const modal = document.getElementById("camera-capture-modal");
+    if (modal) modal.style.display = "none";
+  },
+
+  capturePhotoFromWebcam() {
+    const video = document.getElementById("camera-video-feed");
+    const canvas = document.getElementById("camera-canvas");
+    if (!video || !canvas) return;
+
+    const width = video.videoWidth || 640;
+    const height = video.videoHeight || 480;
+
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, width, height);
+
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const file = new File([blob], `camera_scan_${Date.now()}.jpg`, { type: "image/jpeg" });
+      this.capturedCameraFile = file;
+
+      try {
+        const container = new DataTransfer();
+        container.items.add(file);
+        const fileInput = document.getElementById("doc-file-input");
+        if (fileInput) fileInput.files = container.files;
+      } catch (e) {}
+
+      this.handleFileSelect({ target: { files: [file] } });
+      this.closeCameraModal();
+    }, "image/jpeg", 0.92);
+  },
+
   async handleDocUpload(e) {
     e.preventDefault();
     const fileInput = document.getElementById("doc-file-input");
-    if (!fileInput.files.length) {
+    const file = (fileInput && fileInput.files && fileInput.files.length) ? fileInput.files[0] : this.capturedCameraFile;
+    if (!file) {
       this.startSocraticIntake();
       return;
     }
@@ -648,7 +732,6 @@ const PatientIntake = {
     }
 
     try {
-      const file = fileInput.files[0];
       const formData = new FormData();
       formData.append("file", file);
       formData.append("session_id", this.currentSessionId || `sess_${Date.now()}`);
@@ -999,8 +1082,30 @@ const PatientIntake = {
   renderTicketDetails(data = {}) {
     const bodyEl = document.getElementById("ticket-details-body");
     if (bodyEl) {
-      const patientName = data.patient_name || this.registeredData?.name || 'Registered Patient';
-      const dept = (data.department || this.department || 'General Medicine').toUpperCase();
+      const rawDept = (data.department || this.department || 'General Medicine').toLowerCase();
+      const deptDisplayMap = {
+        "kayachikitsa": "KAYACHIKITSA (INTERNAL MEDICINE)",
+        "panchakarma": "PANCHAKARMA (DETOX & PURIFICATION)",
+        "shalya": "SHALYA TANTRA (SURGICAL & STRUCTURAL)",
+        "shalakya": "SHALAKYA TANTRA (ENT & EYE)",
+        "prasuti-stri": "PRASUTI TANTRA & STREE ROGA",
+        "kaumarabhritya": "KAUMARABHRITYA (PEDIATRICS)",
+        "swasthavritta": "SWASTHAVRITTA & YOGA",
+        "agadatantra": "AGADA TANTRA (TOXICOLOGY)",
+        "ayush": "AYUSH / AYURVEDA MAIN OPD",
+        "general-medicine": "GENERAL MEDICINE",
+        "cardiology": "CARDIOLOGY",
+        "neurology": "NEUROLOGY",
+        "orthopedics": "ORTHOPEDICS",
+        "pediatrics": "PEDIATRICS",
+        "gastroenterology": "GASTROENTEROLOGY",
+        "dermatology": "DERMATOLOGY",
+        "ent": "ENT",
+        "ophthalmology": "OPHTHALMOLOGY",
+        "psychiatry": "PSYCHIATRY",
+        "emergency": "EMERGENCY / TRAUMA"
+      };
+      const dept = deptDisplayMap[rawDept] || rawDept.toUpperCase().replace(/-/g, ' ');
       const complaint = data.chief_complaint || this.chiefComplaint || 'Clinical intake recorded successfully.';
       const reasoning = data.reasoning || 'Patient triaged and queued for attending physician consultation.';
 

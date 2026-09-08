@@ -166,25 +166,31 @@ async def complete_intake(req: CompleteIntakeRequest):
         patient_age=patient_age
     )
 
-    # 2.5 Run AYUSH 4-Layer Assessment Engine if in AYUSH OPD mode
-    from app.modules.ayush.assessment_engine import AyushAssessmentEngine
-    ayush_engine = AyushAssessmentEngine()
-    session_qa = intake_service.get_session_qa(req.session_id)
-    qa_list = []
-    for q_item, a_item in zip(session_qa.get("questions", []), session_qa.get("answers", [])):
-        qa_list.append({
-            "question_id": q_item.get("question_id"),
-            "question": q_item.get("question"),
-            "answer": a_item.get("answer"),
-            "clinical_domain": q_item.get("clinical_domain", "general")
-        })
+    # 2.5 Run AYUSH 4-Layer Assessment Engine ONLY if in AYUSH OPD mode
+    opd_mode_val = str(getattr(context, "opd_mode", "GENERAL_OPD")).upper()
+    if "AYUSH" in opd_mode_val:
+        from app.modules.ayush.assessment_engine import AyushAssessmentEngine
+        ayush_engine = AyushAssessmentEngine()
+        session_qa = intake_service.get_session_qa(req.session_id)
+        qa_list = []
+        for q_item, a_item in zip(session_qa.get("questions", []), session_qa.get("answers", [])):
+            qa_list.append({
+                "question_id": q_item.get("question_id"),
+                "question": q_item.get("question"),
+                "answer": a_item.get("answer"),
+                "clinical_domain": q_item.get("clinical_domain", "general")
+            })
 
-    ayush_eval = ayush_engine.evaluate_assessment(
-        qa_pairs=qa_list,
-        patient_age=patient_age,
-        ayurvedic_findings=context.ayurvedic_findings
-    )
-    context.ayush_assessment = ayush_eval
+        ayush_eval = ayush_engine.evaluate_assessment(
+            qa_pairs=qa_list,
+            patient_age=patient_age,
+            ayurvedic_findings=context.ayurvedic_findings
+        )
+        context.ayush_assessment = ayush_eval
+    else:
+        context.ayurvedic_findings = {}
+        context.ayush_assessment = {}
+
     intake_service.repo.save_context_state(req.session_id, context)
 
     # 3. Generate Draft Physician Summary

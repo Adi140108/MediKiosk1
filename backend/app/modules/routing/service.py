@@ -43,19 +43,37 @@ class RoutingService:
         opd_mode_str = str(getattr(context, "opd_mode", "GENERAL_OPD")).upper()
         if "AYUSH" in opd_mode_str:
             # Map allopathic triage recommendation to corresponding AYUSH clinical specialty
-            ayush_mapping = {
-                DepartmentId.GASTROENTEROLOGY: DepartmentId.KAYACHIKITSA,
-                DepartmentId.GENERAL_MEDICINE: DepartmentId.KAYACHIKITSA,
-                DepartmentId.NEUROLOGY: DepartmentId.SHALAKYA,
-                DepartmentId.ENT: DepartmentId.SHALAKYA,
-                DepartmentId.OPHTHALMOLOGY: DepartmentId.SHALAKYA,
-                DepartmentId.ORTHOPEDICS: DepartmentId.SHALYA,
-                DepartmentId.PEDIATRICS: DepartmentId.KAUMARABHRITYA,
-                DepartmentId.DERMATOLOGY: DepartmentId.AGADATANTRA,
-                DepartmentId.PSYCHIATRY: DepartmentId.SWASTHAVRITTA,
+            dept_key = getattr(dept, "value", str(dept)).lower()
+            ayush_str_mapping = {
+                "cardiology": DepartmentId.KAYACHIKITSA,
+                "pulmonology": DepartmentId.KAYACHIKITSA,
+                "gastroenterology": DepartmentId.KAYACHIKITSA,
+                "general-medicine": DepartmentId.KAYACHIKITSA,
+                "general_medicine": DepartmentId.KAYACHIKITSA,
+                "neurology": DepartmentId.SHALAKYA,
+                "ent": DepartmentId.SHALAKYA,
+                "ophthalmology": DepartmentId.SHALAKYA,
+                "orthopedics": DepartmentId.SHALYA,
+                "pediatrics": DepartmentId.KAUMARABHRITYA,
+                "dermatology": DepartmentId.AGADATANTRA,
+                "psychiatry": DepartmentId.SWASTHAVRITTA,
+                "ayush": DepartmentId.KAYACHIKITSA,
+                "kayachikitsa": DepartmentId.KAYACHIKITSA,
+                "panchakarma": DepartmentId.PANCHAKARMA,
+                "shalya": DepartmentId.SHALYA,
+                "shalakya": DepartmentId.SHALAKYA,
+                "prasuti-stri": DepartmentId.PRASUTI_STRI,
+                "kaumarabhritya": DepartmentId.KAUMARABHRITYA,
+                "swasthavritta": DepartmentId.SWASTHAVRITTA,
+                "agadatantra": DepartmentId.AGADATANTRA
             }
-            dept = ayush_mapping.get(dept, DepartmentId.AYUSH)
+            dept = ayush_str_mapping.get(dept_key, DepartmentId.KAYACHIKITSA)
             reasoning = f"[🌿 AYUSH OPD MODE] Routed to {dept.value.upper()} for Ayurvedic evaluation, Agni/Prakriti assessment, and holistic treatment."
+        else:
+            # Ensure GENERAL_OPD recommendation is strictly an allopathic department
+            ayush_depts = [DepartmentId.AYUSH, DepartmentId.KAYACHIKITSA, DepartmentId.PANCHAKARMA, DepartmentId.SHALYA, DepartmentId.SHALAKYA, DepartmentId.PRASUTI_STRI, DepartmentId.KAUMARABHRITYA, DepartmentId.SWASTHAVRITTA, DepartmentId.AGADATANTRA]
+            if dept in ayush_depts or getattr(dept, "value", str(dept)).lower() in ["ayush", "kayachikitsa", "panchakarma", "shalya", "shalakya", "prasuti-stri", "kaumarabhritya", "swasthavritta", "agadatantra"]:
+                dept = DepartmentId.GENERAL_MEDICINE
 
         # Critical red flag recommendation adjustment
         if red_flag_result and red_flag_result.overall_severity == RedFlagSeverity.CRITICAL:

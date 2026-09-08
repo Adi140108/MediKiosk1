@@ -109,7 +109,7 @@ const PhysicianDashboard = {
     const isAyush = (this.opdMode || "GENERAL_OPD").includes("AYUSH");
     const deptList = isAyush ? AYUSH_DEPARTMENTS : GENERAL_DEPARTMENTS;
 
-    ["confirm-dept-select", "transfer-dept-select"].forEach((selectId) => {
+    ["confirm-dept-select", "transfer-dept-select", "transfer-target-dept"].forEach((selectId) => {
       const selectEl = document.getElementById(selectId);
       if (selectEl) {
         const currentVal = selectEl.value;
@@ -998,12 +998,22 @@ const PhysicianDashboard = {
     }
     this.currentSessionId = targetSession;
 
+    // Dynamically update dropdown based on active OPD mode / patient OPD mode
+    const patientMode = (this.currentPatientData && this.currentPatientData.queue_item && this.currentPatientData.queue_item.opd_mode) || this.opdMode || "GENERAL_OPD";
+    const isAyush = patientMode.includes("AYUSH");
+    const deptList = isAyush ? AYUSH_DEPARTMENTS : GENERAL_DEPARTMENTS;
+    const deptSelect = document.getElementById("transfer-target-dept");
+    if (deptSelect) {
+      deptSelect.innerHTML = deptList.map(d => `<option value="${d.id}">${d.icon || this.getDeptIcon(d.id)} ${d.display_name}</option>`).join("");
+      if (this.currentDepartment && deptList.some(d => d.id === this.currentDepartment)) {
+        // Default to a different department than current if possible
+        const other = deptList.find(d => d.id !== this.currentDepartment);
+        if (other) deptSelect.value = other.id;
+      }
+    }
+
     const modal = document.getElementById("transfer-patient-modal");
     if (!modal) return;
-    const deptSelect = document.getElementById("transfer-target-dept");
-    if (deptSelect && this.currentDepartment) {
-      deptSelect.value = this.currentDepartment === "cardiology" ? "general-medicine" : "cardiology";
-    }
     const reasonInput = document.getElementById("transfer-reason-input");
     if (reasonInput) reasonInput.value = "";
     modal.style.display = "flex";

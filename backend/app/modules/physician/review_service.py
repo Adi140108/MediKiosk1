@@ -129,23 +129,23 @@ INSTRUCTIONS:
         progression = context.progression if context and context.progression else "No acute deterioration noted during intake"
         associated = context.associated_symptoms if context and context.associated_symptoms else []
 
-        # 3. Dynamic Ayurvedic Dosha & Agni Synthesis using AyurGenixAI Dataset & BharatGenAI AyurParam
-        ayurvedic = dict(context.ayurvedic_findings) if context and context.ayurvedic_findings else {}
-        try:
-            rag_assessment = ayurparam_adapter.synthesize_ayurvedic_report(
-                chief_complaint=complaint,
-                associated_symptoms=associated,
-                pain_score=context.severity if context else None
-            )
-            # Merge RAG evaluation into ayurvedic dictionary
-            for k, v in rag_assessment.items():
-                ayurvedic[k] = v
-        except Exception as e:
-            logger.warning(f"Ayurvedic RAG synthesis notice: {e}")
-            if not ayurvedic.get("dominant_dosha"):
-                ayurvedic["dominant_dosha"] = "Vata-Pitta"
-                ayurvedic["agni_status"] = "Vishama Agni (Irregular Metabolism)"
-                ayurvedic["dietary_guidelines"] = ["Warm fluids (Ushnodaka)", "Easily digestible meals", "Avoid cold foods"]
+        # 3. Dynamic Ayurvedic Dosha & Agni Synthesis using AyurGenixAI Dataset & BharatGenAI AyurParam (ONLY in AYUSH OPD mode)
+        opd_mode_str = str(getattr(context, "opd_mode", "GENERAL_OPD")).upper() if context else "GENERAL_OPD"
+        is_ayush = "AYUSH" in opd_mode_str
+        ayurvedic = {}
+        if is_ayush:
+            ayurvedic = dict(context.ayurvedic_findings) if context and context.ayurvedic_findings else {}
+            try:
+                rag_assessment = ayurparam_adapter.synthesize_ayurvedic_report(
+                    chief_complaint=complaint,
+                    associated_symptoms=associated,
+                    pain_score=context.severity if context else None
+                )
+                # Merge RAG evaluation into ayurvedic dictionary
+                for k, v in rag_assessment.items():
+                    ayurvedic[k] = v
+            except Exception as e:
+                logger.warning(f"Ayurvedic RAG synthesis notice: {e}")
 
         red_flags = [f.title for f in rf_result.flagged_rules] if rf_result and rf_result.flagged_rules else []
         dept = routing.recommended_department.value if routing else "General Medicine"

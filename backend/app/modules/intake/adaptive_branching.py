@@ -77,10 +77,24 @@ class AdaptiveBranchingEngine:
         missing = self.identify_missing_information(context)
         context.missing_information = missing
 
-        # 1. Check if we should stop
-        if context.question_count >= 10 or (len(missing) == 0 and context.question_count >= 4):
-            context.is_sufficient = True
-            return None
+        # 1. Check if we should stop based on OPD mode and questioning depth
+        mode_str = str(getattr(context, "opd_mode", "GENERAL_OPD")).upper()
+        if "AYUSH" in mode_str:
+            # AYUSH OPD Mode requires comprehensive multi-domain exploration:
+            # Must ask at least 6 to 8 questions across Track A & B until confidence threshold (>= 0.85) is met.
+            if context.question_count >= 10:
+                context.is_sufficient = True
+                return None
+            if context.question_count >= 6:
+                ayush_eval = getattr(context, "ayush_assessment", {}) or {}
+                evidence_cnt = ayush_eval.get("evidence_count", 0)
+                if evidence_cnt >= 5 or context.question_count >= 8:
+                    context.is_sufficient = True
+                    return None
+        else:
+            if context.question_count >= 10 or (len(missing) == 0 and context.question_count >= 4):
+                context.is_sufficient = True
+                return None
 
         candidates: List[Dict[str, Any]] = []
 

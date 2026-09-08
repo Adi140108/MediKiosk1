@@ -104,10 +104,6 @@ class AyushQuestionPlanner:
             for q in domain_questions:
                 q_id = q.get("question_id")
                 if q_id and q_id not in asked:
-                    # Check prerequisites/dependencies if defined
-                    req_questions = q.get("required_for", [])
-                    if any(req not in session_state.answered_question_ids for req in req_questions):
-                        continue
                     return q
 
             # Mark domain completed if all questions asked

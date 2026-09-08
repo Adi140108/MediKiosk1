@@ -1,8 +1,15 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from app.schemas.routing import DepartmentId, DepartmentInfo
 
-# Centralized Department Registry
-DEPARTMENTS_REGISTRY: List[DepartmentInfo] = [
+# General OPD Department Registry
+GENERAL_DEPARTMENTS: List[DepartmentInfo] = [
+    DepartmentInfo(
+        id=DepartmentId.GENERAL_MEDICINE,
+        name="General Medicine",
+        display_name="General Medicine",
+        icon="🩺",
+        description="Adult primary care, systemic illnesses, fever, diabetes, hypertension"
+    ),
     DepartmentInfo(
         id=DepartmentId.CARDIOLOGY,
         name="Cardiology",
@@ -23,13 +30,6 @@ DEPARTMENTS_REGISTRY: List[DepartmentInfo] = [
         display_name="Orthopedics",
         icon="🦴",
         description="Bones, joints, ligaments, fractures, arthritis"
-    ),
-    DepartmentInfo(
-        id=DepartmentId.GENERAL_MEDICINE,
-        name="General Medicine",
-        display_name="General Medicine",
-        icon="🩺",
-        description="Adult primary care, systemic illnesses, fever, diabetes, hypertension"
     ),
     DepartmentInfo(
         id=DepartmentId.PEDIATRICS,
@@ -74,13 +74,6 @@ DEPARTMENTS_REGISTRY: List[DepartmentInfo] = [
         description="Mental health, anxiety, depression, mood disorders"
     ),
     DepartmentInfo(
-        id=DepartmentId.AYUSH,
-        name="AYUSH",
-        display_name="AYUSH",
-        icon="🌿",
-        description="Ayurveda, Yoga, Unani, Siddha, and Homeopathy holistic care"
-    ),
-    DepartmentInfo(
         id=DepartmentId.EMERGENCY,
         name="Emergency",
         display_name="Emergency",
@@ -96,12 +89,102 @@ DEPARTMENTS_REGISTRY: List[DepartmentInfo] = [
     )
 ]
 
+# AYUSH OPD Department Registry
+AYUSH_DEPARTMENTS: List[DepartmentInfo] = [
+    DepartmentInfo(
+        id=DepartmentId.AYUSH,
+        name="AYUSH",
+        display_name="AYUSH / Ayurveda Main OPD",
+        icon="🌿",
+        description="Ayurvedic general outpatient care, Prakriti constitution assessment and holistic triage"
+    ),
+    DepartmentInfo(
+        id=DepartmentId.KAYACHIKITS,
+        name="Kayachikitsa",
+        display_name="Kayachikitsa (Internal Medicine)",
+        icon="🍵",
+        description="Agni, Dhatu, Ama, systemic illnesses, digestive and metabolic disorders"
+    ) if hasattr(DepartmentId, 'KAYACHIKITS') else DepartmentInfo(
+        id=DepartmentId.KAYACHIKITSA,
+        name="Kayachikitsa",
+        display_name="Kayachikitsa (Internal Medicine)",
+        icon="🍵",
+        description="Agni, Dhatu, Ama, systemic illnesses, digestive and metabolic disorders"
+    ),
+    DepartmentInfo(
+        id=DepartmentId.PANCHAKARMA,
+        name="Panchakarma",
+        display_name="Panchakarma (Detox & Purification)",
+        icon="🪔",
+        description="Shodhana therapy, Vamana, Virechana, Basti, Nasya and bio-cleansing evaluations"
+    ),
+    DepartmentInfo(
+        id=DepartmentId.SHALYA,
+        name="Shalya",
+        display_name="Shalya Tantra (General & Structural Care)",
+        icon="🗡️",
+        description="Musculoskeletal, joint pain, spinal care, and structural Ayurvedic management"
+    ),
+    DepartmentInfo(
+        id=DepartmentId.SHALAKYA,
+        name="Shalakya",
+        display_name="Shalakya Tantra (ENT & Eye / Urdhvanga)",
+        icon="👁️",
+        description="Head, ear, nose, throat, and ocular disorders in Ayurveda"
+    ),
+    DepartmentInfo(
+        id=DepartmentId.PRASUTI_STRI,
+        name="Prasuti & Stri Roga",
+        display_name="Prasuti Tantra & Stree Roga",
+        icon="🌺",
+        description="Ayurvedic women's health, maternal wellness, and gynecological care"
+    ),
+    DepartmentInfo(
+        id=DepartmentId.KAUMARABHRITYA,
+        name="Kaumarabhritya",
+        display_name="Kaumarabhritya (Pediatrics)",
+        icon="👶",
+        description="Balaroga, infant care, pediatric growth and immune health in Ayurveda"
+    ),
+    DepartmentInfo(
+        id=DepartmentId.SWASTHAVRITTA,
+        name="Swasthavritta",
+        display_name="Swasthavritta & Yoga (Preventive Care)",
+        icon="🧘",
+        description="Dinacharya, Ritucharya, Ahara, Vihara, preventive health and lifestyle medicine"
+    ),
+    DepartmentInfo(
+        id=DepartmentId.AGADATANTRA,
+        name="Agadatantra",
+        display_name="Agada Tantra (Toxicology & Allergies)",
+        icon="🧪",
+        description="Environmental allergies, toxicities, skin hypersensitivities and insect bites"
+    )
+]
+
+DEPARTMENTS_REGISTRY: List[DepartmentInfo] = GENERAL_DEPARTMENTS + AYUSH_DEPARTMENTS
+
 def get_all_departments() -> List[DepartmentInfo]:
     return DEPARTMENTS_REGISTRY
+
+def get_departments_for_mode(opd_mode: Optional[str] = "GENERAL_OPD") -> List[DepartmentInfo]:
+    mode = str(opd_mode or "GENERAL_OPD").upper()
+    if "AYUSH" in mode:
+        return AYUSH_DEPARTMENTS
+    return GENERAL_DEPARTMENTS
 
 def get_department_by_id(dept_id: str) -> DepartmentInfo:
     for dept in DEPARTMENTS_REGISTRY:
         if dept.id.value == dept_id or dept.id == dept_id:
             return dept
     # Default fallback
-    return DEPARTMENTS_REGISTRY[-1]  # Unspecified
+    return GENERAL_DEPARTMENTS[-1]  # Unspecified
+
+def is_department_valid_for_mode(dept_id: str, opd_mode: str) -> bool:
+    mode = str(opd_mode or "GENERAL_OPD").upper()
+    valid_list = AYUSH_DEPARTMENTS if "AYUSH" in mode else GENERAL_DEPARTMENTS
+    # Emergency is always allowed as a safety net
+    if dept_id in [DepartmentId.EMERGENCY.value, DepartmentId.EMERGENCY]:
+        return True
+    return any(dept.id.value == dept_id or dept.id == dept_id for dept in valid_list)
+
