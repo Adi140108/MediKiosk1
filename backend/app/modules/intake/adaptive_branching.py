@@ -173,18 +173,26 @@ class AdaptiveBranchingEngine:
             )
             ayush_q = self.ayush_planner.select_next_question(state, asked_ids=list(asked_question_ids))
             if ayush_q:
-                q_text = ayush_q.get("question_patient_language", {}).get("en") or ayush_q.get("question_en") or ayush_q.get("text", "")
+                q_text = ayush_q.get("patient_text") or ayush_q.get("question") or ayush_q.get("question_patient_language", {}).get("en") or ayush_q.get("question_en") or ayush_q.get("text", "")
+                feature_targets = ayush_q.get("feature_targets") or []
+                feature_str = ", ".join(feature_targets) if isinstance(feature_targets, list) else str(feature_targets)
+                if not feature_str:
+                    feature_str = ayush_q.get("sub_domain") or ayush_q.get("domain", "")
+
+                obj_str = ayush_q.get("objective") or f"Assess {ayush_q.get('domain')} - {feature_str}"
+                disp_label = ayush_q.get("ayurvedic_label") or f"{ayush_q.get('domain')} ({feature_str})"
+
                 return {
                     "id": ayush_q.get("question_id"),
                     "question_id": ayush_q.get("question_id"),
-                    "objective": f"Assess {ayush_q.get('domain')} - {ayush_q.get('feature')}",
+                    "objective": obj_str,
                     "category": "AYURVEDIC",
                     "ayurvedic_domain": str(ayush_q.get("domain", "AYUSH")).lower(),
-                    "display_label": f"{ayush_q.get('domain')} ({ayush_q.get('feature')})",
+                    "display_label": disp_label,
                     "question": q_text,
                     "options": ayush_q.get("options", []),
                     "answer_type": ayush_q.get("answer_type", "single_choice"),
-                    "feature": ayush_q.get("feature")
+                    "feature": feature_str
                 }
 
             # If AYUSH question planner is exhausted and sufficiency is reached
