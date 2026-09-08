@@ -179,3 +179,41 @@ async def test_multilingual_socratic_questioning():
     # Check that localized Hindi question is returned
     assert "सिर" in next_q.question or "दर्द" in next_q.question
 
+
+# Test AYUSH question & option localization in Kannada
+@pytest.mark.asyncio
+async def test_ayush_question_and_options_localization_kn():
+    mgr = IntakeSessionManager()
+    session_id = "sess_ayush_kn_01"
+
+    # Start AYUSH session in Kannada
+    q1 = mgr.start_session(session_id, "pat_ayush_kn", language="kn", opd_mode="AYUSH_OPD", initial_chief_complaint="Chest pain")
+
+    # Simulate answers through symptom pathway to get to AYUSH Prakriti question planner
+    cur_q = q1
+    ayush_q_found = None
+
+    for i in range(5):
+        next_q, finished, _ = await mgr.process_answer_and_get_next(
+            session_id=session_id,
+            question_id=cur_q.question_id,
+            answer_text="No, normal",
+            language="kn"
+        )
+        if finished or not next_q:
+            break
+        if "PRAK_" in next_q.question_id:
+            ayush_q_found = next_q
+            break
+        cur_q = next_q
+
+    assert ayush_q_found is not None
+    # Verify question text is in Kannada and not raw question_id
+    assert "PRAK_BUILD_001" not in ayush_q_found.question
+    assert "ದೇಹದ" in ayush_q_found.question or "ರಚನೆ" in ayush_q_found.question or "ಪ್ರಕೃತಿ" in ayush_q_found.question
+    # Verify options are localized to Kannada
+    assert ayush_q_found.options is not None
+    assert len(ayush_q_found.options) > 0
+    assert "ನೈಸರ್ಗಿಕವಾಗಿ" in ayush_q_found.options[0]["label"] or "ದೇಹ" in ayush_q_found.options[0]["label"]
+
+

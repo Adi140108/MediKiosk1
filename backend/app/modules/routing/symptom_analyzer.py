@@ -1,8 +1,9 @@
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional
 from app.schemas.routing import DepartmentId
 
-DEPARTMENT_KEYWORD_RULES: Dict[DepartmentId, List[str]] = {
-    DepartmentId.CARDIOLOGY: ["chest pain", "angina", "palpitation", "arrhythmia", "shortness of breath on exertion", "chest pressure", "sweating with chest discomfort", "radiating chest pain"],
+# General OPD keyword rules (No AYUSH keywords!)
+GENERAL_DEPARTMENT_KEYWORD_RULES: Dict[DepartmentId, List[str]] = {
+    DepartmentId.CARDIOLOGY: ["chest pain", "chest tightness", "angina", "palpitation", "arrhythmia", "shortness of breath", "shortness of breath on exertion", "chest pressure", "sweating with chest discomfort", "radiating chest pain"],
     DepartmentId.NEUROLOGY: ["migraine", "dizziness", "vertigo", "seizure", "numbness", "stroke", "tremor", "loss of balance", "facial droop", "slurred speech", "paralysis"],
     DepartmentId.ORTHOPEDICS: ["joint pain", "knee pain", "bone fracture", "severe back pain", "arthritis", "sprain", "shoulder pain", "swelling in joint", "morning stiffness", "dislocation"],
     DepartmentId.GASTROENTEROLOGY: ["severe stomach pain", "acid reflux", "bloating", "vomiting blood", "chronic diarrhea", "jaundice", "abdominal cramps", "gastric burning", "black stools"],
@@ -11,39 +12,56 @@ DEPARTMENT_KEYWORD_RULES: Dict[DepartmentId, List[str]] = {
     DepartmentId.OPHTHALMOLOGY: ["eye pain", "blurred vision", "cataract", "red eye", "double vision", "visual disturbance", "eye discharge", "corneal injury"],
     DepartmentId.PSYCHIATRY: ["anxiety", "severe depression", "panic attacks", "insomnia", "hallucinations", "extreme stress", "bipolar", "suicidal ideation"],
     DepartmentId.PEDIATRICS: ["child fever", "infant vomiting", "pediatric rash", "growth concerns", "childhood cough", "infant distress"],
-    DepartmentId.AYUSH: ["chronic indigestion", "holistic wellness", "ayurvedic rejuvenation", "vata imbalance", "pitta", "kapha", "mandagni", "dosha consultation"],
     DepartmentId.GENERAL_MEDICINE: ["fever", "fatigue", "body ache", "malaise", "cough", "cold", "unexplained weight loss", "chills", "weakness", "mild headache", "general checkup", "viral fever", "routine consultation", "normal symptoms"]
+}
+
+# AYUSH OPD keyword rules
+AYUSH_DEPARTMENT_KEYWORD_RULES: Dict[DepartmentId, List[str]] = {
+    DepartmentId.KAYACHIKITSA: ["indigestion", "agni", "digestive fire", "metabolic", "dhatu", "ama", "fever", "jwara", "gastro", "constipation", "stomach pain", "acid reflux", "chest tightness", "shortness of breath"],
+    DepartmentId.PANCHAKARMA: ["detox", "shodhana", "panchakarma", "purification", "vamana", "virechana", "basti", "nasya", "chronic toxin", "saama"],
+    DepartmentId.SHALYA: ["joint pain", "musculoskeletal", "spine", "fracture", "structural", "shalya", "back pain", "knee pain"],
+    DepartmentId.SHALAKYA: ["headache", "migraine", "ear pain", "eye pain", "throat", "sinusitis", "shalakya", "nasal"],
+    DepartmentId.PRASUTI_STRI: ["maternal", "gynecological", "menstrual", "pregnancy", "stree roga", "prasuti"],
+    DepartmentId.KAUMARABHRITYA: ["child", "pediatric", "infant", "balaroga", "kaumarabhritya"],
+    DepartmentId.SWASTHAVRITTA: ["preventive", "yoga", "lifestyle", "dinacharya", "ritucharya", "swasthavritta", "wellness"],
+    DepartmentId.AGADATANTRA: ["allergy", "toxicity", "skin rash", "insect bite", "agada", "poisoning"]
 }
 
 def analyze_symptoms_for_department(
     symptoms_text: str,
-    patient_age: int = 30
+    patient_age: int = 30,
+    opd_mode: str = "GENERAL_OPD"
 ) -> Tuple[DepartmentId, float, str, str, List[str], List[Dict[str, Any]], Dict[str, float]]:
     """
-    Evaluates patient symptoms, age, and clinical presentation for department triage:
-    1. Patients aged 0-18 are strictly routed to Pediatrics.
-    2. Common/mild/normal symptoms without focal sub-specialty findings route to General Medicine.
-    3. Specific sub-specialties require distinct clinical keyword matches with sufficient confidence.
+    Evaluates patient symptoms, age, and mode for department triage.
+    GENERAL_OPD: Only routes to General departments. Returns GENERAL_UNSPECIFIED if evidence is ambiguous/insufficient.
+    AYUSH_OPD: Only routes to AYUSH departments. Returns AYUSH_UNSPECIFIED if evidence is ambiguous/insufficient.
     """
     text = symptoms_text.lower()
+    is_ayush = "AYUSH" in str(opd_mode or "GENERAL_OPD").upper()
 
     # Rule 1: Pediatric Age Protocol (0 to 18 years)
     if 0 <= patient_age <= 18:
+        target_dept = DepartmentId.KAUMARABHRITYA if is_ayush else DepartmentId.PEDIATRICS
+        fallback_dept = DepartmentId.AYUSH if is_ayush else DepartmentId.GENERAL_MEDICINE
         return (
-            DepartmentId.PEDIATRICS,
+            target_dept,
             0.95,
             "High",
-            f"Pediatric patient (Age {patient_age} <= 18 yrs) routed to Pediatrics for specialized age-appropriate clinical care.",
+            f"Pediatric patient (Age {patient_age} <= 18 yrs) routed to {target_dept.value.title()} for specialized age-appropriate clinical care.",
             [f"Pediatric age group ({patient_age} yrs <= 18)", "Pediatric clinical triage protocol"],
-            [{"department": DepartmentId.GENERAL_MEDICINE.value, "score": 0.05}],
-            {DepartmentId.PEDIATRICS.value: 0.95, DepartmentId.GENERAL_MEDICINE.value: 0.05}
+            [{"department": fallback_dept.value, "score": 0.05}],
+            {target_dept.value: 0.95, fallback_dept.value: 0.05}
         )
 
-    # Score sub-specialties
+    rules = AYUSH_DEPARTMENT_KEYWORD_RULES if is_ayush else GENERAL_DEPARTMENT_KEYWORD_RULES
+    default_unspecified = DepartmentId.AYUSH_UNSPECIFIED if is_ayush else DepartmentId.GENERAL_UNSPECIFIED
+    default_primary = DepartmentId.AYUSH if is_ayush else DepartmentId.GENERAL_MEDICINE
+
     raw_scores: Dict[DepartmentId, float] = {}
     matched_kws: Dict[DepartmentId, List[str]] = {}
 
-    for dept, keywords in DEPARTMENT_KEYWORD_RULES.items():
+    for dept, keywords in rules.items():
         count = 0.0
         hits = []
         for kw in keywords:
@@ -54,19 +72,17 @@ def analyze_symptoms_for_department(
             raw_scores[dept] = count
             matched_kws[dept] = hits
 
-    # Rule 2: Normal / Mild / Constitutional symptoms route to General Medicine
     if not raw_scores:
         return (
-            DepartmentId.GENERAL_MEDICINE,
-            0.85,
-            "High",
-            "General / constitutional symptoms or routine clinical consultation. Routed to General Medicine.",
-            ["Primary care / general clinical evaluation", "General constitutional presentation"],
-            [{"department": DepartmentId.UNSPECIFIED.value, "score": 0.15}],
-            {DepartmentId.GENERAL_MEDICINE.value: 0.85, DepartmentId.UNSPECIFIED.value: 0.15}
+            default_unspecified,
+            0.50,
+            "Low",
+            f"Insufficient or unmapped evidence for specific specialty. Routed to {default_unspecified.value.title()}.",
+            ["Unmapped or ambiguous clinical presentation"],
+            [{"department": default_primary.value, "score": 0.50}],
+            {default_unspecified.value: 0.50, default_primary.value: 0.50}
         )
 
-    # Normalize raw scores to probabilities summing to 1.0
     total_raw = sum(raw_scores.values())
     dept_scores: Dict[str, float] = {
         dept.value: round(score / total_raw, 2)
@@ -76,31 +92,12 @@ def analyze_symptoms_for_department(
     sorted_depts = sorted(raw_scores.items(), key=lambda x: x[1], reverse=True)
     best_dept, best_raw = sorted_depts[0]
     best_prob = dept_scores[best_dept.value]
-    runner_up = sorted_depts[1] if len(sorted_depts) > 1 else None
 
     matched_evidence = matched_kws.get(best_dept, [])
     alternatives = [
         {"department": d.value, "score": dept_scores[d.value]}
         for d, _ in sorted_depts[1:4]
     ]
-
-    # Ambiguity handling: If runner-up is very close or top score is low, offer alternatives
-    is_ambiguous = False
-    if runner_up:
-        diff = best_prob - dept_scores[runner_up[0].value]
-        if diff < 0.12 and best_prob < 0.60:
-            is_ambiguous = True
-
-    if is_ambiguous:
-        return (
-            DepartmentId.GENERAL_MEDICINE,
-            best_prob,
-            "Medium",
-            f"Multi-system symptoms ({best_dept.value.title()} vs {runner_up[0].value.title()}). Routed to General Medicine for comprehensive primary evaluation.",
-            matched_evidence,
-            [{"department": best_dept.value, "score": best_prob}] + alternatives,
-            dept_scores
-        )
 
     conf_level = "High" if best_prob >= 0.70 else "Medium"
     reasoning = f"Matched primary clinical symptoms for {best_dept.value.title()}: {', '.join(matched_evidence)}."

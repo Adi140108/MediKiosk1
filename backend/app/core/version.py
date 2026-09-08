@@ -1,0 +1,8 @@
+"""
+Central Version Specifications — MediKiosk V3.2.0
+"""
+
+APP_VERSION = "3.2.0"
+ASSESSMENT_VERSION = "3.2.0"
+QUESTIONNAIRE_VERSION = "3.2.0"
+KNOWLEDGE_BASE_VERSION = "3.2.0"

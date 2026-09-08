@@ -231,17 +231,52 @@ const PatientIntake = {
       patientSec.classList.add("active");
     }
 
-    // Toggle wizard steps display
-    for (let i = 1; i <= 8; i++) {
-      const el = document.getElementById(`kiosk-step-${i}`);
-      if (el) {
-        el.style.display = i === stepNum ? "block" : "none";
-      }
-    }
+    const prevStep = this.currentStep;
+    const isForward = stepNum >= prevStep;
     this.currentStep = stepNum;
 
+    // Show milestone notification when advancing after completing a step
+    if (isForward && prevStep !== stepNum) {
+      this.showStepMilestoneToast(prevStep, stepNum);
+    }
+
+    const currentEl = document.getElementById(`kiosk-step-${prevStep}`);
+    const targetEl = document.getElementById(`kiosk-step-${stepNum}`);
+
+    const switchStepContent = () => {
+      for (let i = 1; i <= 8; i++) {
+        const el = document.getElementById(`kiosk-step-${i}`);
+        if (el) {
+          el.classList.remove("step-exit-forward", "step-exit-backward", "step-enter-forward", "step-enter-backward");
+          if (i === stepNum) {
+            el.style.display = "block";
+            el.classList.add(isForward ? "step-enter-forward" : "step-enter-backward");
+            setTimeout(() => {
+              el.classList.remove("step-enter-forward", "step-enter-backward");
+            }, 500);
+          } else {
+            el.style.display = "none";
+          }
+        }
+      }
+
+      if (stepNum === 8) {
+        setTimeout(() => {
+          const seal = document.getElementById("ticket-verified-seal");
+          if (seal) seal.classList.add("stamped");
+        }, 300);
+      }
+    };
+
+    if (currentEl && targetEl && prevStep !== stepNum && currentEl.style.display !== "none") {
+      currentEl.classList.add(isForward ? "step-exit-forward" : "step-exit-backward");
+      setTimeout(switchStepContent, 160);
+    } else {
+      switchStepContent();
+    }
+
     try {
-      this.updateStepIndicator(stepNum);
+      this.updateStepIndicator(stepNum, prevStep);
     } catch (e) {
       console.warn("Step indicator notice:", e);
     }
@@ -289,7 +324,47 @@ const PatientIntake = {
     }
   },
 
-  updateStepIndicator(stepNum) {
+  showStepMilestoneToast(completedStep, nextStep) {
+    const milestones = {
+      1: { icon: "✓", title: "Registration Started", sub: "Step 1 of 8 Completed", badge: "STEP 1" },
+      2: { icon: "🌐", title: "Language Selected", sub: "Step 2 of 8 Completed", badge: "STEP 2" },
+      3: { icon: "🛡️", title: "Consent Confirmed", sub: "Step 3 of 8 Completed", badge: "STEP 3" },
+      4: { icon: "👤", title: "Patient Details Saved", sub: "Step 4 of 8 Completed", badge: "STEP 4" },
+      5: { icon: "🩺", title: "Symptoms & Vitals Saved", sub: "Step 5 of 8 Completed", badge: "STEP 5" },
+      6: { icon: "📄", title: "Documents Attached", sub: "Step 6 of 8 Completed", badge: "STEP 6" },
+      7: { icon: "📋", title: "Clinical Inquiry Finished", sub: "Step 7 of 8 Completed", badge: "STEP 7" },
+      8: { icon: "🎫", title: "Consultation Ticket Issued", sub: "OPD Check-In Completed", badge: "COMPLETE" }
+    };
+
+    const data = milestones[completedStep] || milestones[1];
+    let toast = document.getElementById("step-milestone-toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "step-milestone-toast";
+      toast.className = "step-milestone-toast";
+      document.body.appendChild(toast);
+    }
+
+    toast.innerHTML = `
+      <span class="step-milestone-icon">${data.icon}</span>
+      <div style="display:flex; flex-direction:column; text-align:left;">
+        <span class="step-milestone-title">${data.title}</span>
+        <span class="step-milestone-sub">${data.sub}</span>
+      </div>
+      <span class="step-milestone-badge">${data.badge}</span>
+    `;
+
+    toast.classList.remove("show");
+    void toast.offsetHeight;
+    toast.classList.add("show");
+
+    if (this._milestoneTimer) clearTimeout(this._milestoneTimer);
+    this._milestoneTimer = setTimeout(() => {
+      toast.classList.remove("show");
+    }, 2800);
+  },
+
+  updateStepIndicator(stepNum, prevStep = null) {
     for (let i = 1; i <= 8; i++) {
       const node = document.getElementById(`step-node-${i}`);
       const line = document.getElementById(`step-line-${i}`);
@@ -298,6 +373,10 @@ const PatientIntake = {
         if (i < stepNum || (i === 8 && stepNum === 8)) {
           node.classList.add("completed");
           node.innerHTML = "✓";
+          if (prevStep && i === prevStep) {
+            node.classList.add("node-shockwave");
+            setTimeout(() => node.classList.remove("node-shockwave"), 750);
+          }
         } else if (i === stepNum) {
           node.classList.add("active");
           node.innerHTML = i;
@@ -306,9 +385,35 @@ const PatientIntake = {
         }
       }
       if (line) {
-        line.className = "wizard-step-line" + (i <= stepNum ? " completed" : "");
+        line.className = "wizard-step-line" + (i < stepNum ? " completed" : "");
+        if (prevStep && i === prevStep && stepNum > prevStep) {
+          line.classList.add("surge");
+          setTimeout(() => line.classList.remove("surge"), 800);
+        }
       }
     }
+
+    // Sync Mobile Progress Header
+    const mobileBadge = document.getElementById("mobile-step-badge");
+    const mobileLabel = document.getElementById("mobile-step-label");
+    const mobileIcon = document.getElementById("mobile-step-icon");
+    const mobileFill = document.getElementById("mobile-progress-fill");
+
+    const stepTitles = {
+      1: { icon: "📍", title: "Welcome & Registration" },
+      2: { icon: "🌐", title: "Select Language" },
+      3: { icon: "🛡️", title: "Patient Consent" },
+      4: { icon: "👤", title: "Patient Details" },
+      5: { icon: "🩺", title: "Symptoms & History" },
+      6: { icon: "📄", title: "Previous Records" },
+      7: { icon: "💬", title: "AI Clinical Intake" },
+      8: { icon: "🎫", title: "Consultation Token" }
+    };
+
+    if (mobileBadge) mobileBadge.innerText = `Step ${stepNum} of 8`;
+    if (mobileLabel && stepTitles[stepNum]) mobileLabel.innerText = stepTitles[stepNum].title;
+    if (mobileIcon && stepTitles[stepNum]) mobileIcon.innerText = stepTitles[stepNum].icon;
+    if (mobileFill) mobileFill.style.width = `${(stepNum / 8) * 100}%`;
   },
 
   acceptConsent() {
@@ -319,6 +424,7 @@ const PatientIntake = {
   },
 
   updateLanguageGridUI(lang) {
+    // Step 2 Tiles
     document.querySelectorAll(".lang-tile, .lang-tile-card").forEach((tile) => {
       const tileLang = tile.getAttribute("data-lang");
       const badge = tile.querySelector(".lang-tile-badge, .lang-status-pill");
@@ -327,23 +433,32 @@ const PatientIntake = {
         tile.classList.add("selected");
         if (check) check.style.display = "inline-flex";
         if (badge) {
-          badge.className = "lang-status-pill pill-connected";
-          badge.innerText = "FULLY CONNECTED";
+          badge.className = "lang-tile-badge lang-badge-selected";
+          badge.innerText = "✓ SELECTED";
         }
       } else {
         tile.classList.remove("selected");
         if (check) check.style.display = "none";
         if (badge) {
-          if (tileLang === "hi") {
-            badge.className = "lang-status-pill pill-ready";
-            badge.innerText = "TRANSLATION READY";
-          } else {
-            badge.className = "lang-status-pill pill-fallback";
-            badge.innerText = "TEXT FALLBACK";
-          }
+          badge.className = "lang-tile-badge lang-badge-ready";
+          badge.innerText = "READY";
         }
       }
     });
+
+    // Step 1 Hero Chips
+    document.querySelectorAll(".hero-lang-chip").forEach((chip) => {
+      const chipLang = chip.getAttribute("data-lang");
+      if (chipLang === lang) {
+        chip.classList.add("active");
+      } else {
+        chip.classList.remove("active");
+      }
+    });
+
+    // Header Navbar Lang Pill
+    const langPill = document.getElementById("current-lang-pill");
+    if (langPill) langPill.innerText = lang.toUpperCase();
   },
 
   updateStep2ContinueBtn(lang) {
@@ -640,64 +755,89 @@ const PatientIntake = {
 
   cameraStream: null,
   capturedCameraFile: null,
+  cameraFacingMode: "environment",
+  capturedBlobUrl: null,
 
-  triggerCameraCapture() {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-    if (isMobile) {
-      const camInput = document.getElementById("doc-camera-input");
-      if (camInput) {
-        camInput.click();
-        return;
-      }
-    }
-    this.openCameraModal();
-  },
-
-  async openCameraModal() {
+  async openCameraScanner() {
     const modal = document.getElementById("camera-capture-modal");
     const video = document.getElementById("camera-video-feed");
+    const viewfinder = document.getElementById("camera-viewfinder-container");
+    const snapshotPreview = document.getElementById("camera-snapshot-preview");
+    const liveControls = document.getElementById("camera-live-controls");
+    const confirmControls = document.getElementById("camera-confirm-controls");
+    const notice = document.getElementById("camera-permission-notice");
+
     if (!modal || !video) return;
 
     modal.style.display = "flex";
+    if (viewfinder) viewfinder.style.display = "flex";
+    if (snapshotPreview) snapshotPreview.style.display = "none";
+    if (liveControls) liveControls.style.display = "flex";
+    if (confirmControls) confirmControls.style.display = "none";
+    if (notice) notice.style.display = "none";
+
+    await this.startCameraStream();
+  },
+
+  async startCameraStream() {
+    const video = document.getElementById("camera-video-feed");
+    const notice = document.getElementById("camera-permission-notice");
+    if (!video) return;
+
+    if (this.cameraStream) {
+      try {
+        this.cameraStream.getTracks().forEach(t => t.stop());
+      } catch (e) {}
+      this.cameraStream = null;
+    }
 
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }
+          video: {
+            facingMode: { ideal: this.cameraFacingMode },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          }
         });
         this.cameraStream = stream;
         video.srcObject = stream;
+        await video.play();
       } else {
-        const camInput = document.getElementById("doc-camera-input");
-        if (camInput) camInput.click();
+        throw new Error("getUserMedia not supported");
       }
     } catch (err) {
-      console.warn("Camera access error:", err);
-      this.closeCameraModal();
-      const camInput = document.getElementById("doc-camera-input");
-      if (camInput) camInput.click();
+      console.warn("Camera stream initial error, attempting relaxed constraints:", err);
+      try {
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        this.cameraStream = fallbackStream;
+        video.srcObject = fallbackStream;
+        await video.play();
+      } catch (fallbackErr) {
+        console.warn("Camera access denied or unavailable:", fallbackErr);
+        if (notice) notice.style.display = "block";
+      }
     }
   },
 
-  closeCameraModal() {
-    if (this.cameraStream) {
-      try {
-        this.cameraStream.getTracks().forEach(track => track.stop());
-      } catch (e) {}
-      this.cameraStream = null;
-    }
-    const modal = document.getElementById("camera-capture-modal");
-    if (modal) modal.style.display = "none";
+  async switchCamera() {
+    this.cameraFacingMode = this.cameraFacingMode === "environment" ? "user" : "environment";
+    await this.startCameraStream();
   },
 
   capturePhotoFromWebcam() {
     const video = document.getElementById("camera-video-feed");
     const canvas = document.getElementById("camera-canvas");
+    const viewfinder = document.getElementById("camera-viewfinder-container");
+    const snapshotPreview = document.getElementById("camera-snapshot-preview");
+    const previewImg = document.getElementById("camera-preview-img");
+    const liveControls = document.getElementById("camera-live-controls");
+    const confirmControls = document.getElementById("camera-confirm-controls");
+
     if (!video || !canvas) return;
 
-    const width = video.videoWidth || 640;
-    const height = video.videoHeight || 480;
-
+    const width = video.videoWidth || 1280;
+    const height = video.videoHeight || 720;
     canvas.width = width;
     canvas.height = height;
 
@@ -706,19 +846,56 @@ const PatientIntake = {
 
     canvas.toBlob((blob) => {
       if (!blob) return;
-      const file = new File([blob], `camera_scan_${Date.now()}.jpg`, { type: "image/jpeg" });
+      if (this.capturedBlobUrl) {
+        try { URL.revokeObjectURL(this.capturedBlobUrl); } catch (e) {}
+      }
+      this.capturedBlobUrl = URL.createObjectURL(blob);
+      const file = new File([blob], `medikiosk_scan_${Date.now()}.jpg`, { type: "image/jpeg" });
       this.capturedCameraFile = file;
 
-      try {
-        const container = new DataTransfer();
-        container.items.add(file);
-        const fileInput = document.getElementById("doc-file-input");
-        if (fileInput) fileInput.files = container.files;
-      } catch (e) {}
+      if (previewImg) previewImg.src = this.capturedBlobUrl;
+      if (viewfinder) viewfinder.style.display = "none";
+      if (snapshotPreview) snapshotPreview.style.display = "block";
+      if (liveControls) liveControls.style.display = "none";
+      if (confirmControls) confirmControls.style.display = "flex";
+    }, "image/jpeg", 0.94);
+  },
 
-      this.handleFileSelect({ target: { files: [file] } });
-      this.closeCameraModal();
-    }, "image/jpeg", 0.92);
+  retakeCameraPhoto() {
+    const viewfinder = document.getElementById("camera-viewfinder-container");
+    const snapshotPreview = document.getElementById("camera-snapshot-preview");
+    const liveControls = document.getElementById("camera-live-controls");
+    const confirmControls = document.getElementById("camera-confirm-controls");
+
+    if (viewfinder) viewfinder.style.display = "flex";
+    if (snapshotPreview) snapshotPreview.style.display = "none";
+    if (liveControls) liveControls.style.display = "flex";
+    if (confirmControls) confirmControls.style.display = "none";
+  },
+
+  confirmCameraPhoto() {
+    if (!this.capturedCameraFile) return;
+
+    try {
+      const container = new DataTransfer();
+      container.items.add(this.capturedCameraFile);
+      const fileInput = document.getElementById("doc-file-input");
+      if (fileInput) fileInput.files = container.files;
+    } catch (e) {}
+
+    this.handleFileSelect({ target: { files: [this.capturedCameraFile] } });
+    this.closeCameraModal();
+  },
+
+  closeCameraModal() {
+    if (this.cameraStream) {
+      try {
+        this.cameraStream.getTracks().forEach(t => t.stop());
+      } catch (e) {}
+      this.cameraStream = null;
+    }
+    const modal = document.getElementById("camera-capture-modal");
+    if (modal) modal.style.display = "none";
   },
 
   async handleDocUpload(e) {
@@ -1025,9 +1202,13 @@ const PatientIntake = {
 
   async handleAnswerSubmit() {
     SpeechManager.stopListening();
+    if (this._isSubmittingAnswer || this._isFinishingIntake || this._intakeCompleted) return;
+    
     const input = document.getElementById("patient-answer-input");
     const answer = input ? input.value.trim() : "";
     if (!answer) return;
+
+    this._isSubmittingAnswer = true;
 
     if (!this.currentSessionId) {
       this.currentSessionId = `sess_${this.currentPatientId || 'pat'}_${Date.now()}`;
@@ -1084,10 +1265,11 @@ const PatientIntake = {
           this.renderQuestion(retryRes.next_question);
         }
       } catch (retryErr) {
-        alert("⚠️ Please tap Submit Answer once more to proceed.");
+        console.warn("Retry submit answer failed:", retryErr.message);
       }
     } finally {
-      if (btn) {
+      this._isSubmittingAnswer = false;
+      if (btn && !this._isFinishingIntake) {
         btn.disabled = false;
         btn.innerHTML = originalText;
       }
@@ -1121,6 +1303,7 @@ const PatientIntake = {
         "emergency": "EMERGENCY / TRAUMA"
       };
       const dept = deptDisplayMap[rawDept] || rawDept.toUpperCase().replace(/-/g, ' ');
+      const patientName = data.patient_name || this.registeredData?.name || 'Registered Patient';
       const complaint = data.chief_complaint || this.chiefComplaint || 'Clinical intake recorded successfully.';
       const reasoning = data.reasoning || 'Patient triaged and queued for attending physician consultation.';
 
@@ -1147,40 +1330,96 @@ const PatientIntake = {
   },
 
   async finishIntake() {
-    this.goToStep(8);
-    this.renderTicketDetails();
+    if (this._isFinishingIntake || this._intakeCompleted) {
+      console.log("Intake already finishing or completed, ignoring duplicate call.");
+      return;
+    }
+    this._isFinishingIntake = true;
+    this._intakeCompleted = true;
 
+    const modal = document.getElementById("ai-synthesis-modal");
+    const fill = document.getElementById("synthesis-progress-fill");
+    const item1 = document.getElementById("synthesis-step-1");
+    const item2 = document.getElementById("synthesis-step-2");
+    const item3 = document.getElementById("synthesis-step-3");
+
+    if (modal && fill) {
+      modal.classList.add("active");
+      fill.style.width = "0%";
+      if (item1) item1.classList.remove("done");
+      if (item2) item2.classList.remove("done");
+      if (item3) item3.classList.remove("done");
+
+      setTimeout(() => { if (fill) fill.style.width = "40%"; if (item1) item1.classList.add("done"); }, 200);
+      setTimeout(() => { if (fill) fill.style.width = "75%"; if (item2) item2.classList.add("done"); }, 600);
+      setTimeout(() => { if (fill) fill.style.width = "100%"; if (item3) item3.classList.add("done"); }, 1050);
+    }
+
+    let res = null;
     try {
-      const res = await api.completeIntake(this.currentSessionId, this.currentPatientId || 'pat_dev');
-      const ticketNum = res?.ticket_number || `MK-${Math.floor(10000000 + Math.random() * 90000000)}`;
-      
-      const numEl = document.getElementById("ticket-number-display");
-      if (numEl) numEl.innerText = ticketNum;
-
-      const rf = res?.red_flag || { overall_severity: "MEDIUM" };
-      const routing = res?.routing || { recommended_department: this.department || "general_medicine", reasoning: "Comprehensive clinical intake recorded." };
-
-      const badgeContainer = document.getElementById("ticket-triage-badge");
-      if (badgeContainer) {
-        let badgeClass = "lang-badge-ready";
-        if (rf.overall_severity === "CRITICAL") badgeClass = "lang-badge-connected' style='background:#fee2e2; color:#991b1b;";
-        else if (rf.overall_severity === "HIGH") badgeClass = "lang-badge-connected' style='background:#ffedd5; color:#9a3412;";
-        else if (rf.overall_severity === "MEDIUM") badgeClass = "lang-badge-connected' style='background:#fef3c7; color:#92400e;";
-
-        badgeContainer.innerHTML = `<span class="lang-tile-badge ${badgeClass}">${rf.overall_severity} PRIORITY</span>`;
-      }
-
-      this.renderTicketDetails({
-        patient_name: this.registeredData?.name || 'Registered Patient',
-        department: routing.recommended_department || this.department || 'General Medicine',
-        chief_complaint: res?.draft_summary?.chief_complaint || this.chiefComplaint || 'Recorded during intake',
-        reasoning: routing.reasoning || 'Patient triaged and ready for consultation.'
-      });
-
-      SpeechManager.speakText(`Intake completed. Consultation Ticket number is ${ticketNum}. Please proceed to the ${routing.recommended_department || 'assigned'} department.`, this.language);
+      res = await api.completeIntake(this.currentSessionId, this.currentPatientId || 'pat_dev');
     } catch (err) {
       console.warn("Summary completion notice:", err.message);
     }
+
+    // Wait for single smooth clinical synthesis visualization
+    await new Promise(resolve => setTimeout(resolve, 1300));
+
+    if (modal) {
+      modal.classList.remove("active");
+    }
+
+    this.goToStep(8);
+
+    const ticketNum = res?.ticket_number || `MK-${Math.floor(10000000 + Math.random() * 90000000)}`;
+    const numEl = document.getElementById("ticket-number-display");
+    if (numEl) numEl.innerText = ticketNum;
+
+    const rf = res?.red_flag || { overall_severity: "MEDIUM" };
+    const routing = res?.routing || { recommended_department: this.department || "general_medicine", reasoning: "Comprehensive clinical intake recorded." };
+
+    const badgeContainer = document.getElementById("ticket-triage-badge");
+    if (badgeContainer) {
+      let badgeClass = "lang-badge-ready";
+      if (rf.overall_severity === "CRITICAL") badgeClass = "lang-badge-connected' style='background:#fee2e2; color:#991b1b;";
+      else if (rf.overall_severity === "HIGH") badgeClass = "lang-badge-connected' style='background:#ffedd5; color:#9a3412;";
+      else if (rf.overall_severity === "MEDIUM") badgeClass = "lang-badge-connected' style='background:#fef3c7; color:#92400e;";
+
+      badgeContainer.innerHTML = `<span class="lang-tile-badge ${badgeClass}">${rf.overall_severity} PRIORITY</span>`;
+    }
+
+    this.renderTicketDetails({
+      patient_name: this.registeredData?.name || 'Registered Patient',
+      department: routing.recommended_department || this.department || 'General Medicine',
+      chief_complaint: res?.draft_summary?.chief_complaint || this.chiefComplaint || 'Recorded during intake',
+      reasoning: routing.reasoning || 'Patient triaged and ready for consultation.'
+    });
+
+    SpeechManager.speakText(`Intake completed. Consultation Ticket number is ${ticketNum}. Please proceed to the ${routing.recommended_department || 'assigned'} department.`, this.language);
+  },
+
+  triggerConfettiBurst() {
+    const container = document.getElementById("ticket-confetti-container");
+    if (!container) return;
+    container.innerHTML = "";
+    container.classList.remove("active");
+
+    const colors = ["#0D9488", "#14B8A6", "#6366F1", "#F59E0B", "#EC4899", "#10B981"];
+    for (let i = 0; i < 28; i++) {
+      const piece = document.createElement("div");
+      piece.className = "confetti-piece";
+      piece.style.background = colors[i % colors.length];
+      piece.style.left = `${Math.random() * 90 + 5}%`;
+      piece.style.top = "0px";
+      piece.style.setProperty("--x-start", `${(Math.random() - 0.5) * 60}px`);
+      piece.style.setProperty("--x-end", `${(Math.random() - 0.5) * 140}px`);
+      piece.style.animationDelay = `${Math.random() * 0.4}s`;
+      piece.style.animationDuration = `${1.8 + Math.random() * 1.2}s`;
+      piece.style.borderRadius = i % 2 === 0 ? "50%" : "2px";
+      container.appendChild(piece);
+    }
+    void container.offsetHeight;
+    container.classList.add("active");
   }
 };
 

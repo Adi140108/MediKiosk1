@@ -25,6 +25,8 @@ class DepartmentId(str, Enum):
     AGADATANTRA = "agadatantra"
     EMERGENCY = "emergency"
     UNSPECIFIED = "unspecified"
+    AYUSH_UNSPECIFIED = "ayush-unspecified"
+    GENERAL_UNSPECIFIED = "general-unspecified"
 
 class RecommendationStatus(str, Enum):
     PENDING_REVIEW = "PENDING_REVIEW"

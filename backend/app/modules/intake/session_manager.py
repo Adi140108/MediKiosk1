@@ -9,7 +9,7 @@ from app.db.repositories.intake_repository import IntakeRepository
 from app.modules.intake.adaptive_branching import AdaptiveBranchingEngine
 from app.modules.intake.socratic_engine import SocraticEngine
 from app.modules.intake.live_summary import LiveSummaryGenerator
-from app.modules.intake.multilingual_questions import get_localized_question
+from app.modules.intake.multilingual_questions import get_localized_question, get_localized_options
 from app.ai.gemma.client import GemmaClient
 
 logger = logging.getLogger("medikiosk.intake.session_manager")
@@ -95,6 +95,8 @@ class IntakeSessionManager:
                 cand_id = candidate.get("id", "1")
                 default_q = candidate.get("question", "Could you describe when this started and how it feels?")
                 localized_q = get_localized_question(cand_id, target_lang=language, default_text=default_q)
+                raw_opts = candidate.get("options")
+                loc_opts = get_localized_options(cand_id, raw_opts, target_lang=language) if raw_opts else None
 
                 first_question = QuestionItem(
                     question_id=f"q_{session_id}_{cand_id}",
@@ -104,6 +106,8 @@ class IntakeSessionManager:
                     question_framework=QuestionFramework.AYURVEDIC if candidate.get("category") == "AYURVEDIC" else QuestionFramework.SOCRATIC,
                     socratic_stage=SocraticStage.CLARIFY,
                     ayurvedic_domain=candidate.get("ayurvedic_domain"),
+                    display_label=candidate.get("display_label"),
+                    options=loc_opts,
                     language=language,
                     sequence=1
                 )
@@ -209,6 +213,8 @@ class IntakeSessionManager:
         cand_id = candidate.get("id", str(next_q_num))
         default_q = candidate.get("question", "Could you provide more details about this?")
         localized_q = get_localized_question(cand_id, target_lang=language, default_text=default_q)
+        raw_opts = candidate.get("options")
+        loc_opts = get_localized_options(cand_id, raw_opts, target_lang=language) if raw_opts else None
 
         next_question = QuestionItem(
             question_id=f"q_{session_id}_{cand_id}",
@@ -219,7 +225,7 @@ class IntakeSessionManager:
             socratic_stage=stage,
             ayurvedic_domain=candidate.get("ayurvedic_domain"),
             display_label=candidate.get("display_label"),
-            options=candidate.get("options"),
+            options=loc_opts,
             language=language,
             sequence=next_q_num
         )
