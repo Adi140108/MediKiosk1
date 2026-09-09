@@ -34,6 +34,11 @@ const SpeechManager = {
   },
 
   init() {
+    try {
+      if (localStorage.getItem('medikiosk_muted') === 'true') {
+        this.isMuted = true;
+      }
+    } catch(e) {}
     this.setupRecognition();
     if (this.synth) {
       try { this.synth.resume(); } catch(e) {}
@@ -43,7 +48,9 @@ const SpeechManager = {
         };
       }
     }
+    this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
   },
+
 
   resumeAudioAndSpeak(stepNum, lang) {
     if (this.isMuted) return;
@@ -682,25 +689,103 @@ const SpeechManager = {
   },
 
   updateButtonStates(state) {
+    const isMutedNow = this.isMuted || state === 'muted';
+    const isPlayingNow = state === 'playing' && !isMutedNow;
+
+    const SVG_ON = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`;
+    const SVG_MUTED = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
+    const SVG_PLAYING = `<svg class="audio-playing-pulse" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`;
+
+    // 1. Update all step card audio buttons (.btn-icon-round and #btn-speak-question)
     const buttons = document.querySelectorAll('#btn-speak-question, .btn-icon-round');
     buttons.forEach(btn => {
-      if (state === 'playing') {
-        btn.innerHTML = '🔊';
+      if (isPlayingNow) {
+        btn.innerHTML = SVG_PLAYING;
         btn.classList.add('is-playing');
         btn.classList.remove('is-muted');
-        btn.title = "Audio Playing — Tap to Mute";
-      } else if (state === 'muted' || this.isMuted) {
-        btn.innerHTML = '🔇';
+        btn.title = "Audio Guidance Speaking — Tap to Mute";
+        btn.setAttribute('aria-label', 'Audio guidance speaking. Tap to mute.');
+      } else if (isMutedNow) {
+        btn.innerHTML = SVG_MUTED;
         btn.classList.remove('is-playing');
         btn.classList.add('is-muted');
-        btn.title = "Audio Muted — Tap to Unmute & Listen";
+        btn.title = "Audio MUTED — Tap to Unmute & Listen";
+        btn.setAttribute('aria-label', 'Audio muted. Tap to unmute and listen.');
       } else {
-        btn.innerHTML = '🔊';
+        btn.innerHTML = SVG_ON;
         btn.classList.remove('is-playing');
         btn.classList.remove('is-muted');
-        btn.title = "Listen with Audio / Voice";
+        btn.title = "Listen to Voice Guidance — Tap to Mute";
+        btn.setAttribute('aria-label', 'Listen to voice guidance. Tap to mute.');
       }
     });
+
+    // 2. Update Top Navbar Global Audio Toggle Pill (#navbar-audio-toggle)
+    const navPill = document.getElementById('navbar-audio-toggle');
+    const navIcon = document.getElementById('navbar-audio-icon');
+    const navLabel = document.getElementById('navbar-audio-label');
+    const navDot = document.getElementById('audio-pill-dot');
+
+    if (navPill) {
+      if (isMutedNow) {
+        navPill.classList.add('is-muted');
+        navPill.classList.remove('is-playing');
+        navPill.title = "Sound MUTED — Tap to Unmute";
+        if (navIcon) navIcon.innerHTML = SVG_MUTED;
+        if (navLabel) navLabel.innerText = "MUTED";
+        if (navDot) navDot.style.backgroundColor = "#EF4444";
+      } else if (isPlayingNow) {
+        navPill.classList.remove('is-muted');
+        navPill.classList.add('is-playing');
+        navPill.title = "Sound SPEAKING — Tap to Mute";
+        if (navIcon) navIcon.innerHTML = SVG_PLAYING;
+        if (navLabel) navLabel.innerText = "SPEAKING";
+        if (navDot) navDot.style.backgroundColor = "#10B981";
+      } else {
+        navPill.classList.remove('is-muted');
+        navPill.classList.remove('is-playing');
+        navPill.title = "Sound ON — Tap to Mute";
+        if (navIcon) navIcon.innerHTML = SVG_ON;
+        if (navLabel) navLabel.innerText = "SOUND ON";
+        if (navDot) navDot.style.backgroundColor = "#10B981";
+      }
+    }
+
+    // 3. Update Step 1 Hero Audio Button (.btn-hero-audio)
+    const heroAudioBtns = document.querySelectorAll('.btn-hero-audio');
+    heroAudioBtns.forEach(btn => {
+      if (isMutedNow) {
+        btn.classList.add('is-muted');
+        btn.classList.remove('is-playing');
+        btn.innerHTML = `${SVG_MUTED}<span>Audio Muted (ध्वनि बंद) — Tap to Unmute</span>`;
+        btn.title = "Audio Muted — Tap to Unmute";
+      } else if (isPlayingNow) {
+        btn.classList.remove('is-muted');
+        btn.classList.add('is-playing');
+        btn.innerHTML = `${SVG_PLAYING}<span>Speaking Guidance... (ध्वनि चालू)</span>`;
+        btn.title = "Audio Playing — Tap to Mute";
+      } else {
+        btn.classList.remove('is-muted');
+        btn.classList.remove('is-playing');
+        btn.innerHTML = `${SVG_ON}<span>Listen in Audio (ध्वनि सहायता)</span>`;
+        btn.title = "Listen in Audio Guidance";
+      }
+    });
+  },
+
+  toggleGlobalMute() {
+    if (this.isMuted) {
+      this.isMuted = false;
+      try { localStorage.setItem('medikiosk_muted', 'false'); } catch(e) {}
+      this.updateButtonStates('idle');
+      const step = (window.PatientIntake && window.PatientIntake.currentStep) ? window.PatientIntake.currentStep : 1;
+      this.resumeAudioAndSpeak(step, this.currentLanguage || 'en');
+    } else {
+      this.isMuted = true;
+      try { localStorage.setItem('medikiosk_muted', 'true'); } catch(e) {}
+      this.stopAllAudio();
+      this.updateButtonStates('muted');
+    }
   },
 
   currentAudio: null,
@@ -709,6 +794,8 @@ const SpeechManager = {
     if (this.isMuted) {
       // User tapped while muted -> Unmute and speak
       this.isMuted = false;
+      try { localStorage.setItem('medikiosk_muted', 'false'); } catch(e) {}
+      this.updateButtonStates('idle');
       const targetLang = lang || this.currentLanguage || 'en';
       const toSpeak = text || this.lastSpokenText || this.getStepGuidanceText(1, targetLang);
       this.speakText(toSpeak, targetLang);
@@ -716,6 +803,7 @@ const SpeechManager = {
     } else {
       // User tapped while unmuted / playing -> Mute completely
       this.isMuted = true;
+      try { localStorage.setItem('medikiosk_muted', 'true'); } catch(e) {}
       this.isSpeaking = false;
       this.stopAllAudio();
       this.updateButtonStates('muted');
@@ -768,27 +856,36 @@ const SpeechManager = {
     const targetLang = (lang || this.currentLanguage || 'en').toLowerCase().trim();
     const assignedVoice = this.getIndianFemaleVoice(targetLang);
 
-    // Option A: If browser has a dedicated natural voice installed for this language, use it
-    if (this.synth && assignedVoice && (targetLang === 'en' || targetLang === 'hi')) {
+    // Primary: Browser SpeechSynthesis ONLY if browser actually has a matching voice for targetLang
+    if (this.synth && assignedVoice) {
       try {
+        this.synth.cancel();
         this.synth.resume();
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = this.langLocaleMap[targetLang] || 'en-IN';
+        utterance.lang = this.langLocaleMap[targetLang] || `${targetLang}-IN`;
         utterance.rate = 0.92;
         utterance.pitch = 1.0;
         utterance.voice = assignedVoice;
 
+        let audioStarted = false;
+
         utterance.onstart = () => {
+          audioStarted = true;
           this.isSpeaking = true;
           this.updateButtonStates('playing');
         };
 
         utterance.onend = () => {
-          this.isSpeaking = false;
           if (this._speechWatchdog) {
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
           }
+          if (!audioStarted) {
+            console.warn("Browser voice ended instantly without starting audio for", targetLang, "- playing server audio stream");
+            this._playServerAudioStream(text, targetLang, onEndCallback);
+            return;
+          }
+          this.isSpeaking = false;
           this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
           if (typeof onEndCallback === 'function') {
             onEndCallback();
@@ -796,42 +893,43 @@ const SpeechManager = {
         };
 
         utterance.onerror = (e) => {
-          console.warn("Browser SpeechSynthesis notice:", e);
+          console.warn("Browser SpeechSynthesis failed for", targetLang, "- falling back to server TTS:", e);
           this.isSpeaking = false;
           if (this._speechWatchdog) {
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
           }
-          this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
-          if (e.error !== 'interrupted' && e.error !== 'canceled') {
-            this._playServerAudioStream(text, targetLang, onEndCallback);
-          } else if (typeof onEndCallback === 'function') {
-            onEndCallback();
-          }
+          this._playServerAudioStream(text, targetLang, onEndCallback);
         };
 
         this.isSpeaking = true;
         this.updateButtonStates('playing');
         this.synth.speak(utterance);
 
-        // Chrome watchdog to prevent audio suspension mid-speech
         if (this._speechWatchdog) clearInterval(this._speechWatchdog);
+        let watchdogTicks = 0;
         this._speechWatchdog = setInterval(() => {
+          watchdogTicks++;
           if (this.synth && this.synth.speaking) {
             try { this.synth.resume(); } catch(e) {}
+          } else if (watchdogTicks <= 1 && !audioStarted) {
+            clearInterval(this._speechWatchdog);
+            this._speechWatchdog = null;
+            console.warn("Browser voice produced no audio for", targetLang, "- falling back to server TTS");
+            this._playServerAudioStream(text, targetLang, onEndCallback);
           } else {
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
           }
-        }, 3500);
+        }, 800);
 
         return;
       } catch (err) {
-        console.warn("Browser speech error, falling back to server TTS stream:", err);
+        console.warn("Browser speech error:", err);
       }
     }
 
-    // Option B: Server Indic Neural TTS (Kannada, Tamil, Telugu, Malayalam, Marathi, Bengali, Gujarati, Punjabi, Hindi, English)
+    // Fallback: Server Indic Neural TTS stream for all languages without a matching browser voice
     this._playServerAudioStream(text, targetLang, onEndCallback);
   },
 
@@ -854,7 +952,7 @@ const SpeechManager = {
       };
 
       audio.onerror = (e) => {
-        console.warn("Audio stream playback notice:", e);
+        console.warn("Server audio stream failed for", targetLang, ":", e);
         this.isSpeaking = false;
         this.currentAudio = null;
         this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
@@ -864,7 +962,7 @@ const SpeechManager = {
       };
 
       audio.play().catch(err => {
-        console.debug("Autoplay note:", err);
+        console.warn("Audio autoplay blocked or failed:", err);
         this.isSpeaking = false;
         this.currentAudio = null;
         this.updateButtonStates(this.isMuted ? 'muted' : 'idle');

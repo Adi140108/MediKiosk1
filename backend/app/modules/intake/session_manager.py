@@ -9,7 +9,7 @@ from app.db.repositories.intake_repository import IntakeRepository
 from app.modules.intake.adaptive_branching import AdaptiveBranchingEngine
 from app.modules.intake.socratic_engine import SocraticEngine
 from app.modules.intake.live_summary import LiveSummaryGenerator
-from app.modules.intake.multilingual_questions import get_localized_question
+from app.modules.intake.multilingual_questions import get_localized_question, get_localized_options
 from app.ai.gemma.client import GemmaClient
 
 logger = logging.getLogger("medikiosk.intake.session_manager")
@@ -95,6 +95,8 @@ class IntakeSessionManager:
                 cand_id = candidate.get("id", "1")
                 default_q = candidate.get("question", "Could you describe when this started and how it feels?")
                 localized_q = get_localized_question(cand_id, target_lang=language, default_text=default_q)
+                raw_opts = candidate.get("options")
+                loc_opts = get_localized_options(cand_id, raw_opts, target_lang=language) if raw_opts else None
 
                 first_question = QuestionItem(
                     question_id=f"q_{session_id}_{cand_id}",
@@ -104,6 +106,8 @@ class IntakeSessionManager:
                     question_framework=QuestionFramework.AYURVEDIC if candidate.get("category") == "AYURVEDIC" else QuestionFramework.SOCRATIC,
                     socratic_stage=SocraticStage.CLARIFY,
                     ayurvedic_domain=candidate.get("ayurvedic_domain"),
+                    display_label=candidate.get("display_label"),
+                    options=loc_opts,
                     language=language,
                     sequence=1
                 )
@@ -209,6 +213,8 @@ class IntakeSessionManager:
         cand_id = candidate.get("id", str(next_q_num))
         default_q = candidate.get("question", "Could you provide more details about this?")
         localized_q = get_localized_question(cand_id, target_lang=language, default_text=default_q)
+        raw_opts = candidate.get("options")
+        loc_opts = get_localized_options(cand_id, raw_opts, target_lang=language) if raw_opts else None
 
         next_question = QuestionItem(
             question_id=f"q_{session_id}_{cand_id}",
@@ -219,7 +225,7 @@ class IntakeSessionManager:
             socratic_stage=stage,
             ayurvedic_domain=candidate.get("ayurvedic_domain"),
             display_label=candidate.get("display_label"),
-            options=candidate.get("options"),
+            options=loc_opts,
             language=language,
             sequence=next_q_num
         )
@@ -238,6 +244,7 @@ class IntakeSessionManager:
         if not question or question.objective == "Identify chief complaint":
             context.chief_complaint = clean_ans
             context.known_information.append(f"Chief complaint: {clean_ans}")
+            self._extract_entities_from_text(context, clean_ans)
             return
 
         obj = question.objective
@@ -272,8 +279,61 @@ class IntakeSessionManager:
             if "sweat" in ans_lower:
                 context.associated_symptoms.append("diaphoresis")
             context.known_information.append(f"Associated symptoms: {clean_ans}")
+
+        self._extract_entities_from_text(context, clean_ans)
         
         # Capture Ayurvedic domain findings if question was Ayurvedic
-        if question.ayurvedic_domain:
+        if question and question.ayurvedic_domain:
             context.ayurvedic_findings[question.ayurvedic_domain] = clean_ans
             context.known_information.append(f"{question.display_label or question.ayurvedic_domain}: {clean_ans}")
+
+    def _extract_entities_from_text(self, context: PatientContextState, text: str):
+        import re
+        t_lower = text.lower()
+
+        # Extract duration if not set
+        if not context.duration:
+            dur_match = re.search(r'(\d+|\b(one|two|three|four|five|six|seven|eight|nine|ten)\b)\s*(days?|hours?|weeks?|months?|d|h|w)', t_lower)
+            if dur_match:
+                context.duration = dur_match.group(0)
+            elif "since yesterday" in t_lower:
+                context.duration = "since yesterday"
+            elif "since morning" in t_lower:
+                context.duration = "since morning"
+
+        # Extract severity if not set
+        if context.severity is None:
+            sev_match = re.search(r'(\d{1,2})\s*/\s*10', t_lower)
+            if sev_match:
+                try:
+                    val = int(sev_match.group(1))
+                    if 1 <= val <= 10:
+                        context.severity = val
+                except ValueError:
+                    pass
+            elif "severe" in t_lower or "unbearable" in t_lower or "extreme" in t_lower:
+                context.severity = 8
+            elif "mild" in t_lower or "slight" in t_lower:
+                context.severity = 3
+            elif "moderate" in t_lower:
+                context.severity = 5
+
+        # Extract onset if not set
+        if not context.onset:
+            if "suddenly" in t_lower or "sudden" in t_lower or "abrupt" in t_lower:
+                context.onset = "sudden onset"
+            elif "gradually" in t_lower or "gradual" in t_lower or "slowly" in t_lower:
+                context.onset = "gradual onset"
+
+        # Extract location if not set
+        if not context.location:
+            loc_keywords = [
+                ("headache", "head"), ("head", "head"), ("chest", "chest"), ("stomach", "abdomen"),
+                ("abdomen", "abdomen"), ("belly", "abdomen"), ("knee", "knee"), ("back", "back"),
+                ("throat", "throat"), ("leg", "leg"), ("arm", "arm"), ("shoulder", "shoulder"),
+                ("joint", "joints"), ("neck", "neck"), ("eye", "eye"), ("ear", "ear")
+            ]
+            for kw, loc_val in loc_keywords:
+                if kw in t_lower:
+                    context.location = loc_val
+                    break

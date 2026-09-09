@@ -1,20 +1,25 @@
 """
-Ayurvedic Scoring Engine — MediKiosk AYUSH V2
+Ayurvedic Scoring Engine — MediKiosk AYUSH V3.2.0
 
 100% Deterministic, transparent, and offline-resilient Ayurvedic clinical assessment.
-Evaluates all 23 core AYUSH domains based STRICTLY on normalized patient observations.
+Evaluates all 23 core AYUSH domains based STRICTLY on structured patient observations.
 
 Key Principles:
-1. Zero Defaults: If evidence is insufficient, outputs `status: "INSUFFICIENT_DATA"` with "Insufficient information".
-   NEVER fabricates default scores (e.g. Vata=40, Pitta=35, Kapha=25).
-2. Negation & History Aware: Excludes denied symptoms (severity=0, is_denial=True) and past symptoms (is_historical=True) from current Vikriti/Agni/Ama scoring.
-3. Transparent Tracing: Every domain result includes `supporting_observations` and `contradicting_observations`.
-4. Domain Stopping Threshold: Requires >= 3 valid non-denied observations for definitive assessment per domain.
+1. Zero Defaults & Zero Raw Text Substring Matching:
+   - No raw string checks (e.g. searching "thin", "slender", "bloating", "gas", "constipation").
+   - Scoring strictly relies on `question_id`, selected option, `dosha_weights`, and structured metadata.
+   - If evidence is insufficient, outputs `status: "INSUFFICIENT_DATA"`. Never fabricates default conclusions.
+2. Independent Prakriti vs Vikriti:
+   - Prakriti = baseline constitution.
+   - Vikriti = active symptom imbalance state.
+3. Transparent Tracing:
+   - Includes supporting observations and version traceability (V3.2.0).
 """
 
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from app.modules.ayush.observation_normalizer import StructuredObservation
+from app.core.version import ASSESSMENT_VERSION, QUESTIONNAIRE_VERSION, KNOWLEDGE_BASE_VERSION
 
 class DomainEvaluationResult(BaseModel):
     domain: str
@@ -28,9 +33,9 @@ class DomainEvaluationResult(BaseModel):
     clinical_note: str = ""
 
 class AyushV2AssessmentResult(BaseModel):
-    assessment_version: str = "2.0"
-    questionnaire_version: str = "2.0"
-    knowledge_base_version: str = "2.0"
+    assessment_version: str = ASSESSMENT_VERSION
+    questionnaire_version: str = QUESTIONNAIRE_VERSION
+    knowledge_base_version: str = KNOWLEDGE_BASE_VERSION
     is_ayush_mode: bool = True
     vaya_stage: str = "Unspecified"
     prakriti: DomainEvaluationResult
@@ -63,90 +68,52 @@ class AyurvedicScoringEngine:
     Evaluates 23 AYUSH Domains deterministically using structured observations.
     """
 
-    MIN_OBSERVATIONS_THRESHOLD = 3
+    # Mentor feature weights for Prakriti scoring
+    MENTOR_PRAKRITI_MAPPINGS = {
+        "dry_skin": {"VATA": 2, "PITTA": 0, "KAPHA": -1},
+        "strong_appetite": {"VATA": 0, "PITTA": 2, "KAPHA": 0},
+        "deep_sleep": {"VATA": -1, "PITTA": 0, "KAPHA": 2},
+        "irregular_bowel": {"VATA": 2, "PITTA": 0, "KAPHA": 0},
+        "heat_intolerance": {"VATA": 0, "PITTA": 2, "KAPHA": -1},
+        "slow_digestion": {"VATA": 0, "PITTA": -1, "KAPHA": 2}
+    }
 
     def evaluate_all(
         self,
         observations: List[StructuredObservation],
         patient_age: Optional[int] = None
     ) -> AyushV2AssessmentResult:
-        # Filter active vs historical vs denial
         valid_obs = [obs for obs in observations if not obs.is_denial]
         current_obs = [obs for obs in valid_obs if not obs.is_historical]
 
-        # 1. Prakriti
         prakriti_res = self.evaluate_prakriti(observations)
-
-        # 2. Vikriti
         vikriti_res = self.evaluate_vikriti(current_obs)
-
-        # 3. Dosha Status
         dosha_res = self.evaluate_doshas(current_obs)
-
-        # 4. Dushya Status
         dushya_res = self.evaluate_dushya(current_obs)
-
-        # 5. Srotas Status
         srotas_res = self.evaluate_srotas(current_obs)
-
-        # 6. Agni
         agni_res = self.evaluate_agni(current_obs)
-
-        # 7. Ama
         ama_res = self.evaluate_ama(current_obs)
-
-        # 8. Koshta
         koshta_res = self.evaluate_koshta(observations)
-
-        # 9. Ahara
         ahara_res = self.evaluate_ahara(current_obs)
-
-        # 10. Vihara
         vihara_res = self.evaluate_vihara(current_obs)
-
-        # 11. Satmya
         satmya_res = self.evaluate_satmya(observations)
-
-        # 12. Bala
         bala_res = self.evaluate_bala(current_obs)
-
-        # 13. Ojas
         ojas_res = self.evaluate_ojas(current_obs)
-
-        # 14. Desha
         desha_res = self.evaluate_desha(observations)
-
-        # 15. Kala
         kala_res = self.evaluate_kala(observations)
-
-        # 16. Vaya
         vaya_res = self.evaluate_vaya(patient_age)
-
-        # 17. Nidra
         nidra_res = self.evaluate_nidra(observations)
-
-        # 18. Mala
         mala_res = self.evaluate_mala(current_obs)
-
-        # 19. Sara
         sara_res = self.evaluate_sara(observations)
-
-        # 20. Samhanana
         samhanana_res = self.evaluate_samhanana(observations)
-
-        # 21. Satva
         satva_res = self.evaluate_satva(observations)
-
-        # 22. Ahara Shakti
         ahara_shakti_res = self.evaluate_ahara_shakti(current_obs)
-
-        # 23. Vyayama Shakti
         vyayama_shakti_res = self.evaluate_vyayama_shakti(current_obs)
 
         return AyushV2AssessmentResult(
-            assessment_version="2.0",
-            questionnaire_version="2.0",
-            knowledge_base_version="2.0",
+            assessment_version=ASSESSMENT_VERSION,
+            questionnaire_version=QUESTIONNAIRE_VERSION,
+            knowledge_base_version=KNOWLEDGE_BASE_VERSION,
             is_ayush_mode=True,
             vaya_stage=vaya_res.primary_category or "Unspecified",
             prakriti=prakriti_res,
@@ -177,13 +144,13 @@ class AyurvedicScoringEngine:
 
     # ------------------- 1. PRAKRITI EVALUATION -------------------
     def evaluate_prakriti(self, observations: List[StructuredObservation]) -> DomainEvaluationResult:
-        prakriti_obs = [o for o in observations if not o.is_denial]
-        if len(prakriti_obs) < self.MIN_OBSERVATIONS_THRESHOLD:
+        prakriti_obs = [o for o in observations if not o.is_denial and (o.domain or "").lower() in ["prakriti", "general", "ayush"]]
+        if len(prakriti_obs) < 2:
             return DomainEvaluationResult(
                 domain="prakriti",
                 status="INSUFFICIENT_DATA",
                 summary="Insufficient information to determine baseline Prakriti.",
-                clinical_note="Requires at least 3 baseline physical/physiological trait observations."
+                clinical_note="Requires structured Prakriti physical/physiological trait observations."
             )
 
         v_score, p_score, k_score = 0, 0, 0
@@ -191,35 +158,42 @@ class AyurvedicScoringEngine:
 
         for obs in prakriti_obs:
             weights = obs.dosha_weights or {}
-            v_w = weights.get("VATA", weights.get("vata", 0))
-            p_w = weights.get("PITTA", weights.get("pitta", 0))
-            k_w = weights.get("KAPHA", weights.get("kapha", 0))
-            opt_val = (obs.option_value or obs.raw_answer or "").lower()
+            feature_key = (obs.feature or "").lower()
+            
+            # Check mentor mapping first
+            if feature_key in self.MENTOR_PRAKRITI_MAPPINGS:
+                m_weights = self.MENTOR_PRAKRITI_MAPPINGS[feature_key]
+                v_w = m_weights["VATA"]
+                p_w = m_weights["PITTA"]
+                k_w = m_weights["KAPHA"]
+            else:
+                v_w = weights.get("VATA", weights.get("vata", 0))
+                p_w = weights.get("PITTA", weights.get("pitta", 0))
+                k_w = weights.get("KAPHA", weights.get("kapha", 0))
 
-            if v_w > 0 or any(k in opt_val for k in ["vata", "thin", "slender", "lean", "dry"]):
-                v_score += max(v_w, 1)
-                supporting.append({"feature": obs.feature, "dosha": "Vata", "answer": obs.raw_answer})
-            if p_w > 0 or any(k in opt_val for k in ["pitta", "medium", "warm", "sharp"]):
-                p_score += max(p_w, 1)
-                supporting.append({"feature": obs.feature, "dosha": "Pitta", "answer": obs.raw_answer})
-            if k_w > 0 or any(k in opt_val for k in ["kapha", "large", "heavy", "broad"]):
-                k_score += max(k_w, 1)
-                supporting.append({"feature": obs.feature, "dosha": "Kapha", "answer": obs.raw_answer})
+            if v_w > 0:
+                v_score += v_w
+                supporting.append({"feature": obs.feature, "dosha": "Vata", "weight": v_w})
+            if p_w > 0:
+                p_score += p_w
+                supporting.append({"feature": obs.feature, "dosha": "Pitta", "weight": p_w})
+            if k_w > 0:
+                k_score += k_w
+                supporting.append({"feature": obs.feature, "dosha": "Kapha", "weight": k_w})
 
-        total = v_score + p_score + k_score
-        if total == 0:
+        total = max(1, v_score + p_score + k_score)
+        if v_score == 0 and p_score == 0 and k_score == 0:
             return DomainEvaluationResult(
                 domain="prakriti",
                 status="INSUFFICIENT_DATA",
                 summary="Insufficient information to determine baseline Prakriti.",
-                clinical_note="Observed answers did not match specific Prakriti traits."
+                clinical_note="Observed structured answers did not contain doshic weight metadata."
             )
 
-        v_pct = round((v_score / total) * 100)
-        p_pct = round((p_score / total) * 100)
-        k_pct = round((k_score / total) * 100)
+        v_pct = round((max(0, v_score) / total) * 100)
+        p_pct = round((max(0, p_score) / total) * 100)
+        k_pct = round((max(0, k_score) / total) * 100)
 
-        # Dominant type determination
         sorted_scores = sorted([("Vata", v_pct), ("Pitta", p_pct), ("Kapha", k_pct)], key=lambda x: x[1], reverse=True)
         top1, top2 = sorted_scores[0], sorted_scores[1]
 
@@ -243,8 +217,8 @@ class AyurvedicScoringEngine:
 
     # ------------------- 2. VIKRITI EVALUATION -------------------
     def evaluate_vikriti(self, current_obs: List[StructuredObservation]) -> DomainEvaluationResult:
-        vikriti_obs = [o for o in current_obs if o.severity > 0]
-        if len(vikriti_obs) < 2:
+        vikriti_obs = [o for o in current_obs if o.severity > 0 and o.dosha_weights]
+        if not vikriti_obs:
             return DomainEvaluationResult(
                 domain="vikriti",
                 status="INSUFFICIENT_DATA",
@@ -256,15 +230,19 @@ class AyurvedicScoringEngine:
         supporting = []
 
         for obs in vikriti_obs:
-            txt = (obs.feature + " " + obs.raw_answer + " " + (obs.sub_domain or "")).lower()
-            if any(k in txt for k in ["bloating", "constipation", "gas", "joint pain", "dryness", "anxiety", "insomnia", "vata"]):
-                v_sev += obs.severity
+            w = obs.dosha_weights or {}
+            v_w = w.get("VATA", w.get("vata", 0)) * obs.severity
+            p_w = w.get("PITTA", w.get("pitta", 0)) * obs.severity
+            k_w = w.get("KAPHA", w.get("kapha", 0)) * obs.severity
+
+            if v_w > 0:
+                v_sev += v_w
                 supporting.append({"feature": obs.feature, "dosha": "Vata", "severity": obs.severity})
-            if any(k in txt for k in ["acidity", "burning", "reflux", "fever", "skin rash", "irritability", "pitta"]):
-                p_sev += obs.severity
+            if p_w > 0:
+                p_sev += p_w
                 supporting.append({"feature": obs.feature, "dosha": "Pitta", "severity": obs.severity})
-            if any(k in txt for k in ["heaviness", "mucus", "nausea", "lethargy", "congestion", "kapha"]):
-                k_sev += obs.severity
+            if k_w > 0:
+                k_sev += k_w
                 supporting.append({"feature": obs.feature, "dosha": "Kapha", "severity": obs.severity})
 
         tot = v_sev + p_sev + k_sev
@@ -292,14 +270,14 @@ class AyurvedicScoringEngine:
 
     # ------------------- 3. DOSHA STATUS -------------------
     def evaluate_doshas(self, current_obs: List[StructuredObservation]) -> DomainEvaluationResult:
-        v_obs = [o for o in current_obs if o.severity > 0]
+        v_obs = [o for o in current_obs if o.severity > 0 and o.dosha_weights]
         if not v_obs:
             return DomainEvaluationResult(
                 domain="dosha_status",
-                status="SUFFICIENT_DATA",
-                summary="All Doshas in Homeostasis (Samadosha)",
-                primary_category="Sama",
-                clinical_note="No doshic aggravation symptoms reported."
+                status="INSUFFICIENT_DATA",
+                summary="Insufficient data to confirm Doshic Homeostasis vs Aggravation",
+                primary_category="Unspecified",
+                clinical_note="No active structured doshic observations recorded."
             )
 
         return DomainEvaluationResult(
@@ -319,19 +297,10 @@ class AyurvedicScoringEngine:
         for obs in current_obs:
             if obs.severity == 0:
                 continue
-            txt = (obs.feature + " " + obs.raw_answer).lower()
-            if any(k in txt for k in ["fatigue", "loss of taste", "nausea", "heaviness"]):
-                dhatus["Rasa"] += 1
-                supporting.append({"dhatu": "Rasa", "feature": obs.feature})
-            if any(k in txt for k in ["acidity", "burning", "rash", "bleeding"]):
-                dhatus["Rakta"] += 1
-                supporting.append({"dhatu": "Rakta", "feature": obs.feature})
-            if any(k in txt for k in ["muscle pain", "cramps", "heaviness"]):
-                dhatus["Mamsa"] += 1
-                supporting.append({"dhatu": "Mamsa", "feature": obs.feature})
-            if any(k in txt for k in ["joint pain", "back pain", "bone ache"]):
-                dhatus["Asthi"] += 1
-                supporting.append({"dhatu": "Asthi", "feature": obs.feature})
+            sub = (obs.sub_domain or "").title()
+            if sub in dhatus:
+                dhatus[sub] += obs.severity
+                supporting.append({"dhatu": sub, "feature": obs.feature})
 
         affected = [d for d, cnt in dhatus.items() if cnt > 0]
         if not affected:
@@ -362,16 +331,10 @@ class AyurvedicScoringEngine:
         for obs in current_obs:
             if obs.severity == 0:
                 continue
-            txt = (obs.feature + " " + obs.raw_answer).lower()
-            if any(k in txt for k in ["hunger", "indigestion", "acidity", "bloating", "nausea"]):
-                srotas["Annavaha"] += 1
-                supporting.append({"srotas": "Annavaha Srotas", "feature": obs.feature})
-            if any(k in txt for k in ["constipation", "hard stool", "loose stool", "diarrhea", "bowel"]):
-                srotas["Purishavaha"] += 1
-                supporting.append({"srotas": "Purishavaha Srotas", "feature": obs.feature})
-            if any(k in txt for k in ["cough", "breathless", "wheezing", "chest"]):
-                srotas["Pranavaha"] += 1
-                supporting.append({"srotas": "Pranavaha Srotas", "feature": obs.feature})
+            s_target = (obs.sub_domain or "").title()
+            if s_target in srotas:
+                srotas[s_target] += 1
+                supporting.append({"srotas": f"{s_target} Srotas", "feature": obs.feature})
 
         affected = [s for s, cnt in srotas.items() if cnt > 0]
         if not affected:
@@ -395,7 +358,7 @@ class AyurvedicScoringEngine:
 
     # ------------------- 6. AGNI EVALUATION -------------------
     def evaluate_agni(self, current_obs: List[StructuredObservation]) -> DomainEvaluationResult:
-        agni_obs = [o for o in current_obs if o.domain == "agni"]
+        agni_obs = [o for o in current_obs if (o.domain or "").lower() == "agni"]
         if not agni_obs:
             return DomainEvaluationResult(
                 domain="agni",
@@ -408,17 +371,17 @@ class AyurvedicScoringEngine:
         supporting = []
 
         for obs in agni_obs:
-            raw = (obs.raw_answer + " " + obs.feature).lower()
-            if any(k in raw for k in ["regular", "normal", "healthy", "balanced"]):
+            val = (obs.option_value or obs.raw_answer or "").lower()
+            if "sama" in val or val == "regular":
                 scores["Sama"] += 1
                 supporting.append({"type": "Sama Agni", "evidence": obs.raw_answer})
-            elif any(k in raw for k in ["variable", "irregular", "bloating", "gas", "sometimes hungry"]):
+            elif "vishama" in val or val == "irregular":
                 scores["Vishama"] += 1
                 supporting.append({"type": "Vishama Agni", "evidence": obs.raw_answer})
-            elif any(k in raw for k in ["intense", "sharp", "acidity", "burning", "cannot tolerate delay"]):
+            elif "tikshna" in val or val == "intense":
                 scores["Tikshna"] += 1
                 supporting.append({"type": "Tikshna Agni", "evidence": obs.raw_answer})
-            elif any(k in raw for k in ["slow", "sluggish", "heaviness", "low hunger", "poor digestion"]):
+            elif "manda" in val or val == "sluggish":
                 scores["Manda"] += 1
                 supporting.append({"type": "Manda Agni", "evidence": obs.raw_answer})
 
@@ -451,7 +414,7 @@ class AyurvedicScoringEngine:
 
     # ------------------- 7. AMA EVALUATION -------------------
     def evaluate_ama(self, current_obs: List[StructuredObservation]) -> DomainEvaluationResult:
-        ama_obs = [o for o in current_obs if o.domain == "ama"]
+        ama_obs = [o for o in current_obs if (o.domain or "").lower() == "ama"]
         if not ama_obs:
             return DomainEvaluationResult(
                 domain="ama",
@@ -465,8 +428,8 @@ class AyurvedicScoringEngine:
 
         for obs in ama_obs:
             if obs.severity > 0:
-                raw = (obs.raw_answer + " " + obs.feature).lower()
-                if any(k in raw for k in ["coated tongue", "heavy", "heaviness", "foul odor", "sluggish", "sticky", "yes", "frequent", "present"]):
+                val = (obs.option_value or "").lower()
+                if val in ["saama", "present", "yes", "coated_tongue", "heavy"]:
                     ama_indicators += 1
                     supporting.append({"feature": obs.feature, "evidence": obs.raw_answer})
 
@@ -493,7 +456,7 @@ class AyurvedicScoringEngine:
 
     # ------------------- 8. KOSHTA EVALUATION -------------------
     def evaluate_koshta(self, observations: List[StructuredObservation]) -> DomainEvaluationResult:
-        koshta_obs = [o for o in observations if o.domain == "koshta"]
+        koshta_obs = [o for o in observations if (o.domain or "").lower() == "koshta"]
         if not koshta_obs:
             return DomainEvaluationResult(
                 domain="koshta",
@@ -506,14 +469,14 @@ class AyurvedicScoringEngine:
         supporting = []
 
         for obs in koshta_obs:
-            raw = (obs.raw_answer + " " + obs.feature).lower()
-            if any(k in raw for k in ["soft", "loose", "sensitive to milk", "easy", "2-3 times"]):
+            val = (obs.option_value or "").lower()
+            if val in ["mridu", "soft", "sensitive"]:
                 scores["Mridu"] += 1
                 supporting.append({"type": "Mridu Koshta", "evidence": obs.raw_answer})
-            elif any(k in raw for k in ["regular", "normal", "once daily", "moderate"]):
+            elif val in ["madhyama", "normal", "regular"]:
                 scores["Madhyama"] += 1
                 supporting.append({"type": "Madhyama Koshta", "evidence": obs.raw_answer})
-            elif any(k in raw for k in ["hard", "dry", "constipated", "requires laxative", "hard stool", "straining"]):
+            elif val in ["krura", "hard", "constipated"]:
                 scores["Krura"] += 1
                 supporting.append({"type": "Krura Koshta", "evidence": obs.raw_answer})
 
@@ -545,6 +508,14 @@ class AyurvedicScoringEngine:
 
     # ------------------- 9. AHARA (DIET) -------------------
     def evaluate_ahara(self, current_obs: List[StructuredObservation]) -> DomainEvaluationResult:
+        ahara_obs = [o for o in current_obs if (o.domain or "").lower() == "ahara"]
+        if not ahara_obs:
+            return DomainEvaluationResult(
+                domain="ahara",
+                status="INSUFFICIENT_DATA",
+                summary="Insufficient information on Ahara (Dietary Pattern).",
+                clinical_note="No dietary habit observations recorded."
+            )
         return DomainEvaluationResult(
             domain="ahara",
             status="SUFFICIENT_DATA",
@@ -555,6 +526,14 @@ class AyurvedicScoringEngine:
 
     # ------------------- 10. VIHARA (LIFESTYLE) -------------------
     def evaluate_vihara(self, current_obs: List[StructuredObservation]) -> DomainEvaluationResult:
+        vihara_obs = [o for o in current_obs if (o.domain or "").lower() == "vihara"]
+        if not vihara_obs:
+            return DomainEvaluationResult(
+                domain="vihara",
+                status="INSUFFICIENT_DATA",
+                summary="Insufficient information on Vihara (Lifestyle Routine).",
+                clinical_note="No daily routine or activity observations recorded."
+            )
         return DomainEvaluationResult(
             domain="vihara",
             status="SUFFICIENT_DATA",
@@ -565,6 +544,14 @@ class AyurvedicScoringEngine:
 
     # ------------------- 11. SATMYA (SUITABILITY) -------------------
     def evaluate_satmya(self, observations: List[StructuredObservation]) -> DomainEvaluationResult:
+        satmya_obs = [o for o in observations if (o.domain or "").lower() == "satmya"]
+        if not satmya_obs:
+            return DomainEvaluationResult(
+                domain="satmya",
+                status="INSUFFICIENT_DATA",
+                summary="Insufficient information on Satmya (Suitability/Adaptation).",
+                clinical_note="No habituation or climate adaptation observations recorded."
+            )
         return DomainEvaluationResult(
             domain="satmya",
             status="SUFFICIENT_DATA",
@@ -575,6 +562,14 @@ class AyurvedicScoringEngine:
 
     # ------------------- 12. BALA (VITALITY/STRENGTH) -------------------
     def evaluate_bala(self, current_obs: List[StructuredObservation]) -> DomainEvaluationResult:
+        bala_obs = [o for o in current_obs if (o.domain or "").lower() in ["bala", "vyayama_shakti"]]
+        if not bala_obs:
+            return DomainEvaluationResult(
+                domain="bala",
+                status="INSUFFICIENT_DATA",
+                summary="Insufficient information to evaluate Bala (Vitality).",
+                clinical_note="No physical strength or endurance observations recorded."
+            )
         sev_count = sum(o.severity for o in current_obs)
         if sev_count >= 6:
             cat = "Avara (Low Physical Vitality)"
@@ -593,14 +588,23 @@ class AyurvedicScoringEngine:
 
     # ------------------- 13. OJAS STATUS -------------------
     def evaluate_ojas(self, current_obs: List[StructuredObservation]) -> DomainEvaluationResult:
-        fatigue_obs = [o for o in current_obs if "fatigue" in (o.feature + o.raw_answer).lower() and o.severity > 0]
-        if fatigue_obs:
+        ojas_obs = [o for o in current_obs if (o.domain or "").lower() == "ojas"]
+        if not ojas_obs:
+            return DomainEvaluationResult(
+                domain="ojas",
+                status="INSUFFICIENT_DATA",
+                summary="Insufficient information to evaluate Ojas status.",
+                clinical_note="No vital resilience observations recorded."
+            )
+
+        impaired = any((o.option_value or "").lower() in ["impaired", "exhaustion", "low"] for o in ojas_obs if o.severity > 0)
+        if impaired:
             return DomainEvaluationResult(
                 domain="ojas",
                 status="SUFFICIENT_DATA",
                 summary="Ojo-Kshaya / Ojo-Visramsa (Vital Essence Impairment)",
                 primary_category="Impaired",
-                supporting_observations=[{"feature": o.feature, "raw": o.raw_answer} for o in fatigue_obs],
+                supporting_observations=[{"feature": o.feature, "raw": o.raw_answer} for o in ojas_obs],
                 clinical_note="Significant fatigue/weakness indicates diminished Ojas."
             )
 
@@ -614,6 +618,14 @@ class AyurvedicScoringEngine:
 
     # ------------------- 14. DESHA (GEOGRAPHY) -------------------
     def evaluate_desha(self, observations: List[StructuredObservation]) -> DomainEvaluationResult:
+        desha_obs = [o for o in observations if (o.domain or "").lower() == "desha"]
+        if not desha_obs:
+            return DomainEvaluationResult(
+                domain="desha",
+                status="INSUFFICIENT_DATA",
+                summary="Insufficient information on Desha (Geographic Habitat).",
+                clinical_note="No regional or habitat observations recorded."
+            )
         return DomainEvaluationResult(
             domain="desha",
             status="SUFFICIENT_DATA",
@@ -624,6 +636,14 @@ class AyurvedicScoringEngine:
 
     # ------------------- 15. KALA (SEASON/TIME) -------------------
     def evaluate_kala(self, observations: List[StructuredObservation]) -> DomainEvaluationResult:
+        kala_obs = [o for o in observations if (o.domain or "").lower() == "kala"]
+        if not kala_obs:
+            return DomainEvaluationResult(
+                domain="kala",
+                status="INSUFFICIENT_DATA",
+                summary="Insufficient information on Kala (Temporal/Seasonal Influence).",
+                clinical_note="No seasonal observation data recorded."
+            )
         return DomainEvaluationResult(
             domain="kala",
             status="SUFFICIENT_DATA",
@@ -664,7 +684,7 @@ class AyurvedicScoringEngine:
 
     # ------------------- 17. NIDRA (SLEEP) -------------------
     def evaluate_nidra(self, observations: List[StructuredObservation]) -> DomainEvaluationResult:
-        nidra_obs = [o for o in observations if o.domain == "nidra"]
+        nidra_obs = [o for o in observations if (o.domain or "").lower() == "nidra"]
         if not nidra_obs:
             return DomainEvaluationResult(
                 domain="nidra",
@@ -676,8 +696,8 @@ class AyurvedicScoringEngine:
         disturbed = False
         supporting = []
         for obs in nidra_obs:
-            raw = (obs.raw_answer + " " + obs.feature).lower()
-            if any(k in raw for k in ["disturbed", "insomnia", "hard to fall asleep", "wake up frequently", "light", "poor"]):
+            val = (obs.option_value or "").lower()
+            if val in ["asamyak", "disturbed", "poor", "light", "insomnia"]:
                 disturbed = True
                 supporting.append({"feature": obs.feature, "evidence": obs.raw_answer})
 
@@ -703,7 +723,7 @@ class AyurvedicScoringEngine:
 
     # ------------------- 18. MALA (EXCRETIONS) -------------------
     def evaluate_mala(self, current_obs: List[StructuredObservation]) -> DomainEvaluationResult:
-        mala_obs = [o for o in current_obs if o.domain in ["koshta", "mala"]]
+        mala_obs = [o for o in current_obs if (o.domain or "").lower() in ["koshta", "mala"]]
         if not mala_obs:
             return DomainEvaluationResult(
                 domain="mala",
@@ -723,6 +743,14 @@ class AyurvedicScoringEngine:
 
     # ------------------- 19. SARA (TISSUE EXCELLENCE) -------------------
     def evaluate_sara(self, observations: List[StructuredObservation]) -> DomainEvaluationResult:
+        sara_obs = [o for o in observations if (o.domain or "").lower() == "sara"]
+        if not sara_obs:
+            return DomainEvaluationResult(
+                domain="sara",
+                status="INSUFFICIENT_DATA",
+                summary="Insufficient information on Sara (Tissue Quality).",
+                clinical_note="No tissue excellence observations recorded."
+            )
         return DomainEvaluationResult(
             domain="sara",
             status="SUFFICIENT_DATA",
@@ -733,6 +761,14 @@ class AyurvedicScoringEngine:
 
     # ------------------- 20. SAMHANANA (COMPACTNESS) -------------------
     def evaluate_samhanana(self, observations: List[StructuredObservation]) -> DomainEvaluationResult:
+        samhanana_obs = [o for o in observations if (o.domain or "").lower() == "samhanana"]
+        if not samhanana_obs:
+            return DomainEvaluationResult(
+                domain="samhanana",
+                status="INSUFFICIENT_DATA",
+                summary="Insufficient information on Samhanana (Body Build Compactness).",
+                clinical_note="No body symmetry or compactness observations recorded."
+            )
         return DomainEvaluationResult(
             domain="samhanana",
             status="SUFFICIENT_DATA",
@@ -743,7 +779,7 @@ class AyurvedicScoringEngine:
 
     # ------------------- 21. SATVA (PSYCHOLOGICAL RESILIENCE) -------------------
     def evaluate_satva(self, observations: List[StructuredObservation]) -> DomainEvaluationResult:
-        satva_obs = [o for o in observations if o.domain == "satva"]
+        satva_obs = [o for o in observations if (o.domain or "").lower() == "satva"]
         if not satva_obs:
             return DomainEvaluationResult(
                 domain="satva",
@@ -752,14 +788,14 @@ class AyurvedicScoringEngine:
                 clinical_note="No mental resilience or stress tolerance observations recorded."
             )
 
-        val = 2  # Default to Madhyama (2) if answered
+        val = 2
         supporting = []
         for obs in satva_obs:
-            raw = (obs.raw_answer + " " + obs.feature).lower()
-            if any(k in raw for k in ["high", "calm under pressure", "resilient", "strong", "pravara"]):
+            opt = (obs.option_value or "").lower()
+            if opt in ["pravara", "high", "strong"]:
                 val = 3
                 supporting.append({"level": "Pravara (3)", "evidence": obs.raw_answer})
-            elif any(k in raw for k in ["easily anxious", "overwhelmed", "low", "panics", "avara"]):
+            elif opt in ["avara", "low", "anxious"]:
                 val = 1
                 supporting.append({"level": "Avara (1)", "evidence": obs.raw_answer})
             else:
@@ -783,6 +819,14 @@ class AyurvedicScoringEngine:
 
     # ------------------- 22. AHARA SHAKTI -------------------
     def evaluate_ahara_shakti(self, current_obs: List[StructuredObservation]) -> DomainEvaluationResult:
+        as_obs = [o for o in current_obs if (o.domain or "").lower() in ["ahara_shakti", "agni"]]
+        if not as_obs:
+            return DomainEvaluationResult(
+                domain="ahara_shakti",
+                status="INSUFFICIENT_DATA",
+                summary="Insufficient information on Ahara Shakti (Digestive Capacity).",
+                clinical_note="No food intake or digestive capacity observations recorded."
+            )
         return DomainEvaluationResult(
             domain="ahara_shakti",
             status="SUFFICIENT_DATA",
@@ -793,6 +837,14 @@ class AyurvedicScoringEngine:
 
     # ------------------- 23. VYAYAMA SHAKTI -------------------
     def evaluate_vyayama_shakti(self, current_obs: List[StructuredObservation]) -> DomainEvaluationResult:
+        vs_obs = [o for o in current_obs if (o.domain or "").lower() == "vyayama_shakti"]
+        if not vs_obs:
+            return DomainEvaluationResult(
+                domain="vyayama_shakti",
+                status="INSUFFICIENT_DATA",
+                summary="Insufficient information on Vyayama Shakti (Exercise Tolerance).",
+                clinical_note="No physical exertion capacity observations recorded."
+            )
         return DomainEvaluationResult(
             domain="vyayama_shakti",
             status="SUFFICIENT_DATA",
