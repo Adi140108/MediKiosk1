@@ -147,7 +147,7 @@ async def complete_intake(req: CompleteIntakeRequest):
     patient = patient_repo.get_patient(req.patient_id)
     patient_name = patient.name if patient else "Unknown Patient"
     patient_age = patient.age if patient else 35
-    patient_gender = patient.gender.value if patient else "OTHER"
+    patient_gender = getattr(patient.gender, "value", patient.gender) if patient else "OTHER"
 
     context = intake_service.repo.get_context_state(req.session_id)
     if not context:

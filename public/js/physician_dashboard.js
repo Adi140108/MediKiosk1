@@ -1,29 +1,29 @@
 const GENERAL_DEPARTMENTS = [
-  { id: "general-medicine", display_name: "General Medicine", icon: "🩺", description: "Primary care, acute viral illnesses, non-specific fevers and multisystem initial evaluations." },
-  { id: "cardiology", display_name: "Cardiology", icon: "🫀", description: "Chest pain, palpitations, hypertension, ischemic workup and cardiovascular risk assessments." },
-  { id: "pulmonology", display_name: "Pulmonology", icon: "🫁", description: "Respiratory distress, persistent cough, dyspnea, asthma and chronic airway disorders." },
-  { id: "neurology", display_name: "Neurology", icon: "🧠", description: "Headaches, dizziness, focal neurological deficits, seizures and stroke triage evaluations." },
-  { id: "gastroenterology", display_name: "Gastroenterology", icon: "🍽️", description: "Abdominal pain, acute gastrointestinal bleed, jaundice, peptic and hepatic conditions." },
-  { id: "orthopedics", display_name: "Orthopedics", icon: "🦴", description: "Trauma, fractures, severe joint swellings, musculoskeletal injuries and spinal pain." },
-  { id: "pediatrics", display_name: "Pediatrics", icon: "👶", description: "Infant and pediatric clinical reviews, childhood infections and pediatric triage." },
-  { id: "emergency", display_name: "Emergency / Trauma", icon: "🚨", description: "Immediate life-threatening triage, critical red flags, and emergency resuscitation." },
-  { id: "dermatology", display_name: "Dermatology", icon: "🧴", description: "Acute dermatological reactions, lesions, severe urticaria and cutaneous eruptions." },
-  { id: "ent", display_name: "ENT", icon: "👂", description: "Ear discharge, hearing changes, vertigo, acute epistaxis and throat infections." },
-  { id: "ophthalmology", display_name: "Ophthalmology", icon: "👁", description: "Visual disturbances, acute eye trauma, red eye and ocular pressure emergencies." },
-  { id: "psychiatry", display_name: "Psychiatry", icon: "🧩", description: "Acute distress, behavioral emergencies, psychiatric triage and mood disorders." },
-  { id: "unspecified", display_name: "Triage & Float Queue", icon: "🏥", description: "Ambiguous symptoms, multi-system red flags, and float cases awaiting department routing." }
+  { id: "general-medicine", display_name: "General Medicine", icon: "", description: "Primary care, acute viral illnesses, non-specific fevers and multisystem initial evaluations." },
+  { id: "cardiology", display_name: "Cardiology", icon: "", description: "Chest pain, palpitations, hypertension, ischemic workup and cardiovascular risk assessments." },
+  { id: "pulmonology", display_name: "Pulmonology", icon: "", description: "Respiratory distress, persistent cough, dyspnea, asthma and chronic airway disorders." },
+  { id: "neurology", display_name: "Neurology", icon: "", description: "Headaches, dizziness, focal neurological deficits, seizures and stroke triage evaluations." },
+  { id: "gastroenterology", display_name: "Gastroenterology", icon: "️", description: "Abdominal pain, acute gastrointestinal bleed, jaundice, peptic and hepatic conditions." },
+  { id: "orthopedics", display_name: "Orthopedics", icon: "", description: "Trauma, fractures, severe joint swellings, musculoskeletal injuries and spinal pain." },
+  { id: "pediatrics", display_name: "Pediatrics", icon: "", description: "Infant and pediatric clinical reviews, childhood infections and pediatric triage." },
+  { id: "emergency", display_name: "Emergency / Trauma", icon: "", description: "Immediate life-threatening triage, critical red flags, and emergency resuscitation." },
+  { id: "dermatology", display_name: "Dermatology", icon: "", description: "Acute dermatological reactions, lesions, severe urticaria and cutaneous eruptions." },
+  { id: "ent", display_name: "ENT", icon: "", description: "Ear discharge, hearing changes, vertigo, acute epistaxis and throat infections." },
+  { id: "ophthalmology", display_name: "Ophthalmology", icon: "", description: "Visual disturbances, acute eye trauma, red eye and ocular pressure emergencies." },
+  { id: "psychiatry", display_name: "Psychiatry", icon: "", description: "Acute distress, behavioral emergencies, psychiatric triage and mood disorders." },
+  { id: "unspecified", display_name: "Triage & Float Queue", icon: "", description: "Ambiguous symptoms, multi-system red flags, and float cases awaiting department routing." }
 ];
 
 const AYUSH_DEPARTMENTS = [
-  { id: "ayush", display_name: "AYUSH / Ayurveda Main OPD", icon: "🌿", description: "Ayurvedic general outpatient care, Prakriti constitution assessment and holistic triage." },
-  { id: "kayachikitsa", display_name: "Kayachikitsa (Internal Medicine)", icon: "🍵", description: "Agni, Dhatu, Ama, systemic illnesses, digestive and metabolic disorders." },
-  { id: "panchakarma", display_name: "Panchakarma (Detox & Purification)", icon: "🪔", description: "Shodhana therapy, Vamana, Virechana, Basti, Nasya and bio-cleansing evaluations." },
-  { id: "shalya", display_name: "Shalya Tantra (General & Structural Care)", icon: "🗡️", description: "Musculoskeletal, joint pain, spinal care, and structural Ayurvedic management." },
-  { id: "shalakya", display_name: "Shalakya Tantra (ENT & Eye / Urdhvanga)", icon: "👁️", description: "Head, ear, nose, throat, and ocular disorders in Ayurveda." },
-  { id: "prasuti-stri", display_name: "Prasuti Tantra & Stree Roga", icon: "🌺", description: "Ayurvedic women's health, maternal wellness, and gynecological care." },
-  { id: "kaumarabhritya", display_name: "Kaumarabhritya (Pediatrics)", icon: "👶", description: "Balaroga, infant care, pediatric growth and immune health in Ayurveda." },
-  { id: "swasthavritta", display_name: "Swasthavritta & Yoga (Preventive Care)", icon: "🧘", description: "Dinacharya, Ritucharya, Ahara, Vihara, preventive health and lifestyle medicine." },
-  { id: "agadatantra", display_name: "Agada Tantra (Toxicology & Allergies)", icon: "🧪", description: "Environmental allergies, toxicities, skin hypersensitivities and insect bites." }
+  { id: "ayush", display_name: "AYUSH / Ayurveda Main OPD", icon: "", description: "Ayurvedic general outpatient care, Prakriti constitution assessment and holistic triage." },
+  { id: "kayachikitsa", display_name: "Kayachikitsa (Internal Medicine)", icon: "", description: "Agni, Dhatu, Ama, systemic illnesses, digestive and metabolic disorders." },
+  { id: "panchakarma", display_name: "Panchakarma (Detox & Purification)", icon: "", description: "Shodhana therapy, Vamana, Virechana, Basti, Nasya and bio-cleansing evaluations." },
+  { id: "shalya", display_name: "Shalya Tantra (General & Structural Care)", icon: "️", description: "Musculoskeletal, joint pain, spinal care, and structural Ayurvedic management." },
+  { id: "shalakya", display_name: "Shalakya Tantra (ENT & Eye / Urdhvanga)", icon: "️", description: "Head, ear, nose, throat, and ocular disorders in Ayurveda." },
+  { id: "prasuti-stri", display_name: "Prasuti Tantra & Stree Roga", icon: "", description: "Ayurvedic women's health, maternal wellness, and gynecological care." },
+  { id: "kaumarabhritya", display_name: "Kaumarabhritya (Pediatrics)", icon: "", description: "Balaroga, infant care, pediatric growth and immune health in Ayurveda." },
+  { id: "swasthavritta", display_name: "Swasthavritta & Yoga (Preventive Care)", icon: "", description: "Dinacharya, Ritucharya, Ahara, Vihara, preventive health and lifestyle medicine." },
+  { id: "agadatantra", display_name: "Agada Tantra (Toxicology & Allergies)", icon: "", description: "Environmental allergies, toxicities, skin hypersensitivities and insect bites." }
 ];
 
 const DEFAULT_DEPARTMENTS = GENERAL_DEPARTMENTS;
@@ -41,30 +41,30 @@ const PhysicianDashboard = {
 
   getDeptIcon(deptId) {
     const icons = {
-      "general-medicine": "🩺",
-      "cardiology": "🫀",
-      "pulmonology": "🫁",
-      "neurology": "🧠",
-      "gastroenterology": "🍽️",
-      "orthopedics": "🦴",
-      "pediatrics": "👶",
-      "emergency": "🚨",
-      "dermatology": "🧴",
-      "ent": "👂",
-      "ophthalmology": "👁",
-      "psychiatry": "🧩",
-      "ayush": "🌿",
-      "kayachikitsa": "🍵",
-      "panchakarma": "🪔",
-      "shalya": "🗡️",
-      "shalakya": "👁️",
-      "prasuti-stri": "🌺",
-      "kaumarabhritya": "👶",
-      "swasthavritta": "🧘",
-      "agadatantra": "🧪",
-      "unspecified": "🏥"
+      "general-medicine": "",
+      "cardiology": "",
+      "pulmonology": "",
+      "neurology": "",
+      "gastroenterology": "️",
+      "orthopedics": "",
+      "pediatrics": "",
+      "emergency": "",
+      "dermatology": "",
+      "ent": "",
+      "ophthalmology": "",
+      "psychiatry": "",
+      "ayush": "",
+      "kayachikitsa": "",
+      "panchakarma": "",
+      "shalya": "️",
+      "shalakya": "️",
+      "prasuti-stri": "",
+      "kaumarabhritya": "",
+      "swasthavritta": "",
+      "agadatantra": "",
+      "unspecified": ""
     };
-    return icons[deptId] || "🩺";
+    return "";
   },
 
   init() {
@@ -91,12 +91,12 @@ const PhysicianDashboard = {
     const isAyush = this.opdMode.includes("AYUSH");
     if (pill) {
       if (isAyush) {
-        pill.innerHTML = "🌿 AYUSH OPD ⚙️";
+        pill.innerHTML = "AYUSH OPD";
         pill.style.background = "#fefce8";
         pill.style.borderColor = "#fde047";
         pill.style.color = "#854d0e";
       } else {
-        pill.innerHTML = "🏥 GENERAL OPD ⚙️";
+        pill.innerHTML = "GENERAL OPD";
         pill.style.background = "#f0fdf4";
         pill.style.borderColor = "#86efac";
         pill.style.color = "#166534";
@@ -324,9 +324,9 @@ const PhysicianDashboard = {
 
         let sevBadge = `<span class="lang-tile-badge lang-badge-connected">NORMAL</span>`;
         if (item.overall_severity === "CRITICAL") {
-          sevBadge = `<span class="lang-tile-badge" style="background:#fee2e2; color:#991b1b; border:1px solid #ef4444;">🚨 CRITICAL</span>`;
+          sevBadge = `<span class="lang-tile-badge" style="background:#fee2e2; color:#991b1b; border:1px solid #ef4444;">CRITICAL</span>`;
         } else if (item.overall_severity === "HIGH") {
-          sevBadge = `<span class="lang-tile-badge" style="background:#ffedd5; color:#9a3412; border:1px solid #f97316;">⚠️ HIGH</span>`;
+          sevBadge = `<span class="lang-tile-badge" style="background:#ffedd5; color:#9a3412; border:1px solid #f97316;">HIGH</span>`;
         } else if (item.overall_severity === "MEDIUM") {
           sevBadge = `<span class="lang-tile-badge" style="background:#fef3c7; color:#92400e; border:1px solid #f59e0b;">MEDIUM</span>`;
         }
@@ -354,7 +354,7 @@ const PhysicianDashboard = {
             <div style="font-size:0.85rem; font-weight:600; color:#1e293b; max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
               ${item.chief_complaint_summary || "Clinical check-in completed"}
             </div>
-            ${item.has_documents ? '<span style="font-size:0.7rem; color:#0369a1; font-weight:600;">📎 Records Attached</span>' : ''}
+            ${item.has_documents ? '<span style="font-size:0.7rem; color:#0369a1; font-weight:600;"> Records Attached</span>' : ''}
           </td>
           <td>
             <span style="font-size:0.85rem; font-weight:600;">${waitDisplay}</span>
@@ -404,9 +404,9 @@ const PhysicianDashboard = {
       if (overviewEl) {
         overviewEl.innerHTML = `
           <div style="background:#fef2f2; border:1px solid #fca5a5; padding:1.25rem; border-radius:8px; color:#991b1b;">
-            <h3 style="margin:0 0 0.4rem 0;">⚠️ Patient Case Record Loading Notice</h3>
+            <h3 style="margin:0 0 0.4rem 0;">Patient Case Record Loading Notice</h3>
             <p style="margin:0 0 0.75rem 0; font-size:0.875rem;">${err.message || "Request timed out or case is processing. You can retry immediately."}</p>
-            <button class="btn-primary-action" style="font-size:0.8rem; padding:0.4rem 0.85rem;" onclick="PhysicianDashboard.inspectPatientCase('${sessionId}')">🔄 Retry Loading Case</button>
+            <button class="btn-primary-action" style="font-size:0.8rem; padding:0.4rem 0.85rem;" onclick="PhysicianDashboard.inspectPatientCase('${sessionId}')">Retry Loading Case</button>
             <button class="btn-secondary-action" style="font-size:0.8rem; padding:0.4rem 0.85rem; margin-left:0.5rem;" onclick="PhysicianDashboard.showQueueView()">← Back to Queue</button>
           </div>
         `;
@@ -431,8 +431,8 @@ const PhysicianDashboard = {
     const overviewEl = document.getElementById("case-patient-overview");
     const opdMode = data.opd_mode || data.mode_at_intake || (data.queue_item && data.queue_item.opd_mode) || "GENERAL_OPD";
     const modeBadgeHtml = (opdMode === "AYUSH_OPD") 
-      ? `<span style="background:linear-gradient(135deg, #059669, #047857); color:#fff; font-size:0.75rem; font-weight:800; padding:4px 10px; border-radius:12px; margin-left:8px; box-shadow:0 2px 6px rgba(5,150,105,0.3);">🌿 AYUSH OPD</span>`
-      : `<span style="background:linear-gradient(135deg, #0d9488, #0f766e); color:#fff; font-size:0.75rem; font-weight:800; padding:4px 10px; border-radius:12px; margin-left:8px; box-shadow:0 2px 6px rgba(13,148,136,0.3);">🩺 GENERAL OPD</span>`;
+      ? `<span style="background:linear-gradient(135deg, #059669, #047857); color:#fff; font-size:0.75rem; font-weight:800; padding:4px 10px; border-radius:12px; margin-left:8px; box-shadow:0 2px 6px rgba(5,150,105,0.3);">AYUSH OPD</span>`
+      : `<span style="background:linear-gradient(135deg, #0d9488, #0f766e); color:#fff; font-size:0.75rem; font-weight:800; padding:4px 10px; border-radius:12px; margin-left:8px; box-shadow:0 2px 6px rgba(13,148,136,0.3);">GENERAL OPD</span>`;
 
     if (overviewEl) {
       overviewEl.innerHTML = `
@@ -454,7 +454,7 @@ const PhysicianDashboard = {
     if (red_flag && red_flag.is_red_flag) {
       if (redFlagBanner) redFlagBanner.style.display = "block";
       const reasons = (red_flag.flagged_reasons || []).join(" • ") || "Clinical urgency criteria identified during intake.";
-      if (rfTitle) rfTitle.innerText = `🚨 ${red_flag.overall_severity} CLINICAL RED FLAG DETECTED`;
+      if (rfTitle) rfTitle.innerText = `${red_flag.overall_severity} CLINICAL RED FLAG DETECTED`;
       if (rfDesc) rfDesc.innerHTML = `<p>${reasons}</p>`;
     } else {
       if (redFlagBanner) redFlagBanner.style.display = "none";
@@ -484,9 +484,9 @@ const PhysicianDashboard = {
     const expGaps = document.getElementById("explain-gaps-content");
     if (expGaps) {
       if (information_gaps && information_gaps.length > 0) {
-        expGaps.innerHTML = information_gaps.map(g => `<span class="gap-pill">⚠️ ${g.label || g.field}</span>`).join("");
+        expGaps.innerHTML = information_gaps.map(g => `<span class="gap-pill">${g.label || g.field}</span>`).join("");
       } else {
-        expGaps.innerHTML = `<p style="color:#166534; font-size:0.825rem;">✓ Complete clinical profile captured.</p>`;
+        expGaps.innerHTML = `<p style="color:#166534; font-size:0.825rem;">Complete clinical profile captured.</p>`;
       }
     }
 
@@ -499,11 +499,11 @@ const PhysicianDashboard = {
     if (detTagsEl) {
       const tags = [];
       const lowerComplaint = detChief.toLowerCase();
-      if (lowerComplaint.includes("chest") || lowerComplaint.includes("छाती") || lowerComplaint.includes("सीने")) tags.push(`<span class="gap-pill" style="background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe;">🫀 Chest Pain</span>`);
-      if (lowerComplaint.includes("joint") || lowerComplaint.includes("जोड़") || lowerComplaint.includes("घुटने")) tags.push(`<span class="gap-pill" style="background:#fef3c7; color:#b45309; border-color:#fde68a;">🦴 Joint Pain</span>`);
-      if (lowerComplaint.includes("head") || lowerComplaint.includes("सिर")) tags.push(`<span class="gap-pill" style="background:#fdf2f8; color:#9d174d; border-color:#fbcfe8;">🧠 Headache</span>`);
-      if (lowerComplaint.includes("stomach") || lowerComplaint.includes("पेट")) tags.push(`<span class="gap-pill" style="background:#f0fdf4; color:#15803d; border-color:#bbf7d0;">🩺 Abdominal Pain</span>`);
-      if (tags.length === 0) tags.push(`<span class="gap-pill" style="background:#f8fafc; color:#475569; border-color:#cbd5e1;">🩺 General Triage</span>`);
+      if (lowerComplaint.includes("chest") || lowerComplaint.includes("छाती") || lowerComplaint.includes("सीने")) tags.push(`<span class="gap-pill" style="background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe;">Chest Pain</span>`);
+      if (lowerComplaint.includes("joint") || lowerComplaint.includes("जोड़") || lowerComplaint.includes("घुटने")) tags.push(`<span class="gap-pill" style="background:#fef3c7; color:#b45309; border-color:#fde68a;">Joint Pain</span>`);
+      if (lowerComplaint.includes("head") || lowerComplaint.includes("सिर")) tags.push(`<span class="gap-pill" style="background:#fdf2f8; color:#9d174d; border-color:#fbcfe8;">Headache</span>`);
+      if (lowerComplaint.includes("stomach") || lowerComplaint.includes("पेट")) tags.push(`<span class="gap-pill" style="background:#f0fdf4; color:#15803d; border-color:#bbf7d0;">Abdominal Pain</span>`);
+      if (tags.length === 0) tags.push(`<span class="gap-pill" style="background:#f8fafc; color:#475569; border-color:#cbd5e1;">General Triage</span>`);
       detTagsEl.innerHTML = tags.join(" ");
     }
 
@@ -542,13 +542,13 @@ const PhysicianDashboard = {
         items.push(`<div style="margin-bottom:0.25rem;"><strong>Conditions:</strong> ${conds.map(c => `<span class="gap-pill" style="background:#fef2f2; color:#991b1b; border-color:#fecaca; font-size:0.75rem;">${c}</span>`).join(" ")}</div>`);
       }
       if (meds && meds.length > 0) {
-        items.push(`<div style="margin-bottom:0.25rem;"><strong>Ongoing Daily Meds:</strong> ${meds.map(m => `<span class="gap-pill" style="background:#eff6ff; color:#1e40af; border-color:#bfdbfe; font-size:0.75rem;">💊 ${m}</span>`).join(" ")}</div>`);
+        items.push(`<div style="margin-bottom:0.25rem;"><strong>Ongoing Daily Meds:</strong> ${meds.map(m => `<span class="gap-pill" style="background:#eff6ff; color:#1e40af; border-color:#bfdbfe; font-size:0.75rem;">${m}</span>`).join(" ")}</div>`);
       }
       if (pastHistory) {
         items.push(`<div style="margin-bottom:0.25rem; font-size:0.8rem; color:#475569;"><strong>Past Surgeries/Allergies:</strong> ${pastHistory}</div>`);
       }
       if (rxNotes) {
-        items.push(`<div style="font-size:0.8rem; color:#15803d; background:#f0fdf4; padding:0.35rem 0.6rem; border-radius:4px; border:1px solid #bbf7d0; margin-top:0.25rem;"><strong>🗣️ Dictated Rx Notes:</strong> ${rxNotes}</div>`);
+        items.push(`<div style="font-size:0.8rem; color:#15803d; background:#f0fdf4; padding:0.35rem 0.6rem; border-radius:4px; border:1px solid #bbf7d0; margin-top:0.25rem;"><strong>Dictated Rx Notes:</strong> ${rxNotes}</div>`);
       }
 
       detMedHistory.innerHTML = items.length > 0 ? items.join("") : "<span style='color:#64748b;'>No pre-existing conditions or daily medications recorded.</span>";
@@ -647,7 +647,7 @@ const PhysicianDashboard = {
         <!-- Prakriti 23-Domain Assessment Card -->
         <div style="background:#ffffff; border:1px solid #fef08a; border-radius:10px; padding:0.85rem; margin-bottom:0.75rem;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-            <div style="font-weight:800; color:#854d0e; font-size:0.95rem;">🌿 Baseline Prakriti: ${isPrakritiValid ? (prakriti.primary_category || prakriti.summary) : 'Insufficient information'}</div>
+            <div style="font-weight:800; color:#854d0e; font-size:0.95rem;">Baseline Prakriti: ${isPrakritiValid ? (prakriti.primary_category || prakriti.summary) : 'Insufficient information'}</div>
             <span class="gap-pill" style="font-size:0.7rem; background:${isPrakritiValid ? '#fef08a' : '#f1f5f9'}; color:${isPrakritiValid ? '#854d0e' : '#64748b'}; border-color:${isPrakritiValid ? '#fde047' : '#cbd5e1'}; margin:0;">
               ${isPrakritiValid ? 'Confidence: High' : 'Insufficient Data'}
             </span>
@@ -721,7 +721,7 @@ const PhysicianDashboard = {
 
         <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #fef08a; padding-top:0.6rem;">
           <button type="button" class="btn-primary-action" style="font-size:0.75rem; padding:0.35rem 0.75rem; background:linear-gradient(135deg, #0d9488, #0f766e);" onclick="PhysicianDashboard.openWhyModal()">
-            🔍 Interactive "Why?" Evidence Trace
+            Interactive "Why?" Evidence Trace
           </button>
           <span style="font-size:0.7rem; color:#854d0e; font-style:italic;">Ayurvedic Engine V2 Grounded</span>
         </div>
@@ -760,7 +760,7 @@ const PhysicianDashboard = {
                   ${attendantBadge}
                   ${physicianBadge}
                   <button type="button" class="btn-secondary-action" style="font-size:0.725rem; padding:2px 7px; border-color:#cbd5e1; background:white;" onclick="PhysicianDashboard.toggleAnswerEdit(${idx})">
-                    ✏️ Edit Answer
+                    Edit Answer
                   </button>
                 </div>
               </div>
@@ -772,7 +772,7 @@ const PhysicianDashboard = {
                   <textarea id="edit-ans-text-${idx}" class="form-textarea-field" rows="2" style="font-size:0.85rem; width:100%; margin-bottom:0.4rem;">${ansVal || ''}</textarea>
                   <div style="display:flex; justify-content:flex-end; gap:0.4rem;">
                     <button type="button" class="btn-secondary-action" style="font-size:0.725rem; padding:2px 8px;" onclick="PhysicianDashboard.toggleAnswerEdit(${idx}, false)">Cancel</button>
-                    <button type="button" class="btn-primary-action" style="font-size:0.725rem; padding:2px 10px;" onclick="PhysicianDashboard.saveAnswerEdit('${sessId}', '${qId}', ${idx})">✓ Save Answer</button>
+                    <button type="button" class="btn-primary-action" style="font-size:0.725rem; padding:2px 10px;" onclick="PhysicianDashboard.saveAnswerEdit('${sessId}', '${qId}', ${idx})">Save Answer</button>
                   </div>
                 </div>
               </div>
@@ -820,7 +820,7 @@ const PhysicianDashboard = {
             labsHtml = `
               <div style="margin-top:0.6rem;">
                 <div style="font-weight:700; font-size:0.8rem; color:#0f172a; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
-                  <span>🧪 Extracted Laboratory Findings:</span>
+                  <span>Extracted Laboratory Findings:</span>
                   <span class="gap-pill" style="font-size:0.7rem; background:#ecfdf5; color:#065f46; border-color:#a7f3d0;">${labVals.length} Tests Digitized</span>
                 </div>
                 <table class="ocr-lab-table">
@@ -851,7 +851,7 @@ const PhysicianDashboard = {
             medsHtml = `
               <div style="margin-top:0.4rem; display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
                 <span style="font-size:0.75rem; font-weight:700; color:#475569;">Prescribed Rx:</span>
-                ${meds.map(m => `<span class="gap-pill" style="font-size:0.75rem; background:#eff6ff; color:#1e40af; border-color:#bfdbfe;">💊 ${m.name} ${m.dosage || ''} ${m.frequency || ''}</span>`).join('')}
+                ${meds.map(m => `<span class="gap-pill" style="font-size:0.75rem; background:#eff6ff; color:#1e40af; border-color:#bfdbfe;">${m.name} ${m.dosage || ''} ${m.frequency || ''}</span>`).join('')}
               </div>
             `;
           }
@@ -862,7 +862,7 @@ const PhysicianDashboard = {
             condsHtml = `
               <div style="margin-top:0.4rem; display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
                 <span style="font-size:0.75rem; font-weight:700; color:#475569;">Impression:</span>
-                ${conds.map(c => `<span class="gap-pill" style="font-size:0.75rem; background:#fef3c7; color:#92400e; border-color:#fde68a;">📋 ${c}</span>`).join('')}
+                ${conds.map(c => `<span class="gap-pill" style="font-size:0.75rem; background:#fef3c7; color:#92400e; border-color:#fde68a;">${c}</span>`).join('')}
               </div>
             `;
           }
@@ -880,10 +880,14 @@ const PhysicianDashboard = {
           return `
             <div class="ocr-item-card">
               <div class="ocr-item-header">
-                <span><strong>📄 ${filename}</strong></span>
-                <span style="display:flex; gap:6px; align-items:center;">
-                  <span class="gap-pill" style="font-size:0.7rem; background:#f8fafc; color:#475569; border-color:#cbd5e1;">Provider: ${d.storage_provider || 'Encrypted Store'}</span>
-                  <span class="gap-pill" style="font-size:0.7rem; background:#f0fdf4; color:#15803d; border-color:#bbf7d0;">${confPercent}% OCR</span>
+                <span class="ocr-item-title">
+                  <svg class="btn-icon-svg" style="color:#0D9488;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                  <strong>${filename}</strong>
+                </span>
+                <span style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                  <span class="gap-pill" style="font-size:0.7rem; background:#F8FAFC; color:#475569; border-color:#CBD5E1;">Store: ${d.storage_provider || 'Encrypted Store'}</span>
+                  <span class="gap-pill" style="font-size:0.7rem; background:#ECFDF5; color:#065F46; border-color:#A7F3D0; font-weight:700;">${confPercent}% OCR</span>
+                  <span class="gap-pill" style="font-size:0.7rem; background:#EEF2FF; color:#4338CA; border-color:#C7D2FE;">SHA-256 Sealed</span>
                 </span>
               </div>
               <div class="ocr-item-content">
@@ -895,7 +899,7 @@ const PhysicianDashboard = {
                 ${rawText && (labVals.length > 0 || meds.length > 0 || conds.length > 0) ? `
                   <div style="margin-top:0.6rem;">
                     <button type="button" onclick="PhysicianDashboard.toggleRawOcr('raw-ocr-${idx}')" style="background:none; border:none; color:#0284c7; font-size:0.75rem; font-weight:600; cursor:pointer; padding:0; display:flex; align-items:center; gap:4px;">
-                      <span>📝 Show/Hide Full Raw OCR Text ▼</span>
+                      <span>Show/Hide Full Raw OCR Text</span>
                     </button>
                     <div id="raw-ocr-${idx}" class="ocr-raw-box" style="display:none; margin-top:0.4rem;">
                       ${rawText}
@@ -906,7 +910,7 @@ const PhysicianDashboard = {
                 ${scanUrl ? `
                   <div style="display:flex; gap:0.5rem; margin-top:0.75rem; align-items:center; flex-wrap:wrap;">
                     <button type="button" class="btn-scan-preview" onclick="PhysicianDashboard.openDocumentScanModal('${scanUrl}', '${filename.replace(/'/g, "\\'")}')">
-                      🔍 Preview Document Scan
+                      Preview Document Scan
                     </button>
                     <button type="button" class="btn-scan-preview" style="background:#f8fafc; color:#475569; border-color:#cbd5e1;" onclick="PhysicianDashboard.openScanLink('${scanUrl}')">
                       ↗ Open Full Scan
@@ -918,7 +922,17 @@ const PhysicianDashboard = {
           `;
         }).join("");
       } else {
-        docsList.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; font-style:italic;">No previous reports or prescriptions uploaded by patient.</p>`;
+        docsList.innerHTML = `
+          <div style="background:#F8FAFC; border:1px dashed #CBD5E1; border-radius:10px; padding:1.25rem; text-align:center;">
+            <div style="font-size:1.8rem; margin-bottom:0.4rem;"></div>
+            <h5 style="margin:0; font-size:0.92rem; font-weight:700; color:#334155;">No Prior Physical Documents Uploaded</h5>
+            <p style="margin:0.25rem 0 0.85rem 0; font-size:0.8rem; color:#64748B;">Patient completed intake verbally or without physical prescription papers.</p>
+            <button type="button" class="btn-card-action btn-card-action-secondary" style="font-size:0.78rem;" onclick="PhysicianDashboard.loadDemoEvidenceReport()">
+              <svg class="btn-icon-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+              <span>Inspect Sample Digitized Lab Report</span>
+            </button>
+          </div>
+        `;
       }
     }
 
@@ -1049,22 +1063,30 @@ const PhysicianDashboard = {
       this.closeTransferModal();
 
       const targetDeptInfo = {
-        "cardiology": { name: "Cardiology", icon: "🫀" },
-        "neurology": { name: "Neurology", icon: "🧠" },
-        "general-medicine": { name: "General Medicine", icon: "🩺" },
-        "pediatrics": { name: "Pediatrics", icon: "👶" },
-        "orthopedics": { name: "Orthopedics", icon: "🦴" },
-        "emergency": { name: "Emergency / Trauma", icon: "🚨" },
-        "gastroenterology": { name: "Gastroenterology", icon: "🍽️" },
-        "dermatology": { name: "Dermatology", icon: "🧴" },
-        "ent": { name: "ENT", icon: "👂" },
-        "ophthalmology": { name: "Ophthalmology", icon: "👁" },
-        "psychiatry": { name: "Psychiatry", icon: "🧩" },
-        "ayush": { name: "AYUSH / Integrative", icon: "🌿" }
+        "cardiology": { name: "Cardiology", icon: "" },
+        "neurology": { name: "Neurology", icon: "" },
+        "general-medicine": { name: "General Medicine", icon: "" },
+        "pediatrics": { name: "Pediatrics", icon: "" },
+        "orthopedics": { name: "Orthopedics", icon: "" },
+        "emergency": { name: "Emergency / Trauma", icon: "" },
+        "gastroenterology": { name: "Gastroenterology", icon: "" },
+        "dermatology": { name: "Dermatology", icon: "" },
+        "ent": { name: "ENT", icon: "" },
+        "ophthalmology": { name: "Ophthalmology", icon: "" },
+        "psychiatry": { name: "Psychiatry", icon: "" },
+        "ayush": { name: "AYUSH / Integrative", icon: "" },
+        "kayachikitsa": { name: "Kayachikitsa (Internal Medicine)", icon: "" },
+        "panchakarma": { name: "Panchakarma (Detox & Purification)", icon: "" },
+        "shalya": { name: "Shalya Tantra (Structural Care)", icon: "" },
+        "shalakya": { name: "Shalakya Tantra (ENT & Eye)", icon: "" },
+        "prasuti-stri": { name: "Prasuti Tantra & Stree Roga", icon: "" },
+        "kaumarabhritya": { name: "Kaumarabhritya (Pediatrics)", icon: "" },
+        "swasthavritta": { name: "Swasthavritta & Yoga", icon: "" },
+        "agadatantra": { name: "Agada Tantra (Toxicology)", icon: "" }
       };
 
-      const deptMeta = targetDeptInfo[targetDept] || { name: targetDept.toUpperCase(), icon: "🩺" };
-      const shouldSwitch = confirm(`✓ Patient successfully transferred to ${deptMeta.name} waiting queue!\n\nWould you like to switch to the ${deptMeta.name} Department Queue now?`);
+      const deptMeta = targetDeptInfo[targetDept] || { name: targetDept.toUpperCase(), icon: "" };
+      const shouldSwitch = confirm(`Patient successfully transferred to ${deptMeta.name} waiting queue!\n\nWould you like to switch to the ${deptMeta.name} Department Queue now?`);
 
       if (shouldSwitch) {
         this.selectDepartment(targetDept, deptMeta.name, deptMeta.icon);
@@ -1096,13 +1118,13 @@ const PhysicianDashboard = {
     }
     this.currentSessionId = targetSession;
 
-    if (!confirm("🚨 IMMEDIATE EMERGENCY ESCALATION\n\nAre you sure you want to flag this patient for Immediate Emergency Priority and move them to the Emergency Department Queue?")) {
+    if (!confirm("IMMEDIATE EMERGENCY ESCALATION\n\nAre you sure you want to flag this patient for Immediate Emergency Priority and move them to the Emergency Department Queue?")) {
       return;
     }
 
     try {
       await api.reassignDepartment(targetSession, "emergency", "dr_sharma_cardio", "Immediate Emergency Escalation by physician");
-      alert("🚨 Patient successfully escalated to Emergency / Trauma Department queue.");
+      alert("Patient successfully escalated to Emergency / Trauma Department queue.");
       this.showQueueView();
     } catch (err) {
       alert("Escalation notice: " + err.message);
@@ -1129,7 +1151,7 @@ const PhysicianDashboard = {
         category,
         custom_question: custom || null
       });
-      alert("✓ Question dispatched to patient intake session!");
+      alert("Question dispatched to patient intake session!");
       this.closeAskPatientModal();
       this.inspectPatientCase(this.currentSessionId);
     } catch (err) {
@@ -1148,7 +1170,7 @@ const PhysicianDashboard = {
     try {
       const sessionId = this.currentSessionId || this.currentPatientData?.session_id || this.currentPatientData?.queue_item?.session_id || this.currentPatientData?.patient?.session_id;
       if (!sessionId) {
-        alert("⚠️ Please open or select an active patient case first.");
+        alert("Please open or select an active patient case first.");
         return;
       }
 
@@ -1162,10 +1184,10 @@ const PhysicianDashboard = {
       const isPriorityChanged = this.originalRecommendedPriority && priority !== this.originalRecommendedPriority;
 
       if ((isDeptChanged || isPriorityChanged) && !overrideReason) {
-        alert("⚠️ Override rationale is required when altering the AI recommended department or priority.");
+        alert("Override rationale is required when altering the AI recommended department or priority.");
         if (btn) {
           btn.disabled = false;
-          btn.innerText = "✓ Confirm & Sign Record";
+          btn.innerText = "Confirm & Sign Record";
         }
         return;
       }
@@ -1188,14 +1210,14 @@ const PhysicianDashboard = {
         }
       }
 
-      alert("✓ Clinical record successfully finalized, signed, and logged to audit trail.");
+      alert("Clinical record successfully finalized, signed, and logged to audit trail.");
       this.showQueueView();
     } catch (err) {
       alert("Confirmation notice: " + (err.message || "Failed to confirm patient record"));
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.innerText = "✓ Confirm & Sign Record";
+        btn.innerText = "Confirm & Sign Record";
       }
     }
   },
@@ -1210,7 +1232,7 @@ const PhysicianDashboard = {
 
     if (disp) disp.style.display = nextState ? "none" : "block";
     if (editForm) editForm.style.display = nextState ? "block" : "none";
-    if (toggleBtn) toggleBtn.innerText = nextState ? "✕ Close Edit" : "✏️ Edit Summary";
+    if (toggleBtn) toggleBtn.innerText = nextState ? "Close Edit" : "️ Edit Summary";
   },
 
   saveHpiInlineEdit() {
@@ -1261,7 +1283,7 @@ const PhysicianDashboard = {
 
     if (!modal || !body) return;
 
-    if (title) title.innerText = `📄 ${filename}`;
+    if (title) title.innerText = `${filename}`;
     if (meta) meta.innerText = "Verified Medical Record Scan";
     if (extBtn) {
       extBtn.href = url;
@@ -1299,7 +1321,7 @@ const PhysicianDashboard = {
     const nextState = show !== undefined ? show : !isShowing;
 
     if (editBox) editBox.style.display = nextState ? "block" : "none";
-    if (toggleBtn) toggleBtn.innerText = nextState ? "✕ Close Edit" : "✏️ Edit Summary";
+    if (toggleBtn) toggleBtn.innerText = nextState ? "Close Edit" : "️ Edit Summary";
     if (nextState) {
       const textarea = document.getElementById("det-edit-narrative-textarea");
       if (textarea) textarea.focus();
@@ -1395,7 +1417,7 @@ const PhysicianDashboard = {
       return;
     }
 
-    container.innerHTML = `<p style="text-align:center; color:#854d0e; padding:2rem 0;">🔍 Searching AyurGenixAI dataset & AyurParam knowledge base...</p>`;
+    container.innerHTML = `<p style="text-align:center; color:#854d0e; padding:2rem 0;">Searching AyurGenixAI dataset & AyurParam knowledge base...</p>`;
 
     try {
       const res = await api.queryAyurvedaRag(query, this.currentLanguage || "en", 3);
@@ -1427,17 +1449,17 @@ const PhysicianDashboard = {
           </p>
 
           <div style="margin-bottom:0.4rem; font-size:0.85rem;">
-            <strong style="color:#15803d;">✓ Pathya (Diet & Lifestyle):</strong> ${(r.pathya || []).join(', ')}
+            <strong style="color:#15803d;">Pathya (Diet & Lifestyle):</strong> ${(r.pathya || []).join(', ')}
           </div>
           <div style="margin-bottom:0.4rem; font-size:0.85rem;">
-            <strong style="color:#b91c1c;">✗ Apathya (Contraindications):</strong> ${(r.apathya || []).join(', ')}
+            <strong style="color:#b91c1c;">Apathya (Contraindications):</strong> ${(r.apathya || []).join(', ')}
           </div>
           <div style="margin-bottom:0.4rem; font-size:0.85rem;">
-            <strong style="color:#0369a1;">🌿 Classical Formulations:</strong> ${(r.classical_herbs_formulations || []).join(', ')}
+            <strong style="color:#0369a1;">Classical Formulations:</strong> ${(r.classical_herbs_formulations || []).join(', ')}
           </div>
 
           <div style="font-size:0.75rem; color:#a16207; margin-top:0.65rem; border-top:1px solid #fef08a; padding-top:0.4rem; font-style:italic;">
-            📖 Classical Samhita Citation: ${r.classical_reference}
+            Classical Samhita Citation: ${r.classical_reference}
           </div>
         </div>
       `).join("");
@@ -1462,7 +1484,7 @@ const PhysicianDashboard = {
     if (!ev || !ev.matched_features || ev.matched_features.length === 0) {
       container.innerHTML = `
         <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:14px; padding:20px; text-align:center; color:#64748b;">
-          <div style="font-size:2rem; margin-bottom:6px;">📋</div>
+          <div style="font-size:2rem; margin-bottom:6px;"></div>
           <p style="font-weight:700; color:#334155; margin:0; font-size:0.95rem;">Baseline Clinical Features Tracked</p>
           <p style="font-size:0.825rem; margin-top:4px; margin-bottom:0;">Patient observations were recorded and evaluated against baseline Ayurvedic indicator criteria.</p>
         </div>
@@ -1472,7 +1494,7 @@ const PhysicianDashboard = {
 
     let html = `
       <div style="margin-bottom:16px; background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:14px; padding:14px 18px;">
-        <h4 style="font-size:0.95rem; font-weight:800; color:#166534; margin:0;">✓ Matched Symptom Indicators (${ev.matched_features.length} Features Detected)</h4>
+        <h4 style="font-size:0.95rem; font-weight:800; color:#166534; margin:0;">Matched Symptom Indicators (${ev.matched_features.length} Features Detected)</h4>
       </div>
       <div style="display:flex; flex-direction:column; gap:10px;">
     `;
@@ -1503,7 +1525,7 @@ const PhysicianDashboard = {
     if (ev.raw_observations && ev.raw_observations.length > 0) {
       html += `
         <div style="margin-top:20px; border-top:1px dashed #cbd5e1; padding-top:16px;">
-          <h4 style="font-size:0.95rem; font-weight:800; color:#0f172a; margin-bottom:12px;">🗣️ Raw Patient Evidence Responses</h4>
+          <h4 style="font-size:0.95rem; font-weight:800; color:#0f172a; margin-bottom:12px;">Raw Patient Evidence Responses</h4>
           <div style="display:flex; flex-direction:column; gap:10px;">
       `;
       ev.raw_observations.forEach((obs) => {

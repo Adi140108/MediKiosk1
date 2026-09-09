@@ -48,39 +48,43 @@ const PatientIntake = {
     try { this.updateStepIndicator(1); } catch (e) {}
     try { this.updateLanguageGridUI(this.language); } catch (e) {}
 
-    // 2. IMMEDIATE WELCOMING AUTO-SPEECH
+    // 2. SINGLE WELCOMING AUTO-SPEECH (Guarded against duplicate execution)
+    let welcomeTriggered = false;
     const triggerWelcomeSpeech = () => {
-      try {
-        if (this.currentStep === 1 && !this.hasSpokenInitialWelcome && typeof SpeechManager !== "undefined" && !SpeechManager.isMuted) {
-          this.hasSpokenInitialWelcome = true;
-          if (SpeechManager.resumeAudioAndSpeak) {
-            SpeechManager.resumeAudioAndSpeak(1, this.language);
-          }
-        }
-      } catch (e) {}
-    };
+      if (welcomeTriggered || this.hasSpokenInitialWelcome) return;
+      if (this.currentStep !== 1) return;
+      if (typeof SpeechManager !== "undefined" && SpeechManager.isMuted) return;
 
-    // Immediate attempt on load (50ms)
-    setTimeout(triggerWelcomeSpeech, 50);
-    setTimeout(triggerWelcomeSpeech, 250);
+      welcomeTriggered = true;
+      this.hasSpokenInitialWelcome = true;
 
-    // Unlock audio instantly on any first micro-interaction
-    const unlockAndSpeak = () => {
       try {
         if (typeof SpeechManager !== "undefined") {
           if (SpeechManager.synth) SpeechManager.synth.resume();
           const ctx = SpeechManager.getAudioContext();
           if (ctx && ctx.state === 'suspended') ctx.resume();
+          if (SpeechManager.resumeAudioAndSpeak) {
+            SpeechManager.resumeAudioAndSpeak(1, this.language);
+          }
         }
-      } catch(e) {}
-      triggerWelcomeSpeech();
+      } catch (e) {
+        console.warn("Welcome speech notice:", e);
+      }
     };
 
-    ['click', 'touchstart', 'touchend', 'pointerdown', 'pointermove', 'mousemove', 'keydown', 'scroll', 'focus'].forEach(evt => {
-      try {
-        window.addEventListener(evt, unlockAndSpeak, { once: true, passive: true });
-      } catch (e) {}
-    });
+    // Single delayed trigger after DOM is settled
+    setTimeout(triggerWelcomeSpeech, 250);
+
+    // Fallback: If autoplay policy blocked initial speech, trigger once on first user click/touch
+    const onFirstUserGesture = () => {
+      window.removeEventListener('click', onFirstUserGesture, true);
+      window.removeEventListener('touchstart', onFirstUserGesture, true);
+      window.removeEventListener('keydown', onFirstUserGesture, true);
+      triggerWelcomeSpeech();
+    };
+    window.addEventListener('click', onFirstUserGesture, true);
+    window.addEventListener('touchstart', onFirstUserGesture, true);
+    window.addEventListener('keydown', onFirstUserGesture, true);
   },
 
   getActiveOpdMode() {
@@ -326,14 +330,14 @@ const PatientIntake = {
 
   showStepMilestoneToast(completedStep, nextStep) {
     const milestones = {
-      1: { icon: "✓", title: "Registration Started", sub: "Step 1 of 8 Completed", badge: "STEP 1" },
-      2: { icon: "🌐", title: "Language Selected", sub: "Step 2 of 8 Completed", badge: "STEP 2" },
-      3: { icon: "🛡️", title: "Consent Confirmed", sub: "Step 3 of 8 Completed", badge: "STEP 3" },
-      4: { icon: "👤", title: "Patient Details Saved", sub: "Step 4 of 8 Completed", badge: "STEP 4" },
-      5: { icon: "🩺", title: "Symptoms & Vitals Saved", sub: "Step 5 of 8 Completed", badge: "STEP 5" },
-      6: { icon: "📄", title: "Documents Attached", sub: "Step 6 of 8 Completed", badge: "STEP 6" },
-      7: { icon: "📋", title: "Clinical Inquiry Finished", sub: "Step 7 of 8 Completed", badge: "STEP 7" },
-      8: { icon: "🎫", title: "Consultation Ticket Issued", sub: "OPD Check-In Completed", badge: "COMPLETE" }
+      1: { icon: "1", title: "Registration Started", sub: "Step 1 of 8 Completed", badge: "STEP 1" },
+      2: { icon: "2", title: "Language Selected", sub: "Step 2 of 8 Completed", badge: "STEP 2" },
+      3: { icon: "3", title: "Consent Confirmed", sub: "Step 3 of 8 Completed", badge: "STEP 3" },
+      4: { icon: "4", title: "Patient Details Saved", sub: "Step 4 of 8 Completed", badge: "STEP 4" },
+      5: { icon: "5", title: "Symptoms & Vitals Saved", sub: "Step 5 of 8 Completed", badge: "STEP 5" },
+      6: { icon: "6", title: "Documents Attached", sub: "Step 6 of 8 Completed", badge: "STEP 6" },
+      7: { icon: "7", title: "Clinical Inquiry Finished", sub: "Step 7 of 8 Completed", badge: "STEP 7" },
+      8: { icon: "8", title: "Consultation Ticket Issued", sub: "OPD Check-In Completed", badge: "COMPLETE" }
     };
 
     const data = milestones[completedStep] || milestones[1];
@@ -365,6 +369,16 @@ const PatientIntake = {
   },
 
   updateStepIndicator(stepNum, prevStep = null) {
+    const bar = document.getElementById("kiosk-step-indicator");
+
+    // Strictly hide indicators on Step 1 (Welcome page)
+    if (stepNum === 1) {
+      if (bar) bar.style.display = "none";
+      return;
+    } else {
+      if (bar) bar.style.display = "flex";
+    }
+
     for (let i = 1; i <= 8; i++) {
       const node = document.getElementById(`step-node-${i}`);
       const line = document.getElementById(`step-line-${i}`);
@@ -372,7 +386,7 @@ const PatientIntake = {
         node.className = "wizard-step-node";
         if (i < stepNum || (i === 8 && stepNum === 8)) {
           node.classList.add("completed");
-          node.innerHTML = "✓";
+          node.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
           if (prevStep && i === prevStep) {
             node.classList.add("node-shockwave");
             setTimeout(() => node.classList.remove("node-shockwave"), 750);
@@ -402,7 +416,7 @@ const PatientIntake = {
         tile.classList.add("selected");
         if (badge) {
           badge.className = "lang-tile-badge lang-badge-selected";
-          badge.innerText = "✓ SELECTED";
+          badge.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:3px;"><polyline points="20 6 9 17 4 12"></polyline></svg>SELECTED';
         }
       } else {
         tile.classList.remove("selected");
@@ -491,7 +505,7 @@ const PatientIntake = {
           wrapper.style.backgroundColor = "#ffffff";
         }, 2500);
       }
-      alert("⚠️ Please check the agreement box to confirm your consent before proceeding.");
+      alert("️ Please check the agreement box to confirm your consent before proceeding.");
       return;
     }
     this.goToStep(4);
@@ -588,52 +602,95 @@ const PatientIntake = {
     }
   },
 
-  selectPainLevel(level) {
+  onPainSliderInput(level) {
+    this.updatePainDisplay(level);
+  },
+
+  setSliderVal(level) {
+    const slider = document.getElementById("pain-slider");
+    if (slider) slider.value = level;
+    this.selectPainLevel(level);
+  },
+
+  updatePainDisplay(level) {
     this.painLevel = parseInt(level, 10);
     const hiddenInput = document.getElementById("pain-range");
     if (hiddenInput) hiddenInput.value = this.painLevel;
 
-    // Update active button state in grid
-    document.querySelectorAll(".pain-num-btn").forEach((btn) => {
-      const val = parseInt(btn.getAttribute("data-val"), 10);
-      if (val === this.painLevel) {
-        btn.classList.add("selected");
-      } else {
-        btn.classList.remove("selected");
-      }
-    });
-
-    const displayBadge = document.getElementById("pain-val-display");
-    if (displayBadge) {
-      if (this.painLevel <= 3) {
-        displayBadge.style.cssText = "background:#ecfdf5; color:#065f46; border:1px solid #10b981; font-size:0.875rem; padding:0.3rem 0.75rem; font-weight:700;";
-        displayBadge.innerText = `Level ${this.painLevel} — Mild Discomfort`;
-      } else if (this.painLevel <= 6) {
-        displayBadge.style.cssText = "background:#fef3c7; color:#92400e; border:1px solid #f59e0b; font-size:0.875rem; padding:0.3rem 0.75rem; font-weight:700;";
-        displayBadge.innerText = `Level ${this.painLevel} — Moderate Pain`;
-      } else if (this.painLevel <= 8) {
-        displayBadge.style.cssText = "background:#ffedd5; color:#9a3412; border:1px solid #f97316; font-size:0.875rem; padding:0.3rem 0.75rem; font-weight:700;";
-        displayBadge.innerText = `Level ${this.painLevel} — Severe Pain`;
-      } else {
-        displayBadge.style.cssText = "background:#fee2e2; color:#991b1b; border:1px solid #ef4444; font-size:0.875rem; padding:0.3rem 0.75rem; font-weight:700;";
-        displayBadge.innerText = `Level ${this.painLevel} — Critical Pain`;
-      }
+    const slider = document.getElementById("pain-slider");
+    if (slider && parseInt(slider.value, 10) !== this.painLevel) {
+      slider.value = this.painLevel;
     }
 
-    const nativePainConfirm = {
-      en: `Pain level ${this.painLevel} selected`,
-      hi: `दर्द का स्तर ${this.painLevel} चुना गया`,
-      kn: `ನೋವಿನ ಪ್ರಮಾಣ ${this.painLevel} ಆಯ್ಕೆಮಾಡಲಾಗಿದೆ`,
-      ta: `வலி அளவு ${this.painLevel} தேர்ந்தெடுக்கப்பட்டது`,
-      te: `నొప్పి స్థాయి ${this.painLevel} ఎంపిక చేయబడింది`,
-      ml: `വേദനയുടെ അളവ് ${this.painLevel} തിരഞ്ഞെടുത്തു`,
-      mr: `वेदनेचा स्तर ${this.painLevel} निवडला आहे`,
-      bn: `ব্যথার মাত্রা ${this.painLevel} নির্বাচিত হয়েছে`,
-      gu: `દુખાવાનું પ્રમાણ ${this.painLevel} પસંદ કરવામાં આવ્યું`,
-      pa: `ਦਰਦ ਦਾ ਪੱਧਰ ${this.painLevel} ਚੁਣਿਆ ਗਿਆ`
-    };
-    const painMsg = nativePainConfirm[this.language] || nativePainConfirm["en"];
-    SpeechManager.speakText(painMsg, this.language);
+    const displayBadge = document.getElementById("pain-val-display");
+    let primaryColor = "#10b981";
+    let statusText = "Mild Discomfort";
+    let bgCol = "#ecfdf5";
+    let textCol = "#065f46";
+
+    if (this.painLevel <= 3) {
+      primaryColor = "#10b981";
+      statusText = "Mild Discomfort";
+      bgCol = "#ecfdf5";
+      textCol = "#065f46";
+    } else if (this.painLevel <= 6) {
+      primaryColor = "#f59e0b";
+      statusText = "Moderate Pain";
+      bgCol = "#fef3c7";
+      textCol = "#92400e";
+    } else if (this.painLevel <= 8) {
+      primaryColor = "#f97316";
+      statusText = "Severe Pain";
+      bgCol = "#ffedd5";
+      textCol = "#9a3412";
+    } else {
+      primaryColor = "#ef4444";
+      statusText = "Critical / Emergency";
+      bgCol = "#fee2e2";
+      textCol = "#991b1b";
+    }
+
+    if (displayBadge) {
+      displayBadge.style.cssText = `background:${bgCol}; color:${textCol}; border:1.5px solid ${primaryColor}; font-size:0.88rem; padding:0.35rem 0.95rem; font-weight:700; border-radius:9999px;`;
+      displayBadge.innerText = `Level ${this.painLevel} — ${statusText}`;
+    }
+    
+    if (slider) {
+      slider.style.setProperty('--primary-color', primaryColor);
+      slider.style.setProperty('--slider-thumb-color', primaryColor);
+    }
+
+    // Highlight active tick
+    try {
+      const allTicks = document.querySelectorAll("#pain-ticks-container span");
+      allTicks.forEach(t => t.classList.remove("active-tick"));
+      const currentTick = document.getElementById(`pain-tick-${this.painLevel}`);
+      if (currentTick) currentTick.classList.add("active-tick");
+    } catch (e) {}
+  },
+
+  selectPainLevel(level) {
+    this.updatePainDisplay(level);
+
+    if (this._painSpeakTimeout) clearTimeout(this._painSpeakTimeout);
+    this._painSpeakTimeout = setTimeout(() => {
+      const nativePainConfirm = {
+        en: `Pain level ${this.painLevel} selected`,
+        hi: `दर्द का स्तर ${this.painLevel} चुना गया`,
+        kn: `ನೋವಿನ ಪ್ರಮಾಣ ${this.painLevel} ಆಯ್ಕೆಮಾಡಲಾಗಿದೆ`,
+        ta: `வலி அளவு ${this.painLevel} தேர்ந்தெடுக்கப்பட்டது`,
+        te: `నొప్పి స్థాయి ${this.painLevel} ఎంపిక చేయబడింది`,
+        ml: `വേദനയുടെ അളവ് ${this.painLevel} തിരഞ്ഞെടുത്തു`,
+        mr: `वेदनेचा स्तर ${this.painLevel} निवडला आहे`,
+        bn: `ব্যথার মাত্রা ${this.painLevel} নির্বাচিত হয়েছে`,
+        gu: `દુખાવાનું પ્રમાણ ${this.painLevel} પસંદ કરવામાં આવ્યું`,
+        pa: `ਦਰਦ ਦਾ ਪੱਧਰ ${this.painLevel} ਚੁਣਿਆ ਗਿਆ`
+      };
+      const painMsg = nativePainConfirm[this.language] || nativePainConfirm["en"];
+      if (typeof SpeechManager !== "undefined" && !SpeechManager.isMuted) {
+        SpeechManager.speakText(painMsg, this.language);
+      }
+    }, 400);
   },
 
   handleComplaintNext() {
@@ -677,9 +734,9 @@ const PatientIntake = {
     previewContainer.innerHTML = `
       <div style="background:#eff6ff; border:1.5px solid #93c5fd; border-radius:8px; padding:0.85rem; margin-top:0.75rem;">
         <div style="display:flex; align-items:center; gap:0.85rem;">
-          ${isImage ? `<img src="${localUrl}" style="width:65px; height:65px; object-fit:cover; border-radius:6px; border:1px solid #60a5fa; box-shadow:0 2px 6px rgba(0,0,0,0.15);" />` : `<div style="width:65px; height:65px; background:#dbeafe; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:2rem; color:#1d4ed8;">📄</div>`}
+          ${isImage ? `<img src="${localUrl}" style="width:65px; height:65px; object-fit:cover; border-radius:6px; border:1px solid #60a5fa; box-shadow:0 2px 6px rgba(0,0,0,0.15);" />` : `<div style="width:65px; height:65px; background:#dbeafe; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:2rem; color:#1d4ed8;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></div>`}
           <div style="flex:1; overflow:hidden;">
-            <p style="font-weight:700; color:#1e40af; margin:0; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📄 ${file.name}</p>
+            <p style="font-weight:700; color:#1e40af; margin:0; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${file.name}</p>
             <p style="font-size:0.8rem; color:#2563eb; margin:0.25rem 0 0 0;">Size: ${sizeMb} MB • Ready for Cloud Encryption & OCR Analysis</p>
           </div>
         </div>
@@ -699,7 +756,7 @@ const PatientIntake = {
     const isExpanded = el.style.maxHeight === "none" || el.style.maxHeight === "1000px";
     if (isExpanded) {
       el.style.maxHeight = "160px";
-      if (label) label.innerText = "📖 Show Full Extracted Text ▼";
+      if (label) label.innerText = "Show Full Extracted Text ▼";
     } else {
       el.style.maxHeight = "none";
       if (label) label.innerText = "▲ Collapse Text";
@@ -807,7 +864,7 @@ const PatientIntake = {
       ocrDiv.innerHTML = `
         <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:var(--radius-md); padding:1rem; margin-top:1rem;">
           <div style="display:flex; align-items:center; gap:8px;">
-            <span class="spinner" style="display:inline-block;">⏳</span>
+            <span class="spinner" style="display:inline-block;"></span>
             <p style="font-weight:600; color:#334155; font-size:0.95rem;">Uploading to secure cloud vault...</p>
           </div>
         </div>
@@ -832,15 +889,15 @@ const PatientIntake = {
         ocrDiv.innerHTML = `
           <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:var(--radius-md); padding:1.15rem; margin-top:1rem;">
             <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:1.3rem;">✅</span>
-              <p style="font-weight:700; color:#15803d; font-size:1rem;">Document Encrypted & Stored ✓</p>
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:#DCFCE7; color:#16A34A;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+              <p style="font-weight:700; color:#15803d; font-size:1rem;">Document Encrypted & Stored</p>
             </div>
             <p style="font-size:0.85rem; color:#166534; margin-top:0.35rem;">
               Your document is securely attached to your clinical consultation record.
             </p>
             <div id="ocr-polling-status" style="font-size:0.8rem; color:#475569; margin-top:0.5rem;">
               <div style="display:flex; align-items:center; gap:6px;">
-                <span class="spinner">⏳</span> Digitizing laboratory values and clinical entities in background...
+                <span class="spinner"></span> Digitizing laboratory values and clinical entities in background...
               </div>
             </div>
           </div>
@@ -862,9 +919,9 @@ const PatientIntake = {
               pollStatusEl.innerHTML = `
                 <div style="width:100%; margin-top:0.5rem;">
                   <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem; flex-wrap:wrap; gap:0.5rem;">
-                    <span style="color:#15803d; font-weight:700; font-size:0.9rem;">✓ OCR Digitization Complete</span>
+                    <span style="color:#15803d; font-weight:700; font-size:0.9rem;">OCR Digitization Complete</span>
                     <button type="button" onclick="PatientIntake.toggleFullOcrText()" style="background:#e0f2fe; color:#0369a1; border:1px solid #7dd3fc; padding:4px 10px; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer;">
-                      <span id="btn-toggle-ocr-text-label">📖 Show Full Extracted Text ▼</span>
+                      <span id="btn-toggle-ocr-text-label">Show Full Extracted Text ▼</span>
                     </button>
                   </div>
 
@@ -875,7 +932,7 @@ const PatientIntake = {
                   ` : ''}
 
                   <div style="font-weight:700; font-size:0.8rem; color:#166534; margin-bottom:0.35rem;">
-                    📄 Extracted Clinical Content:
+                    Extracted Clinical Content:
                   </div>
                   <div id="full-ocr-text-container" style="font-size:0.85rem; color:#1e293b; font-family:monospace; background:white; padding:0.85rem 1rem; border-radius:8px; border:1px solid #bbf7d0; max-height:160px; overflow-y:auto; white-space:pre-wrap; word-break:break-word; transition:all 0.3s ease; box-shadow:inset 0 1px 3px rgba(0,0,0,0.05);">
                     ${fullText}
@@ -927,7 +984,7 @@ const PatientIntake = {
       proceedDiv.style.cssText = 'margin-top:1rem; text-align:center;';
       proceedDiv.innerHTML = `
         <button type="button" id="btn-proceed-after-ocr" class="btn-primary-action" style="padding:0.75rem 2rem; font-size:1rem; font-weight:700;" onclick="PatientIntake.handleStep6Continue()">
-          ✓ Proceed to AI Clinical Interview →
+          Proceed to AI Clinical Interview →
         </button>
       `;
       const ocrParent = document.getElementById('doc-ocr-result');
@@ -939,7 +996,7 @@ const PatientIntake = {
       if (ocrDiv) {
         ocrDiv.innerHTML = `
           <div style="background:#fef2f2; border:1px solid #fca5a5; border-radius:var(--radius-md); padding:1rem; margin-top:1rem;">
-            <p style="font-weight:700; color:#991b1b;">⚠️ Upload Notice</p>
+            <p style="font-weight:700; color:#991b1b;">Upload Notice</p>
             <p style="font-size:0.85rem; color:#7f1d1d; margin-top:0.25rem;">We could not upload this file, but you can continue with your voice consultation.</p>
             <button type="button" class="btn-primary-action" style="margin-top:0.75rem; padding:0.6rem 1.5rem;" onclick="PatientIntake.handleStep6Continue()">
               Proceed to Interview →
@@ -1108,7 +1165,7 @@ const PatientIntake = {
     const originalText = btn ? btn.innerHTML : "Submit Answer";
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = `<span style="margin-right:6px;">⏳</span> Recording answer...`;
+      btn.innerHTML = ` Recording answer...`;
     }
 
     try {
@@ -1152,7 +1209,7 @@ const PatientIntake = {
           this.renderQuestion(retryRes.next_question);
         }
       } catch (retryErr) {
-        alert("⚠️ Please tap Submit Answer once more to proceed.");
+        alert("Please tap Submit Answer once more to proceed.");
       }
     } finally {
       if (btn) {
@@ -1260,11 +1317,19 @@ const PatientIntake = {
     const badgeContainer = document.getElementById("ticket-triage-badge");
     if (badgeContainer) {
       let badgeClass = "lang-badge-ready";
-      if (rf.overall_severity === "CRITICAL") badgeClass = "lang-badge-connected' style='background:#fee2e2; color:#991b1b;";
-      else if (rf.overall_severity === "HIGH") badgeClass = "lang-badge-connected' style='background:#ffedd5; color:#9a3412;";
-      else if (rf.overall_severity === "MEDIUM") badgeClass = "lang-badge-connected' style='background:#fef3c7; color:#92400e;";
+      let badgeStyle = "";
+      if (rf.overall_severity === "CRITICAL") {
+        badgeClass = "lang-badge-connected";
+        badgeStyle = "background:#fee2e2; color:#991b1b;";
+      } else if (rf.overall_severity === "HIGH") {
+        badgeClass = "lang-badge-connected";
+        badgeStyle = "background:#ffedd5; color:#9a3412;";
+      } else if (rf.overall_severity === "MEDIUM") {
+        badgeClass = "lang-badge-connected";
+        badgeStyle = "background:#fef3c7; color:#92400e;";
+      }
 
-      badgeContainer.innerHTML = `<span class="lang-tile-badge ${badgeClass}">${rf.overall_severity} PRIORITY</span>`;
+      badgeContainer.innerHTML = `<span class="lang-tile-badge ${badgeClass}" style="${badgeStyle}">${rf.overall_severity} PRIORITY</span>`;
     }
 
     this.renderTicketDetails({

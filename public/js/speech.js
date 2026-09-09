@@ -145,9 +145,9 @@ const SpeechManager = {
     if (statusEl) {
       if (isPostSpeech || (this.hasReceivedSpeechInSession && this.lastTranscript)) {
         const preview = this.lastTranscript ? `"${this.lastTranscript.slice(-25)}"` : 'Voice captured';
-        statusEl.innerHTML = `🎙️ ${preview} <span class="mic-countdown-pill" style="font-size:0.75rem; background:rgba(220,38,38,0.18); color:#991b1b; padding:2px 8px; border-radius:12px; font-weight:700; border:1px solid rgba(220,38,38,0.35); margin-left:6px;">closing in ${seconds}s</span>`;
+        statusEl.innerHTML = `${preview} <span class="mic-countdown-pill" style="font-size:0.75rem; background:rgba(220,38,38,0.18); color:#991b1b; padding:2px 8px; border-radius:12px; font-weight:700; border:1px solid rgba(220,38,38,0.35); margin-left:6px;">closing in ${seconds}s</span>`;
       } else {
-        statusEl.innerHTML = `🎙️ Listening... <span class="mic-countdown-pill" style="font-size:0.75rem; background:rgba(220,38,38,0.18); color:#991b1b; padding:2px 8px; border-radius:12px; font-weight:700; border:1px solid rgba(220,38,38,0.35); margin-left:6px;">${seconds}s</span>`;
+        statusEl.innerHTML = `Listening... <span class="mic-countdown-pill" style="font-size:0.75rem; background:rgba(220,38,38,0.18); color:#991b1b; padding:2px 8px; border-radius:12px; font-weight:700; border:1px solid rgba(220,38,38,0.35); margin-left:6px;">${seconds}s</span>`;
       }
     }
   },
@@ -238,9 +238,9 @@ const SpeechManager = {
 
     if (statusEl) {
       if (hasText) {
-        statusEl.innerHTML = `✓ Voice captured. Review or submit below.`;
+        statusEl.innerHTML = `Voice captured. Review or submit below.`;
       } else {
-        statusEl.innerText = (typeof I18n !== 'undefined' && I18n.t) ? I18n.t('mic_speak_btn') : "🎤 Speak Answer";
+        statusEl.innerText = (typeof I18n !== 'undefined' && I18n.t) ? I18n.t('mic_speak_btn') : "Speak Answer";
       }
     }
     this.state = hasText ? SpeechState.SUCCESS : SpeechState.IDLE;
@@ -262,22 +262,22 @@ const SpeechManager = {
           break;
         case SpeechState.PROCESSING:
         case SpeechState.TRANSCRIBING:
-          statusEl.innerText = detail || "⏳ Processing audio & transcribing...";
+          statusEl.innerText = detail || "Processing audio & transcribing...";
           if (waveEl) waveEl.style.display = 'none';
           break;
         case SpeechState.SUCCESS:
-          statusEl.innerText = detail || "✓ Voice captured. Review or submit below.";
+          statusEl.innerText = detail || "Voice captured. Review or submit below.";
           if (micBtn) micBtn.classList.remove('recording');
           if (waveEl) waveEl.style.display = 'none';
           break;
         case SpeechState.ERROR:
-          statusEl.innerText = detail || "⚠️ Speech not recognized. Please retry or type.";
+          statusEl.innerText = detail || "Speech not recognized. Please retry or type.";
           if (micBtn) micBtn.classList.remove('recording');
           if (waveEl) waveEl.style.display = 'none';
           break;
         case SpeechState.IDLE:
         default:
-          statusEl.innerText = detail || ((typeof I18n !== 'undefined' && I18n.t) ? I18n.t('mic_speak_btn') : "🎤 Speak Answer");
+          statusEl.innerText = detail || ((typeof I18n !== 'undefined' && I18n.t) ? I18n.t('mic_speak_btn') : "Speak Answer");
           if (micBtn) micBtn.classList.remove('recording');
           if (waveEl) waveEl.style.display = 'none';
           break;
@@ -439,7 +439,7 @@ const SpeechManager = {
     } else {
       const answerInput = document.getElementById('patient-answer-input');
       if (answerInput && answerInput.value.trim().length > 0) {
-        this.setState(SpeechState.SUCCESS, "✓ Voice captured. Review or submit below.");
+        this.setState(SpeechState.SUCCESS, "Voice captured. Review or submit below.");
       } else {
         this.setState(SpeechState.IDLE);
       }
@@ -682,49 +682,81 @@ const SpeechManager = {
   },
 
   updateButtonStates(state) {
+    const playSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>';
+    const muteSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>';
+
     const buttons = document.querySelectorAll('#btn-speak-question, .btn-icon-round');
     buttons.forEach(btn => {
       if (state === 'playing') {
-        btn.innerHTML = '🔊';
+        btn.innerHTML = playSvg;
         btn.classList.add('is-playing');
         btn.classList.remove('is-muted');
-        btn.title = "Audio Playing — Tap to Mute";
+        btn.title = "Audio Playing";
       } else if (state === 'muted' || this.isMuted) {
-        btn.innerHTML = '🔇';
+        btn.innerHTML = muteSvg;
         btn.classList.remove('is-playing');
         btn.classList.add('is-muted');
-        btn.title = "Audio Muted — Tap to Unmute & Listen";
+        btn.title = "Audio Muted";
       } else {
-        btn.innerHTML = '🔊';
+        btn.innerHTML = playSvg;
         btn.classList.remove('is-playing');
         btn.classList.remove('is-muted');
         btn.title = "Listen with Audio / Voice";
       }
     });
+
+    this.updateNavbarAudioUI(state);
+  },
+
+  updateNavbarAudioUI(state = null) {
+    const toggleBtn = document.getElementById('navbar-audio-toggle');
+    if (!toggleBtn) return;
+
+    const playSvg = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>';
+    const muteSvg = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>';
+
+    if (this.isMuted) {
+      toggleBtn.className = 'nav-audio-pill is-muted';
+      toggleBtn.innerHTML = `${muteSvg}<span>Muted</span>`;
+      toggleBtn.title = "Audio Muted — Click to Enable Voice Guidance";
+    } else if (state === 'playing' || this.isSpeaking) {
+      toggleBtn.className = 'nav-audio-pill is-playing';
+      toggleBtn.innerHTML = `${playSvg}<span>Speaking...</span>`;
+      toggleBtn.title = "Voice Guidance Playing — Click to Mute";
+    } else {
+      toggleBtn.className = 'nav-audio-pill';
+      toggleBtn.innerHTML = `${playSvg}<span>Voice On</span>`;
+      toggleBtn.title = "Voice Guidance Active — Click to Mute";
+    }
+  },
+
+  toggleMute() {
+    this.isMuted = !this.isMuted;
+    if (this.isMuted) {
+      this.stopAllAudio();
+      this.updateNavbarAudioUI('muted');
+    } else {
+      this.updateNavbarAudioUI('idle');
+      // Speak current step guidance cleanly without double-talk
+      const currentStep = (window.PatientIntake && window.PatientIntake.currentStep) ? window.PatientIntake.currentStep : 1;
+      const targetLang = (window.PatientIntake && window.PatientIntake.language) ? window.PatientIntake.language : (this.currentLanguage || 'en');
+      this.speakStepGuidance(currentStep, targetLang);
+    }
+    return !this.isMuted;
   },
 
   currentAudio: null,
 
   toggleSpeak(text = null, lang = null) {
-    if (this.isMuted) {
-      // User tapped while muted -> Unmute and speak
-      this.isMuted = false;
-      const targetLang = lang || this.currentLanguage || 'en';
-      const toSpeak = text || this.lastSpokenText || this.getStepGuidanceText(1, targetLang);
-      this.speakText(toSpeak, targetLang);
-      return true;
-    } else {
-      // User tapped while unmuted / playing -> Mute completely
-      this.isMuted = true;
-      this.isSpeaking = false;
-      this.stopAllAudio();
-      this.updateButtonStates('muted');
-      return false;
-    }
+    return this.toggleMute();
   },
 
   stopAllAudio() {
     this.clearAllTimers();
+    if (this._speechWatchdog) {
+      clearInterval(this._speechWatchdog);
+      this._speechWatchdog = null;
+    }
     if (this.synth) {
       try { this.synth.cancel(); } catch(e) {}
     }
@@ -815,11 +847,30 @@ const SpeechManager = {
         this.synth.speak(utterance);
 
         // Chrome watchdog to prevent audio suspension mid-speech
-        if (this._speechWatchdog) clearInterval(this._speechWatchdog);
+        if (this._speechWatchdog) {
+          clearInterval(this._speechWatchdog);
+          this._speechWatchdog = null;
+        }
+        let watchdogTicks = 0;
         this._speechWatchdog = setInterval(() => {
-          if (this.synth && this.synth.speaking) {
+          watchdogTicks++;
+          // Keep browser speech active if paused
+          if (this.synth && (this.synth.speaking || this.synth.pending)) {
             try { this.synth.resume(); } catch(e) {}
-          } else {
+            if (audioStarted || watchdogTicks >= 4) {
+              clearInterval(this._speechWatchdog);
+              this._speechWatchdog = null;
+            }
+          } else if (watchdogTicks >= 3 && !audioStarted) {
+            // Truly stalled after 2.4s without starting speech
+            clearInterval(this._speechWatchdog);
+            this._speechWatchdog = null;
+            if (this.synth) {
+              try { this.synth.cancel(); } catch(e) {}
+            }
+            console.warn("Browser voice stalled for", targetLang, "- falling back to server TTS");
+            this._playServerAudioStream(text, targetLang, onEndCallback);
+          } else if (audioStarted) {
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
           }
@@ -836,7 +887,24 @@ const SpeechManager = {
   },
 
   _playServerAudioStream(text, targetLang, onEndCallback) {
+    if (this.isMuted) {
+      if (typeof onEndCallback === 'function') onEndCallback();
+      return;
+    }
+    
     try {
+      // Strictly cancel browser speech synthesis before server audio starts
+      if (this.synth) {
+        try { this.synth.cancel(); } catch(e) {}
+      }
+      if (this.currentAudio) {
+        try {
+          this.currentAudio.pause();
+          this.currentAudio.currentTime = 0;
+        } catch(e) {}
+        this.currentAudio = null;
+      }
+
       this.updateButtonStates('playing');
       this.isSpeaking = true;
 

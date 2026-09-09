@@ -204,7 +204,7 @@ async def get_patient_case_workspace(session_id: str):
         rf_dict = rf_result.model_dump()
         if not rf_dict.get("triage_rationale"):
             rf_dict["triage_rationale"] = (
-                "🚨 Critical clinical red flags detected requiring urgent attending evaluation."
+                "Critical clinical red flags detected requiring urgent attending evaluation."
                 if rf_dict.get("overall_severity") == "CRITICAL"
                 else "Evaluated against deterministic red flag safety protocols."
             )

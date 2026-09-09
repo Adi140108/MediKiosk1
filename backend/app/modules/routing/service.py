@@ -68,7 +68,7 @@ class RoutingService:
                 "agadatantra": DepartmentId.AGADATANTRA
             }
             dept = ayush_str_mapping.get(dept_key, DepartmentId.KAYACHIKITSA)
-            reasoning = f"[🌿 AYUSH OPD MODE] Routed to {dept.value.upper()} for Ayurvedic evaluation, Agni/Prakriti assessment, and holistic treatment."
+            reasoning = f"[AYUSH OPD MODE] Routed to {dept.value.upper()} for Ayurvedic evaluation, Agni/Prakriti assessment, and holistic treatment."
         else:
             # Ensure GENERAL_OPD recommendation is strictly an allopathic department
             ayush_depts = [DepartmentId.AYUSH, DepartmentId.KAYACHIKITSA, DepartmentId.PANCHAKARMA, DepartmentId.SHALYA, DepartmentId.SHALAKYA, DepartmentId.PRASUTI_STRI, DepartmentId.KAUMARABHRITYA, DepartmentId.SWASTHAVRITTA, DepartmentId.AGADATANTRA]
@@ -77,7 +77,8 @@ class RoutingService:
 
         # Critical red flag recommendation adjustment
         if red_flag_result and red_flag_result.overall_severity == RedFlagSeverity.CRITICAL:
-            reasoning = f"[🚨 CRITICAL RED FLAG DETECTED] Priority Emergency/Specialty Review: {reasoning}"
+            dept = DepartmentId.EMERGENCY
+            reasoning = f"[CRITICAL RED FLAG DETECTED] Priority Emergency Escalation Override: {reasoning}"
 
         rec = RoutingRecommendation(
             recommendation_id=f"rec_{session_id}_{uuid.uuid4().hex[:8]}",
