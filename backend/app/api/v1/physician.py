@@ -87,7 +87,7 @@ async def get_patient_case_workspace(session_id: str):
 
     pat_id = patient.patient_id if patient else (queue_item.patient_id if queue_item else "unknown")
 
-    if not draft_summary:
+    if not draft_summary or (draft_summary.is_draft and ("during clinical interview, the patient reported" in (draft_summary.hpi or "").lower() or "additional reported details" in (draft_summary.hpi or "").lower())):
         try:
             draft_summary = await asyncio.wait_for(review_service.generate_draft_summary(session_id, pat_id), timeout=3.5)
         except Exception as e:

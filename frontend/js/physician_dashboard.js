@@ -113,7 +113,11 @@ const PhysicianDashboard = {
       const selectEl = document.getElementById(selectId);
       if (selectEl) {
         const currentVal = selectEl.value;
-        selectEl.innerHTML = deptList.map(d => `<option value="${d.id}">${d.icon || this.getDeptIcon(d.id)} ${d.display_name}</option>`).join("");
+        selectEl.innerHTML = deptList.map(d => {
+          const deptMeta = (typeof I18n !== "undefined" && I18n.getDepartmentInfo) ? I18n.getDepartmentInfo(d.id) : null;
+          const name = deptMeta?.name || d.display_name;
+          return `<option value="${d.id}">${d.icon || this.getDeptIcon(d.id)} ${name}</option>`;
+        }).join("");
         if (deptList.some(d => d.id === currentVal)) {
           selectEl.value = currentVal;
         }
@@ -130,6 +134,8 @@ const PhysicianDashboard = {
     if (sel && sel.value !== this.currentLanguage) {
       sel.value = this.currentLanguage;
     }
+    this.updateDepartmentDropdowns();
+
     // Re-render UI views if open
     if (this.currentPatientData && document.getElementById("physician-case-view")?.style.display === "block") {
       this.populateCaseInspector(this.currentPatientData);
@@ -322,22 +328,28 @@ const PhysicianDashboard = {
       items.forEach((item) => {
         const tr = document.createElement("tr");
 
-        let sevBadge = `<span class="lang-tile-badge lang-badge-connected">NORMAL</span>`;
+        let sevBadge = `<span class="lang-tile-badge lang-badge-connected">${(typeof I18n !== "undefined" && I18n.t && I18n.t("stable_only")) || "NORMAL"}</span>`;
         if (item.overall_severity === "CRITICAL") {
-          sevBadge = `<span class="lang-tile-badge" style="background:#fee2e2; color:#991b1b; border:1px solid #ef4444;">🚨 CRITICAL</span>`;
+          const sevText = (typeof I18n !== "undefined" && I18n.t && I18n.t("critical_only")) || "🚨 CRITICAL";
+          sevBadge = `<span class="lang-tile-badge" style="background:#fee2e2; color:#991b1b; border:1px solid #ef4444;">${sevText}</span>`;
         } else if (item.overall_severity === "HIGH") {
-          sevBadge = `<span class="lang-tile-badge" style="background:#ffedd5; color:#9a3412; border:1px solid #f97316;">⚠️ HIGH</span>`;
+          const sevText = (typeof I18n !== "undefined" && I18n.t && I18n.t("high_only")) || "⚠️ HIGH";
+          sevBadge = `<span class="lang-tile-badge" style="background:#ffedd5; color:#9a3412; border:1px solid #f97316;">${sevText}</span>`;
         } else if (item.overall_severity === "MEDIUM") {
-          sevBadge = `<span class="lang-tile-badge" style="background:#fef3c7; color:#92400e; border:1px solid #f59e0b;">MEDIUM</span>`;
+          const sevText = (typeof I18n !== "undefined" && I18n.t && I18n.t("medium_only")) || "MEDIUM";
+          sevBadge = `<span class="lang-tile-badge" style="background:#fef3c7; color:#92400e; border:1px solid #f59e0b;">${sevText}</span>`;
         }
 
         let statusBadge = `<span class="lang-tile-badge lang-badge-connected">${item.status}</span>`;
         if (item.status === "WAITING") {
-          statusBadge = `<span class="lang-tile-badge" style="background:#ecfdf5; color:#065f46; border:1px solid #10b981;">WAITING</span>`;
+          const stText = (typeof I18n !== "undefined" && I18n.t && I18n.t("status_waiting")) || "WAITING";
+          statusBadge = `<span class="lang-tile-badge" style="background:#ecfdf5; color:#065f46; border:1px solid #10b981;">${stText}</span>`;
         } else if (item.status === "IN_REVIEW") {
-          statusBadge = `<span class="lang-tile-badge" style="background:#e0f2fe; color:#0369a1; border:1px solid #38bdf8;">IN REVIEW</span>`;
+          const stText = (typeof I18n !== "undefined" && I18n.t && I18n.t("status_in_review")) || "IN REVIEW";
+          statusBadge = `<span class="lang-tile-badge" style="background:#e0f2fe; color:#0369a1; border:1px solid #38bdf8;">${stText}</span>`;
         } else if (item.status === "COMPLETED") {
-          statusBadge = `<span class="lang-tile-badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">COMPLETED</span>`;
+          const stText = (typeof I18n !== "undefined" && I18n.t && I18n.t("status_completed")) || "COMPLETED";
+          statusBadge = `<span class="lang-tile-badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">${stText}</span>`;
         }
 
         const waitDisplay = item.waiting_time_minutes > 60
@@ -354,7 +366,7 @@ const PhysicianDashboard = {
             <div style="font-size:0.85rem; font-weight:600; color:#1e293b; max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
               ${item.chief_complaint_summary || "Clinical check-in completed"}
             </div>
-            ${item.has_documents ? '<span style="font-size:0.7rem; color:#0369a1; font-weight:600;">📎 Records Attached</span>' : ''}
+            ${item.has_documents ? `<span style="font-size:0.7rem; color:#0369a1; font-weight:600;">${(typeof I18n !== "undefined" && I18n.t && I18n.t("records_attached")) || "📎 Records Attached"}</span>` : ''}
           </td>
           <td>
             <span style="font-size:0.85rem; font-weight:600;">${waitDisplay}</span>
@@ -437,13 +449,19 @@ const PhysicianDashboard = {
       : `<span style="background:linear-gradient(135deg, #0d9488, #0f766e); color:#fff; font-size:0.75rem; font-weight:800; padding:4px 10px; border-radius:12px; margin-left:8px; box-shadow:0 2px 6px rgba(13,148,136,0.3);">🩺 GENERAL OPD</span>`;
 
     if (overviewEl) {
+      const idLabel = (typeof I18n !== "undefined" && I18n.t) ? (I18n.t("patient_id_label") || "ID") : "ID";
+      const ageLabel = (typeof I18n !== "undefined" && I18n.t) ? (I18n.t("age_label") || "Age") : "Age";
+      const genderLabel = (typeof I18n !== "undefined" && I18n.t) ? (I18n.t("gender_label") || "Gender") : "Gender";
+      const prefLangLabel = (typeof I18n !== "undefined" && I18n.t) ? (I18n.t("pref_lang_label") || "Preferred Language") : "Preferred Language";
+      const abhaLabel = (typeof I18n !== "undefined" && I18n.t) ? (I18n.t("abha_label") || "ABHA") : "ABHA";
+
       overviewEl.innerHTML = `
         <div style="display:flex; align-items:center; gap:8px;">
           <h2 style="font-size:1.4rem; color:var(--brand-primary); margin:0;">${patient.name || 'Patient Case'}</h2>
           ${modeBadgeHtml}
         </div>
         <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">
-          ID: <strong>${patient.patient_id || 'N/A'}</strong> • Age: <strong>${patient.age || 'N/A'}y</strong> • Gender: <strong>${patient.gender || 'N/A'}</strong> • Preferred Language: <strong>${(patient.preferred_language || 'EN').toUpperCase()}</strong> • ABHA: <strong>${patient.abha_id || 'Hospital Walk-in'}</strong>
+          ${idLabel}: <strong>${patient.patient_id || 'N/A'}</strong> • ${ageLabel}: <strong>${patient.age || 'N/A'}y</strong> • ${genderLabel}: <strong>${patient.gender || 'N/A'}</strong> • ${prefLangLabel}: <strong>${(patient.preferred_language || 'EN').toUpperCase()}</strong> • ${abhaLabel}: <strong>${patient.abha_id || 'Hospital Walk-in'}</strong>
         </p>
       `;
     }
@@ -467,8 +485,9 @@ const PhysicianDashboard = {
     if (expRouting) {
       const deptName = routing.recommended_department || routing.assigned_department || data.queue_item?.assigned_department || 'General Medicine';
       const deptReason = routing.reasoning || routing.routing_rationale || 'Symptom pattern matching aligns with this clinical department.';
+      const affinityLabel = (typeof I18n !== "undefined" && I18n.t) ? (I18n.t("affinity_label") || "Affinity") : "Affinity";
       expRouting.innerHTML = `
-        <p><strong>Affinity:</strong> ${deptName.toUpperCase()}</p>
+        <p><strong>${affinityLabel}:</strong> ${deptName.toUpperCase()}</p>
         <p style="margin-top:0.35rem; font-size:0.825rem; line-height:1.4;">${deptReason}</p>
       `;
     }
@@ -477,8 +496,9 @@ const PhysicianDashboard = {
     if (expPriority) {
       const priorityLabel = red_flag.overall_severity || data.queue_item?.overall_severity || "NORMAL";
       const priorityReason = red_flag.triage_rationale || red_flag.reasoning || (red_flag.flagged_reasons ? red_flag.flagged_reasons.join(" • ") : null) || 'Standard OPD consultation priority based on deterministic clinical intake.';
+      const tierLabel = (typeof I18n !== "undefined" && I18n.t) ? (I18n.t("priority_tier_label") || "Priority Tier") : "Priority Tier";
       expPriority.innerHTML = `
-        <p><strong>Priority Tier:</strong> ${priorityLabel}</p>
+        <p><strong>${tierLabel}:</strong> ${priorityLabel}</p>
         <p style="margin-top:0.35rem; font-size:0.825rem; line-height:1.4;">${priorityReason}</p>
       `;
     }
@@ -495,17 +515,24 @@ const PhysicianDashboard = {
     // 3.5 Detailed Clinical Summary Card & Narrative Highlights
     const detComplaintEl = document.getElementById("det-chief-complaint");
     const detChief = draft_summary.chief_complaint || data.context?.chief_complaint || data.queue_item?.chief_complaint_summary || "Patient presents for consultation review.";
-    if (detComplaintEl) detComplaintEl.innerText = detChief;
+    const detChiefDisplay = (typeof I18n !== "undefined" && I18n.translateClinicalText) ? I18n.translateClinicalText(detChief) : detChief;
+    if (detComplaintEl) detComplaintEl.innerText = detChiefDisplay;
 
     const detTagsEl = document.getElementById("det-symptom-tags");
     if (detTagsEl) {
       const tags = [];
       const lowerComplaint = detChief.toLowerCase();
-      if (lowerComplaint.includes("chest") || lowerComplaint.includes("छाती") || lowerComplaint.includes("सीने")) tags.push(`<span class="gap-pill" style="background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe;">🫀 Chest Pain</span>`);
-      if (lowerComplaint.includes("joint") || lowerComplaint.includes("जोड़") || lowerComplaint.includes("घुटने")) tags.push(`<span class="gap-pill" style="background:#fef3c7; color:#b45309; border-color:#fde68a;">🦴 Joint Pain</span>`);
-      if (lowerComplaint.includes("head") || lowerComplaint.includes("सिर")) tags.push(`<span class="gap-pill" style="background:#fdf2f8; color:#9d174d; border-color:#fbcfe8;">🧠 Headache</span>`);
-      if (lowerComplaint.includes("stomach") || lowerComplaint.includes("पेट")) tags.push(`<span class="gap-pill" style="background:#f0fdf4; color:#15803d; border-color:#bbf7d0;">🩺 Abdominal Pain</span>`);
-      if (tags.length === 0) tags.push(`<span class="gap-pill" style="background:#f8fafc; color:#475569; border-color:#cbd5e1;">🩺 General Triage</span>`);
+      const tagChest = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("tag_chest_pain") : "🫀 Chest Pain";
+      const tagJoint = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("tag_joint_pain") : "🦴 Joint Pain";
+      const tagHead = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("tag_headache") : "🧠 Headache";
+      const tagAbdo = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("tag_abdominal_pain") : "🩺 Abdominal Pain";
+      const tagGen = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("tag_general_triage") : "🩺 General Triage";
+
+      if (lowerComplaint.includes("chest") || lowerComplaint.includes("छाती") || lowerComplaint.includes("सीने") || lowerComplaint.includes("ಎದೆ")) tags.push(`<span class="gap-pill" style="background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe;">${tagChest}</span>`);
+      if (lowerComplaint.includes("joint") || lowerComplaint.includes("जोड़") || lowerComplaint.includes("घुटने") || lowerComplaint.includes("ಕೀಲು")) tags.push(`<span class="gap-pill" style="background:#fef3c7; color:#b45309; border-color:#fde68a;">${tagJoint}</span>`);
+      if (lowerComplaint.includes("head") || lowerComplaint.includes("सिर") || lowerComplaint.includes("ತಲೆ")) tags.push(`<span class="gap-pill" style="background:#fdf2f8; color:#9d174d; border-color:#fbcfe8;">${tagHead}</span>`);
+      if (lowerComplaint.includes("stomach") || lowerComplaint.includes("पेट") || lowerComplaint.includes("ಹೊಟ್ಟೆ")) tags.push(`<span class="gap-pill" style="background:#f0fdf4; color:#15803d; border-color:#bbf7d0;">${tagAbdo}</span>`);
+      if (tags.length === 0) tags.push(`<span class="gap-pill" style="background:#f8fafc; color:#475569; border-color:#cbd5e1;">${tagGen}</span>`);
       detTagsEl.innerHTML = tags.join(" ");
     }
 
@@ -513,23 +540,26 @@ const PhysicianDashboard = {
     const detPainBar = document.getElementById("det-pain-progress-bar");
     const detPainDesc = document.getElementById("det-pain-description");
     const painScore = data.context?.severity || data.context?.pain_score || (draft_summary.metrics && draft_summary.metrics.pain_level) || 7;
-    if (detPainBadge) detPainBadge.innerText = `Level ${painScore} / 10`;
+    const levelLabel = (typeof I18n !== "undefined" && I18n.t) ? (I18n.t("pain_level_prefix") || "Level") : "Level";
+    if (detPainBadge) detPainBadge.innerText = `${levelLabel} ${painScore} / 10`;
     if (detPainBar) detPainBar.style.width = `${Math.min(100, Math.max(10, painScore * 10))}%`;
     if (detPainDesc) {
-      if (painScore >= 8) detPainDesc.innerText = "Critical / Maximum pain severity recorded.";
-      else if (painScore >= 6) detPainDesc.innerText = "Severe distress reported during initial patient triage.";
-      else if (painScore >= 4) detPainDesc.innerText = "Moderate distress reported during initial triage.";
-      else detPainDesc.innerText = "Mild symptoms reported during initial triage.";
+      if (painScore >= 8) detPainDesc.innerText = (typeof I18n !== "undefined" && I18n.t && I18n.t("pain_critical_desc")) || "Critical / Maximum pain severity recorded.";
+      else if (painScore >= 6) detPainDesc.innerText = (typeof I18n !== "undefined" && I18n.t && I18n.t("pain_severe_desc")) || "Severe distress reported during initial patient triage.";
+      else if (painScore >= 4) detPainDesc.innerText = (typeof I18n !== "undefined" && I18n.t && I18n.t("pain_moderate_desc")) || "Moderate distress reported during initial triage.";
+      else detPainDesc.innerText = (typeof I18n !== "undefined" && I18n.t && I18n.t("pain_mild_desc")) || "Mild symptoms reported during initial triage.";
     }
 
     const detTrajectory = document.getElementById("det-trajectory");
     const detDurInfo = document.getElementById("det-duration-info");
     if (detTrajectory) {
       const prog = draft_summary.symptom_progression || data.context?.progression || "Active presentation, continuous clinical monitoring";
-      detTrajectory.innerText = prog;
+      const progDisplay = (typeof I18n !== "undefined" && I18n.translateClinicalText) ? I18n.translateClinicalText(prog) : prog;
+      detTrajectory.innerText = progDisplay;
     }
     if (detDurInfo) {
-      detDurInfo.innerText = data.context?.onset_time || "Documented during AI Socratic interview";
+      const socraticDoc = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("socratic_interview_documented") : "Documented during AI Socratic interview";
+      detDurInfo.innerText = data.context?.onset_time || socraticDoc;
     }
 
     const detMedHistory = document.getElementById("det-medical-history");
@@ -540,20 +570,29 @@ const PhysicianDashboard = {
       const rxNotes = data.context?.prescription_notes || "";
 
       let items = [];
+      const condLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("conditions_heading") : "Conditions:";
+      const medsLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("daily_meds_heading") : "Ongoing Daily Meds:";
+      const surgLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("past_surgeries_heading") : "Past Surgeries/Allergies:";
+      const rxLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("dictated_rx_heading") : "🗣️ Dictated Rx Notes:";
+      const noneLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("no_conditions_recorded") : "No pre-existing conditions or daily medications recorded.";
+
       if (conds && conds.length > 0) {
-        items.push(`<div style="margin-bottom:0.25rem;"><strong>Conditions:</strong> ${conds.map(c => `<span class="gap-pill" style="background:#fef2f2; color:#991b1b; border-color:#fecaca; font-size:0.75rem;">${c}</span>`).join(" ")}</div>`);
+        items.push(`<div style="margin-bottom:0.25rem;"><strong>${condLabel}</strong> ${conds.map(c => {
+          const cDisplay = (typeof I18n !== "undefined" && I18n.translateCondition) ? I18n.translateCondition(c) : c;
+          return `<span class="gap-pill" style="background:#fef2f2; color:#991b1b; border-color:#fecaca; font-size:0.75rem;">${cDisplay}</span>`;
+        }).join(" ")}</div>`);
       }
       if (meds && meds.length > 0) {
-        items.push(`<div style="margin-bottom:0.25rem;"><strong>Ongoing Daily Meds:</strong> ${meds.map(m => `<span class="gap-pill" style="background:#eff6ff; color:#1e40af; border-color:#bfdbfe; font-size:0.75rem;">💊 ${m}</span>`).join(" ")}</div>`);
+        items.push(`<div style="margin-bottom:0.25rem;"><strong>${medsLabel}</strong> ${meds.map(m => `<span class="gap-pill" style="background:#eff6ff; color:#1e40af; border-color:#bfdbfe; font-size:0.75rem;">💊 ${m}</span>`).join(" ")}</div>`);
       }
       if (pastHistory) {
-        items.push(`<div style="margin-bottom:0.25rem; font-size:0.8rem; color:#475569;"><strong>Past Surgeries/Allergies:</strong> ${pastHistory}</div>`);
+        items.push(`<div style="margin-bottom:0.25rem; font-size:0.8rem; color:#475569;"><strong>${surgLabel}</strong> ${pastHistory}</div>`);
       }
       if (rxNotes) {
-        items.push(`<div style="font-size:0.8rem; color:#15803d; background:#f0fdf4; padding:0.35rem 0.6rem; border-radius:4px; border:1px solid #bbf7d0; margin-top:0.25rem;"><strong>🗣️ Dictated Rx Notes:</strong> ${rxNotes}</div>`);
+        items.push(`<div style="font-size:0.8rem; color:#15803d; background:#f0fdf4; padding:0.35rem 0.6rem; border-radius:4px; border:1px solid #bbf7d0; margin-top:0.25rem;"><strong>${rxLabel}</strong> ${rxNotes}</div>`);
       }
 
-      detMedHistory.innerHTML = items.length > 0 ? items.join("") : "<span style='color:#64748b;'>No pre-existing conditions or daily medications recorded.</span>";
+      detMedHistory.innerHTML = items.length > 0 ? items.join("") : `<span style='color:#64748b;'>${noneLabel}</span>`;
     }
 
     const detHpiNarrative = document.getElementById("det-hpi-narrative");
@@ -571,18 +610,19 @@ const PhysicianDashboard = {
       fullHpi = fullHpi.split("\n").filter(line => !line.trim().startsWith("Q:") && !line.trim().startsWith("A:")).join("\n").trim();
     }
     
-    if (detHpiNarrative) detHpiNarrative.innerText = fullHpi;
-    if (detEditNarrative) detEditNarrative.value = fullHpi;
+    const fullHpiDisplay = (typeof I18n !== "undefined" && I18n.translateClinicalNarrative) ? I18n.translateClinicalNarrative(fullHpi) : fullHpi;
+    if (detHpiNarrative) detHpiNarrative.innerText = fullHpiDisplay;
+    if (detEditNarrative) detEditNarrative.value = fullHpiDisplay;
 
     // 4. Modern Clinical Brief
     const complaintText = document.getElementById("case-chief-complaint-text");
     if (complaintText) {
-      complaintText.innerText = detChief;
+      complaintText.innerText = detChiefDisplay;
     }
 
     const hpiText = document.getElementById("case-hpi-text");
     if (hpiText) {
-      hpiText.innerText = fullHpi;
+      hpiText.innerText = fullHpiDisplay;
     }
 
     const progText = document.getElementById("case-progression-text");
@@ -590,7 +630,8 @@ const PhysicianDashboard = {
       const assoc = (draft_summary.associated_symptoms && draft_summary.associated_symptoms.length > 0)
         ? draft_summary.associated_symptoms.join(", ")
         : (draft_summary.symptom_progression || data.context?.progression || "No specific associated symptoms reported.");
-      progText.innerText = assoc;
+      const assocDisplay = (typeof I18n !== "undefined" && I18n.translateClinicalText) ? I18n.translateClinicalText(assoc) : assoc;
+      progText.innerText = assocDisplay;
     }
 
     const medHistText = document.getElementById("case-medical-history-text");
@@ -600,13 +641,19 @@ const PhysicianDashboard = {
       const pastHistory = data.context?.past_medical_history || "";
       const rxNotes = data.context?.prescription_notes || "";
 
-      let parts = [];
-      if (conds.length > 0) parts.push(`Conditions: ${conds.join(", ")}`);
-      if (meds.length > 0) parts.push(`Daily Meds: ${meds.join(", ")}`);
-      if (pastHistory) parts.push(`History/Allergies: ${pastHistory}`);
-      if (rxNotes) parts.push(`Dictated Advice: "${rxNotes}"`);
+      const condLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("conditions_heading") : "Conditions:";
+      const medsLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("daily_meds_heading") : "Daily Meds:";
+      const surgLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("past_surgeries_heading") : "History/Allergies:";
+      const rxLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("dictated_rx_heading") : "Dictated Advice:";
+      const noneLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("no_conditions_recorded") : "None reported";
 
-      medHistText.innerText = parts.length > 0 ? parts.join(" | ") : "None reported";
+      let parts = [];
+      if (conds.length > 0) parts.push(`${condLabel} ${conds.map(c => (typeof I18n !== "undefined" && I18n.translateCondition) ? I18n.translateCondition(c) : c).join(", ")}`);
+      if (meds.length > 0) parts.push(`${medsLabel} ${meds.join(", ")}`);
+      if (pastHistory) parts.push(`${surgLabel} ${pastHistory}`);
+      if (rxNotes) parts.push(`${rxLabel} "${rxNotes}"`);
+
+      medHistText.innerText = parts.length > 0 ? parts.join(" | ") : noneLabel;
     }
 
     // 5. Ayurvedic Perspective & AYUSH 4-Layer Assessment Engine
@@ -998,13 +1045,13 @@ const PhysicianDashboard = {
       overrideBox.style.display = "block";
       if (pill) {
         pill.className = "lang-tile-badge lang-badge-fallback";
-        pill.innerText = "OVERRIDE / REASSIGNMENT DETECTED";
+        pill.innerText = (typeof I18n !== "undefined" && I18n.t && I18n.t("override_detected_badge")) || "OVERRIDE / REASSIGNMENT DETECTED";
       }
     } else {
       overrideBox.style.display = "none";
       if (pill) {
         pill.className = "lang-tile-badge lang-badge-ready";
-        pill.innerText = "ALIGNED WITH AI";
+        pill.innerText = (typeof I18n !== "undefined" && I18n.t && I18n.t("aligned_ai_badge")) || "ALIGNED WITH AI";
       }
     }
   },
@@ -1054,7 +1101,11 @@ const PhysicianDashboard = {
 
     const targetDept = document.getElementById("transfer-target-dept").value;
     const priority = document.getElementById("transfer-priority-select")?.value || "HIGH";
-    const physicianId = document.getElementById("transfer-physician-id")?.value.trim() || "dr_sharma_cardio";
+    const physicianId = document.getElementById("transfer-physician-id")?.value.trim();
+    if (!physicianId) {
+      alert("Please enter a valid Physician ID to authorize the transfer.");
+      return;
+    }
     const reason = document.getElementById("transfer-reason-input")?.value.trim() || "Clinical specialist reassignment";
 
     const submitBtn = document.getElementById("btn-submit-transfer");
@@ -1120,7 +1171,12 @@ const PhysicianDashboard = {
     }
 
     try {
-      await api.reassignDepartment(targetSession, "emergency", "dr_sharma_cardio", "Immediate Emergency Escalation by physician");
+      const physId = document.getElementById("physician-id-input")?.value?.trim();
+      if (!physId) {
+        alert("Please enter a valid Physician ID to authorize escalation.");
+        return;
+      }
+      await api.reassignDepartment(targetSession, "emergency", physId, "Immediate Emergency Escalation by physician");
       alert("🚨 Patient successfully escalated to Emergency / Trauma Department queue.");
       this.showQueueView();
     } catch (err) {
@@ -1144,7 +1200,7 @@ const PhysicianDashboard = {
 
     try {
       await api.askTargetedQuestion(this.currentSessionId, {
-        physician_id: "dr_sharma_cardio",
+        physician_id: document.getElementById("physician-id-input")?.value?.trim() || "unknown_physician",
         category,
         custom_question: custom || null
       });
@@ -1171,7 +1227,11 @@ const PhysicianDashboard = {
         return;
       }
 
-      const physicianId = document.getElementById("physician-id-input")?.value?.trim() || "dr_sharma_cardio";
+      const physicianId = document.getElementById("physician-id-input")?.value?.trim();
+      if (!physicianId) {
+        alert("Please enter a valid Physician ID to authorize sign-off.");
+        return;
+      }
       const dept = document.getElementById("confirm-dept-select")?.value || "general-medicine";
       const priority = document.getElementById("confirm-priority-select")?.value || "NONE";
       const notes = document.getElementById("physician-notes-input")?.value || "";
@@ -1401,7 +1461,8 @@ const PhysicianDashboard = {
 
     const targetSessionId = sessionId || this.currentSessionId || (this.currentPatientData && this.currentPatientData.session_id);
     try {
-      await api.updateAnswer(targetSessionId, questionId, newAnswer, "dr_sharma_cardio");
+      const physId = document.getElementById("physician-id-input")?.value?.trim() || "unknown_physician";
+      await api.updateAnswer(targetSessionId, questionId, newAnswer, physId);
       
       const ansDisp = document.getElementById(`ans-display-${idx}`);
       if (ansDisp) {

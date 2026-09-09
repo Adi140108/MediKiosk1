@@ -120,7 +120,7 @@ def test_full_flow():
 
     # 6. Test Doctor Sign-Off Decision
     decision_payload = {
-        "physician_id": "dr_sharma_cardio",
+        "physician_id": "test_physician_123",
         "decision_type": "CONFIRM_TRANSFER",
         "final_department": "cardiology",
         "final_priority": "MEDIUM",
@@ -136,7 +136,7 @@ def test_full_flow():
         f"/api/v1/physician/cases/{adult_session_id}/reassign_department",
         params={
             "target_department": "emergency",
-            "physician_id": "dr_sharma_cardio",
+            "physician_id": "test_physician_123",
             "reason": "Acute hemodynamic collapse during observation"
         }
     )
