@@ -179,13 +179,13 @@ const api = {
     if (status) url += `status=${encodeURIComponent(status)}&`;
     if (opdMode) url += `opd_mode=${encodeURIComponent(opdMode)}&`;
 
-    const res = await fetchWithTimeout(url, {}, 15000);
+    const res = await fetchWithTimeout(url, {}, 25000);
     if (!res.ok) throw new Error("Failed to fetch department queue");
     return res.json();
   },
 
   async getPatientCase(sessionId) {
-    const res = await fetchWithTimeout(`${API_BASE}/physician/patient/${sessionId}`, {}, 15000);
+    const res = await fetchWithTimeout(`${API_BASE}/physician/patient/${sessionId}`, {}, 25000);
     if (!res.ok) throw new Error("Failed to fetch patient case details");
     return res.json();
   },

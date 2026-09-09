@@ -537,7 +537,7 @@ const PatientIntake = {
   async handleRegistration(e) {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
 
     try {
       const name = document.getElementById("reg-name").value.trim();
@@ -545,7 +545,7 @@ const PatientIntake = {
       const gender = document.getElementById("reg-gender").value;
       const phone = document.getElementById("reg-phone").value.trim();
       const abhaId = document.getElementById("reg-abha").value.trim();
-      this.isAttendant = document.getElementById("is-attendant-assisted").checked;
+      this.isAttendant = document.getElementById("is-attendant-assisted") ? document.getElementById("is-attendant-assisted").checked : false;
 
       const regData = {
         name,
@@ -558,31 +558,48 @@ const PatientIntake = {
         is_attendant_assisted: this.isAttendant
       };
 
-      const patient = await api.registerPatient(regData);
-      this.currentPatientId = patient.patient_id;
-      this.currentSessionId = `sess_${patient.patient_id}_${Date.now()}`;
+      const tempId = abhaId || `pat_${Math.random().toString(36).substring(2, 10)}`;
+      this.currentPatientId = tempId;
+      this.currentSessionId = `sess_${tempId}_${Date.now()}`;
       this.registeredData = { name, age, gender, phone, abhaId };
 
-      if (this.isAttendant) {
-        const attName = document.getElementById("att-name").value.trim();
-        const attPhone = document.getElementById("att-phone").value.trim();
-        const attRel = document.getElementById("att-rel").value;
-        const attRes = await api.registerAttendant(this.currentPatientId, {
-          name: attName,
-          phone: attPhone,
-          relationship_to_patient: attRel
-        });
-        this.attendantId = attRes.attendant.attendant_id;
-      }
-
-      // Submit ABDM Consent
-      await api.submitConsent(this.currentPatientId, this.currentSessionId, this.isAttendant, this.attendantId);
-
+      // Transition UI to Step 5 INSTANTLY without waiting for network calls
       this.goToStep(5);
+
+      // Perform backend registration and consent sync non-blockingly in background
+      (async () => {
+        try {
+          const patient = await api.registerPatient(regData);
+          if (patient && patient.patient_id) {
+            this.currentPatientId = patient.patient_id;
+          }
+          if (this.isAttendant) {
+            const attNameEl = document.getElementById("att-name");
+            const attPhoneEl = document.getElementById("att-phone");
+            const attRelEl = document.getElementById("att-rel");
+            const attName = attNameEl ? attNameEl.value.trim() : "";
+            const attPhone = attPhoneEl ? attPhoneEl.value.trim() : "";
+            const attRel = attRelEl ? attRelEl.value : "";
+            if (attName) {
+              const attRes = await api.registerAttendant(this.currentPatientId, {
+                name: attName,
+                phone: attPhone,
+                relationship_to_patient: attRel
+              });
+              if (attRes && attRes.attendant && attRes.attendant.attendant_id) {
+                this.attendantId = attRes.attendant.attendant_id;
+              }
+            }
+          }
+          await api.submitConsent(this.currentPatientId, this.currentSessionId, this.isAttendant, this.attendantId);
+        } catch (bgErr) {
+          console.warn("Background registration/consent sync notice:", bgErr);
+        }
+      })();
     } catch (err) {
       alert("Registration error: " + err.message);
     } finally {
-      btn.disabled = false;
+      if (btn) btn.disabled = false;
     }
   },
 

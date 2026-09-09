@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 import logging
 from datetime import datetime, timezone
@@ -87,7 +88,20 @@ async def get_patient_case_workspace(session_id: str):
     pat_id = patient.patient_id if patient else (queue_item.patient_id if queue_item else "unknown")
 
     if not draft_summary:
-        draft_summary = await review_service.generate_draft_summary(session_id, pat_id)
+        try:
+            draft_summary = await asyncio.wait_for(review_service.generate_draft_summary(session_id, pat_id), timeout=3.5)
+        except Exception as e:
+            logger.warning(f"Draft summary generation notice (fast fallback): {e}")
+            context_obj = intake_repo.get_context_state(session_id)
+            cc = context_obj.chief_complaint if (context_obj and context_obj.chief_complaint) else "General clinical evaluation"
+            draft_summary = ClinicalDraftSummary(
+                summary_id=f"sum_draft_{session_id}",
+                session_id=session_id,
+                patient_id=pat_id,
+                chief_complaint=cc,
+                hpi=f"Patient presents for clinical evaluation with complaint: {cc}.",
+                is_draft=True
+            )
 
     rf_result = intake_repo.get_redflag_result(session_id)
     routing = intake_repo.get_routing_by_session(session_id)

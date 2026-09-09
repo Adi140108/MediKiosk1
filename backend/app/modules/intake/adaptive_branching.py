@@ -31,8 +31,51 @@ SYMPTOM_PATHWAYS = {
         {"id": "joint_loc", "objective": "Determine location", "category": "CHIEF_COMPLAINT", "field": "location", "question": "Which specific joints are hurting or swollen — knees, shoulders, hips, fingers, or spine?"},
         {"id": "joint_duration", "objective": "Determine morning stiffness", "category": "SYMPTOM_CHARACTER", "field": "character", "question": "Do you feel stiff in the mornings, and how long does it take for the stiffness to ease?"},
         {"id": "joint_trauma", "objective": "Assess injury history", "category": "CHIEF_COMPLAINT", "field": "onset", "question": "Did this pain start after a recent fall, twist, injury, or physical strain?"}
+    ],
+    "fever_respiratory": [
+        {"id": "fever_pattern", "objective": "Determine fever pattern", "category": "CHIEF_COMPLAINT", "field": "character", "question": "Does the fever stay high continuously or come and go with chills and sweating?"},
+        {"id": "fever_cough", "objective": "Check respiratory symptoms", "category": "SYMPTOM_CHARACTER", "field": "associated_symptoms", "question": "Do you have a dry cough, cough with mucus/phlegm, or difficulty breathing?"},
+        {"id": "fever_redflag", "objective": "Check respiratory red flags", "category": "RED_FLAG", "field": "associated_symptoms", "question": "Are you having chest pain, severe shortness of breath, or blue discoloration of lips?"}
+    ],
+    "skin_allergy": [
+        {"id": "skin_loc", "objective": "Determine location", "category": "CHIEF_COMPLAINT", "field": "location", "question": "Where on your body is the rash or itching located — face, arms, legs, or all over?"},
+        {"id": "skin_trigger", "objective": "Assess allergic triggers", "category": "LIFESTYLE", "field": "aggravating_factors", "question": "Did this start after using new soap, cosmetics, medication, or eating specific foods?"}
+    ],
+    "weakness_fatigue": [
+        {"id": "fatigue_onset", "objective": "Determine onset", "category": "CHIEF_COMPLAINT", "field": "onset", "question": "Did the fatigue or dizziness come on suddenly today or has it developed gradually over weeks?"},
+        {"id": "fatigue_assoc", "objective": "Check anemia and systemic signs", "category": "RED_FLAG", "field": "associated_symptoms", "question": "Have you noticed paleness, fainting spells, breathlessness on climbing stairs, or dark stools?"}
+    ],
+    "gastro_nausea": [
+        {"id": "gastro_freq", "objective": "Assess frequency", "category": "SYMPTOM_CHARACTER", "field": "character", "question": "How many times have you had loose stools or vomiting today, and can you keep liquids down?"},
+        {"id": "gastro_fever", "objective": "Check fever and dehydration", "category": "RED_FLAG", "field": "associated_symptoms", "question": "Do you feel extreme thirst, dry mouth, weakness, or high fever with the stomach upset?"}
+    ],
+    "urinary_flank": [
+        {"id": "urinary_char", "objective": "Assess dysuria", "category": "CHIEF_COMPLAINT", "field": "character", "question": "Is there severe burning pain during urination, or high frequency and urgency?"},
+        {"id": "urinary_redflag", "objective": "Check flank pain and fever", "category": "RED_FLAG", "field": "associated_symptoms", "question": "Do you have severe back/side flank pain, high fever with chills, or blood in urine?"}
     ]
 }
+
+def is_candidate_already_addressed(cand: Dict[str, Any], context: PatientContextState) -> bool:
+    field = cand.get("field")
+    obj = (cand.get("objective") or "").lower()
+    cand_id = cand.get("id", "")
+
+    if field == "duration" or "duration" in obj or cand_id == "gen_duration":
+        if context.duration and len(str(context.duration).strip()) > 0:
+            return True
+    if field == "location" or "location" in obj or cand_id == "gen_location":
+        if context.location and len(str(context.location).strip()) > 0:
+            return True
+    if field == "onset" or "onset" in obj or cand_id == "gen_onset":
+        if context.onset and len(str(context.onset).strip()) > 0:
+            return True
+    if field == "severity" or "severity" in obj or cand_id == "gen_severity":
+        if context.severity is not None and str(context.severity) != "0":
+            return True
+    if field == "character" or "character" in obj or cand_id == "gen_character":
+        if context.character and len(str(context.character).strip()) > 0:
+            return True
+    return False
 
 class AdaptiveBranchingEngine:
     def __init__(
@@ -118,36 +161,46 @@ class AdaptiveBranchingEngine:
         candidates: List[Dict[str, Any]] = []
 
         # 2. Symptom pathway matching (Socratic Clinical Clarification)
-        head_keywords = ["headache", "head ache", "head pain", "migraine", "सिरदर्द", "सरदर्द", "सिर दर्द", "सर दर्द", "सिर", "माथा", "कपाल", "तलेनोवु", "ತಲೆನೋವು", "ತಲೆ", "தலைவலி", "தலை", "తలనొప్పి", "తల", "തലവേദന", "തല", "মাথাব্যথা", "মাথা", "માથાનો દુખાવો", "માથું", "ਸਿਰ ਦਰਦ", "ਸਿਰ", "head"]
-        chest_keywords = ["chest", "heart", "cardio", "सीने", "छाती", "हृदय", "सीना", "दिल", "एदे", "ಎದೆ", "ಎದೆನೋವು", "மார்", "மார்பு", "மார்புவலி", "గుండె", "ఛాతీ", "ఛాతీనొప్పి", "നെഞ്ച്", "നെഞ്ചുവേദന", "বুক", "বুকে ব্যথা", "છાતી", "છાતીમાં", "ਛਾਤੀ"]
-        joint_keywords = ["joint", "knee", "back", "bone", "spine", "arthritis", "जोड़", "घुटने", "कमर", "पीठ", "हड्डी", "कंधा", "ಕೀಲು", "ಮೊಣಕಾಲು", "ಬೆನ್ನು", "ಮೂಳೆ", "ಕೀಲುನೋವು", "மூட்டு", "மூட்டுவலி", "முழங்கால்", "முதுகு", "కీలు", "మోకాలు", "వెన్ను", "కీళ్లనొప్పి", "സന്ധി", "മുട്ട്", "സന്ധിവേദന", "হাঁটু", "জয়েন্ট", "સાંધા", "ઘૂંટણ", "સાંધાનો દુખાવો", "ਜੋੜ", "ਗੋਡੇ"]
-        abdo_keywords = ["stomach", "abdo", "abdomen", "belly", "gastric", "acidity", "पेट", "आमाशय", "जठर", "हೊಟ್ಟೆ", "ಹೊಟ್ಟೆನೋವು", "വയிறு", "வயிற்றுவலி", "కడుపు", "కడుపునొప్పి", "വയർ", "വയറുവേദന", "પેટ", "પેટનો દુખાવો", "ਪੇਟ", "ਪੇਟ ਦਰਦ", "পেট", "পেটে ব্যথা"]
+        head_keywords = ["headache", "head ache", "head pain", "migraine", "सिरदर्द", "सरदर्द", "सिर दर्द", "सर दर्द", "सिर", "माथा", "कपाल", "तलेनोवु", "<ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42>", "<ctrl42><ctrl42><ctrl42>", "தலைவலி", "தலை", "తలనొప్పి", "తల", "തലവേദന", "തല", "মাথাব্যথা", "মাথা", "માથાનો દુખાવો", "માથું", "ਸਿਰ ਦਰਦ", "ਸਿਰ", "head"]
+        chest_keywords = ["chest", "heart", "cardio", "सीने", "छाती", "हृदय", "सीना", "दिल", "एदे", "<ctrl42><ctrl42><ctrl42>", "<ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42>", "மார்", "மார்பு", "மார்புவலி", "గుండె", "ఛాతీ", "ఛాతీనొప్పి", "നെഞ്ച്", "നെഞ്ചുവേദന", "বুক", "বুকে ব্যথা", "છાતી", "છાતીમાં", "ਛਾਤੀ"]
+        joint_keywords = ["joint", "knee", "back", "bone", "spine", "arthritis", "जोड़", "घुटने", "कमर", "पीठ", "हड्डी", "कंधा", "<ctrl42><ctrl42><ctrl42><ctrl42>", "<ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42>", "<ctrl42><ctrl42><ctrl42><ctrl42><ctrl42>", "<ctrl42><ctrl42><ctrl42><ctrl42>", "<ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42>", "மூட்டு", "மூட்டுவலி", "முழங்கால்", "முதுகு", "కీలు", "మోకాలు", "వెన్ను", "కీళ్లనొప్పి", "സന്ധി", "മുട്ട്", "സന്ധിവേദന", "হাঁটু", "জয়েন্ট", "સાંધા", "ઘૂંટણ", "સાંધાનો દુખાવો", "ਜੋੜ", "ਗੋਡੇ"]
+        abdo_keywords = ["stomach", "abdo", "abdomen", "belly", "gastric", "acidity", "पेट", "आमाशय", "जठर", "<ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42>", "<ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42>", "വയிறு", "வயிற்றுவலி", "కడుపు", "కడుపునొప్పి", "വയർ", "വയറുവേദന", "પેટ", "પેટનો દુખાવો", "ਪੇਟ", "ਪੇਟ ਦਰਦ", "পেট", "পেটে ব্যথা"]
+        fever_keywords = ["fever", "cough", "cold", "flu", "throat", "chills", "phlegm", "sore throat", "बुखार", "खांसी", "जुकाम", "सर्दी", "गले", "कफ", "ਜੁਕਾਮ", "ਬੁਖਾਰ", "ਕਾਸੀ", "জ্বর", "কাশি", "તાવ", "ઉધરસ", "జ్వరం", "దగ్గు", "பாய்ச்சல்", "இருமல்", "ಜ್ವರ", "ಕೆಮ್ಮು", "പനി", "ചുമ"]
+        skin_keywords = ["rash", "itching", "skin", "allergy", "lesion", "red spots", "खुजली", "दाद", "त्वचा", "ચામડી", "ਖੁਜਲੀ", "চুলকানি", "દાદર", "துடைக்கும்", "சருமம்", "చర్మం", "దురద", "ചൊറിച്ചിൽ", "ചർമ്മം"]
+        fatigue_keywords = ["tired", "weakness", "fatigue", "dizziness", "giddiness", "faint", "थकान", "कमजोरी", "चक्कर", "સુસ્ત", "કમજોરી", "દાદર", "ਥਕਾਵਟ", "ਕਮਜ਼ੋਰੀ", "দুর্বলতা", "சோர்வு", "தலைசுற்றல்", "నీరసం", "తలతిరుగుడు", "ക്ഷീണം", "തലകറക്കം"]
+        gastro_keywords = ["vomit", "diarrhea", "loose motion", "nausea", "indigestion", "दस्त", "उल्टी", "जी मिचलाना", "<ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42>", "வாந்தி", "பேதி", "வாந்தி உணர்வு", "వికారము", "విరోచనాలు", "ഛർദ്ദി", "വയറിളക്കം", "বমি", "পাতলা পায়খানা", "ઝાડા", "ઉલટી"]
+        urinary_keywords = ["urine", "urination", "burning urine", "kidney", "dysuria", "पेशाब", "मूत्र", "મૂત્ર", "ਪਿਸ਼ਾਬ", "மூത്രം", "మూత్రం", "മൂത്രം"]
 
         matched_pathways: List[str] = []
         if any(k in complaint for k in chest_keywords): matched_pathways.append("chest_pain")
         if any(k in complaint for k in joint_keywords): matched_pathways.append("joint_pain")
         if any(k in complaint for k in abdo_keywords): matched_pathways.append("abdominal_pain")
         if any(k in complaint for k in head_keywords): matched_pathways.append("headache")
+        if any(k in complaint for k in fever_keywords): matched_pathways.append("fever_respiratory")
+        if any(k in complaint for k in skin_keywords): matched_pathways.append("skin_allergy")
+        if any(k in complaint for k in fatigue_keywords): matched_pathways.append("weakness_fatigue")
+        if any(k in complaint for k in gastro_keywords): matched_pathways.append("gastro_nausea")
+        if any(k in complaint for k in urinary_keywords): matched_pathways.append("urinary_flank")
 
         for pathway_key in matched_pathways:
             if pathway_key in SYMPTOM_PATHWAYS:
                 for item in SYMPTOM_PATHWAYS[pathway_key]:
-                    if item["id"] not in asked_question_ids:
+                    if item["id"] not in asked_question_ids and not is_candidate_already_addressed(item, context):
                         candidates.append(item)
 
         if not is_ayush:
             # Strictly GENERAL_OPD: add general Socratic fallback exploration questions
             fallback_pool = [
-                {"id": "gen_duration", "objective": "Determine duration", "category": "CHIEF_COMPLAINT", "question": "How many days or hours have you been experiencing this health problem?"},
-                {"id": "gen_severity", "objective": "Determine severity", "category": "SYMPTOM_CHARACTER", "question": "On a scale from 1 (mild) to 10 (unbearable), how severe is your discomfort right now?"},
-                {"id": "gen_aggravating", "objective": "Assess aggravating factors", "category": "LIFESTYLE", "question": "What specific activities, foods, movements, or postures make your symptoms worse or better?"},
-                {"id": "gen_impact", "objective": "Assess daily life impact", "category": "LIFESTYLE", "question": "How is this health issue affecting your sleep, daily work, appetite, or energy levels?"},
-                {"id": "gen_prev_episodes", "objective": "Assess previous history", "category": "HISTORY", "question": "Have you ever experienced similar health problems or symptoms in the past?"},
-                {"id": "gen_med_relief", "objective": "Assess medication response", "category": "MEDICATION", "question": "Have you taken any medicines or home remedies for this today, and did they provide any relief?"},
-                {"id": "gen_systemic_assoc", "objective": "Check associated systemic symptoms", "category": "SYSTEMIC_EXPLORATION", "question": "Are you experiencing any other symptoms like fever, fatigue, dizziness, nausea, or sweating?"}
+                {"id": "gen_duration", "objective": "Determine duration", "category": "CHIEF_COMPLAINT", "field": "duration", "question": "How many days or hours have you been experiencing this health problem?"},
+                {"id": "gen_severity", "objective": "Determine severity", "category": "SYMPTOM_CHARACTER", "field": "severity", "question": "On a scale from 1 (mild) to 10 (unbearable), how severe is your discomfort right now?"},
+                {"id": "gen_aggravating", "objective": "Assess aggravating factors", "category": "LIFESTYLE", "field": "aggravating_factors", "question": "What specific activities, foods, movements, or postures make your symptoms worse or better?"},
+                {"id": "gen_impact", "objective": "Assess daily life impact", "category": "LIFESTYLE", "field": "lifestyle_impact", "question": "How is this health issue affecting your sleep, daily work, appetite, or energy levels?"},
+                {"id": "gen_prev_episodes", "objective": "Assess previous history", "category": "HISTORY", "field": "past_episodes", "question": "Have you ever experienced similar health problems or symptoms in the past?"},
+                {"id": "gen_med_relief", "objective": "Assess medication response", "category": "MEDICATION", "field": "medication_response", "question": "Have you taken any medicines or home remedies for this today, and did they provide any relief?"},
+                {"id": "gen_systemic_assoc", "objective": "Check associated systemic symptoms", "category": "SYSTEMIC_EXPLORATION", "field": "associated_symptoms", "question": "Are you experiencing any other symptoms like fever, fatigue, dizziness, nausea, or sweating?"}
             ]
             for fallback_item in fallback_pool:
-                if fallback_item["id"] not in asked_question_ids:
+                if fallback_item["id"] not in asked_question_ids and not is_candidate_already_addressed(fallback_item, context):
                     candidates.append(fallback_item)
 
             if not candidates:
