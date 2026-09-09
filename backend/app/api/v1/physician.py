@@ -86,7 +86,7 @@ async def get_patient_case_workspace(session_id: str):
 
     pat_id = patient.patient_id if patient else (queue_item.patient_id if queue_item else "unknown")
 
-    if not draft_summary:
+    if not draft_summary or (draft_summary.is_draft and ("during clinical interview, the patient reported" in (draft_summary.hpi or "").lower() or "additional reported details" in (draft_summary.hpi or "").lower())):
         draft_summary = await review_service.generate_draft_summary(session_id, pat_id)
 
     rf_result = intake_repo.get_redflag_result(session_id)

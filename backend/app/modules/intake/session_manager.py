@@ -246,40 +246,70 @@ class IntakeSessionManager:
             context.known_information.append(f"Chief complaint: {clean_ans}")
             return
 
-        obj = question.objective
-        if "location" in obj.lower():
+        obj = question.objective if question else ""
+        obj_lower = obj.lower()
+
+        if "location" in obj_lower:
             context.location = clean_ans
             context.known_information.append(f"Location: {clean_ans}")
-        elif "onset" in obj.lower():
+        elif "onset" in obj_lower or "injury" in obj_lower or "trauma" in obj_lower:
             context.onset = clean_ans
             context.known_information.append(f"Onset: {clean_ans}")
-        elif "duration" in obj.lower():
+        elif "duration" in obj_lower:
             context.duration = clean_ans
             context.known_information.append(f"Duration: {clean_ans}")
-        elif "character" in obj.lower():
+        elif "character" in obj_lower or "stiffness" in obj_lower:
             context.character = clean_ans
             context.known_information.append(f"Character: {clean_ans}")
-        elif "severity" in obj.lower():
-            # Try to extract integer
+        elif "severity" in obj_lower:
             digits = [int(s) for s in clean_ans.split() if s.isdigit()]
             context.severity = digits[0] if digits else 5
             context.known_information.append(f"Severity: {clean_ans}")
-        elif "associated" in obj.lower() or "red flag" in obj.lower():
-            if "vomit" in ans_lower:
-                context.associated_symptoms.append("vomiting")
-            if "fever" in ans_lower:
-                context.associated_symptoms.append("fever")
-            if "stiff" in ans_lower:
-                context.associated_symptoms.append("neck stiffness")
-            if "vision" in ans_lower or "blur" in ans_lower:
-                context.associated_symptoms.append("visual disturbance")
-            if "breath" in ans_lower or "short" in ans_lower:
-                context.associated_symptoms.append("shortness of breath")
-            if "sweat" in ans_lower:
-                context.associated_symptoms.append("diaphoresis")
+        elif "associated" in obj_lower or "red flag" in obj_lower or "systemic" in obj_lower:
             context.known_information.append(f"Associated symptoms: {clean_ans}")
+        elif "aggravating" in obj_lower or "trigger" in obj_lower:
+            context.aggravating_factors.append(clean_ans)
+            context.known_information.append(f"Aggravating: {clean_ans}")
+        elif "relieving" in obj_lower or "relief" in obj_lower:
+            context.relieving_factors.append(clean_ans)
+            context.known_information.append(f"Relieving: {clean_ans}")
+
+        # Natural language semantic extraction regardless of objective
+        import re
+        sev_match = re.search(r'\b(\d{1,2})\s*(?:out of|/)\s*10\b', clean_ans, re.IGNORECASE)
+        if not sev_match:
+            sev_match = re.search(r'\brated\s*(\d{1,2})\b', clean_ans, re.IGNORECASE)
+        if sev_match:
+            val = int(sev_match.group(1))
+            if 1 <= val <= 10:
+                context.severity = val
+
+        if not context.duration:
+            dur_match = re.search(r'\b(\d+\s*(?:day|days|hour|hours|week|weeks)(?:\s*ago)?)\b', clean_ans, re.IGNORECASE)
+            if dur_match:
+                context.duration = dur_match.group(1)
+
+        if ("worse" in ans_lower or "worsens" in ans_lower) and clean_ans not in context.aggravating_factors:
+            context.aggravating_factors.append(clean_ans)
+        if ("relief" in ans_lower or "relieves" in ans_lower or "better" in ans_lower) and clean_ans not in context.relieving_factors:
+            context.relieving_factors.append(clean_ans)
+
+        # Associated symptom extractions (with negation guard)
+        neg_pattern = r'\b(?:no|not|without|denies|never)\s+(?:[\w]+\s+){0,2}'
+        if re.search(r'\bvomit', ans_lower) and not re.search(neg_pattern + r'vomit', ans_lower):
+            if "vomiting" not in context.associated_symptoms: context.associated_symptoms.append("vomiting")
+        if re.search(r'\bfever\b', ans_lower) and not re.search(neg_pattern + r'fever', ans_lower):
+            if "fever" not in context.associated_symptoms: context.associated_symptoms.append("fever")
+        if re.search(r'\bneck stiffness\b', ans_lower) and not re.search(neg_pattern + r'neck stiffness', ans_lower):
+            if "neck stiffness" not in context.associated_symptoms: context.associated_symptoms.append("neck stiffness")
+        if re.search(r'\b(?:vision|blur)', ans_lower) and not re.search(neg_pattern + r'(?:vision|blur)', ans_lower):
+            if "visual disturbance" not in context.associated_symptoms: context.associated_symptoms.append("visual disturbance")
+        if re.search(r'\b(?:breath|short)', ans_lower) and not re.search(neg_pattern + r'(?:breath|short)', ans_lower):
+            if "shortness of breath" not in context.associated_symptoms: context.associated_symptoms.append("shortness of breath")
+        if re.search(r'\bsweat', ans_lower) and not re.search(neg_pattern + r'sweat', ans_lower):
+            if "diaphoresis" not in context.associated_symptoms: context.associated_symptoms.append("diaphoresis")
         
         # Capture Ayurvedic domain findings if question was Ayurvedic
-        if question.ayurvedic_domain:
+        if question and question.ayurvedic_domain:
             context.ayurvedic_findings[question.ayurvedic_domain] = clean_ans
             context.known_information.append(f"{question.display_label or question.ayurvedic_domain}: {clean_ans}")

@@ -25,8 +25,19 @@ class DepartmentId(str, Enum):
     AGADATANTRA = "agadatantra"
     EMERGENCY = "emergency"
     UNSPECIFIED = "unspecified"
-    AYUSH_UNSPECIFIED = "ayush-unspecified"
     GENERAL_UNSPECIFIED = "general-unspecified"
+    AYUSH_UNSPECIFIED = "ayush-unspecified"
+
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            cleaned = value.lower().strip().replace("_", "-")
+            if cleaned in ("general-unspecified", "general_unspecified", "unassigned", "unknown", "none", ""):
+                return cls.UNSPECIFIED
+            for member in cls:
+                if member.value == cleaned:
+                    return member
+        return cls.UNSPECIFIED
 
 class RecommendationStatus(str, Enum):
     PENDING_REVIEW = "PENDING_REVIEW"

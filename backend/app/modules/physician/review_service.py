@@ -15,6 +15,7 @@ from app.db.repositories.intake_repository import IntakeRepository
 from app.db.repositories.queue_repository import QueueRepository
 from app.db.repositories.timeline_repository import TimelineRepository
 from app.ai.gemma.client import GemmaClient
+from app.modules.physician.clinical_analyzer import ClinicalAnalysisEngine, ClinicalAnalysisResult
 from rag.ayurparam_adapter import ayurparam_adapter
 
 logger = logging.getLogger("medikiosk.physician.review")
@@ -50,68 +51,96 @@ class PhysicianReviewService:
         answers = self.intake_repo.get_answers_by_session(session_id) or []
 
         # Compile rich chief complaint and symptom text
-        complaint_terms = []
-        if context and context.chief_complaint:
-            complaint_terms.append(context.chief_complaint)
-        if context and hasattr(context, "associated_symptoms") and context.associated_symptoms:
-            for s in context.associated_symptoms:
-                if s not in complaint_terms:
-                    complaint_terms.append(s)
-        for a in answers:
-            ans_text = a.answer or a.original_answer or ""
-            if ans_text and len(ans_text) < 80 and ans_text not in complaint_terms:
-                complaint_terms.append(ans_text)
-
-        complaint = ", ".join(complaint_terms) if complaint_terms else "General clinical evaluation"
+        # CRITICAL: chief_complaint must be ONLY the primary presenting complaint,
+        # NOT a concatenation of all patient answers.
+        raw_chief = (context.chief_complaint or "").strip() if context else ""
         
-        # 1. Compile Socratic Dialogue Evidence (for Gemma synthesis prompt)
+        # If the chief complaint looks like it contains multiple comma-separated raw answers
+        # (e.g. "Joint swelling, knee is paining, I fell while riding..."), extract only the first phrase.
+        if raw_chief and raw_chief.count(",") >= 2 and len(raw_chief) > 80:
+            raw_chief = raw_chief.split(",")[0].strip()
+        
+        complaint = raw_chief if raw_chief else "General clinical evaluation"
+        
+        # 1. Compile Socratic Dialogue Evidence (strictly matched by question_id)
         qa_evidence_lines = []
-        qa_answer_only_parts = []
+        qa_pairs = []  # structured pairs for clinical analysis and synthesis
         for q in questions:
-            matching_ans = next((a for a in answers if a.question_id == q.question_id or a.sequence == q.sequence), None)
+            matching_ans = next((a for a in answers if a.question_id == q.question_id), None)
+            if not matching_ans:
+                matching_ans = next((a for a in answers if a.sequence == q.sequence and a.question_id not in [o.question_id for o in questions if o != q]), None)
             if matching_ans:
                 ans_text = matching_ans.answer or matching_ans.original_answer or ""
+                q_text = q.question or ""
+                objective = q.objective or ""
                 if ans_text:
-                    qa_evidence_lines.append(f"Q: {q.question}\nA: {ans_text}")
-                    qa_answer_only_parts.append(ans_text)
+                    qa_evidence_lines.append(f"Q: {q_text}\nA: {ans_text}")
+                    qa_pairs.append({
+                        "question": q_text,
+                        "answer": ans_text.strip(),
+                        "objective": objective,
+                        "field": getattr(q, "field", None) or ""
+                    })
 
-        # 2. Build Cohesive AI-Synthesized Clinical HPI Narrative
-        sev_val = context.severity if context and context.severity is not None else 7
-        sev_label = "Severe" if sev_val >= 7 else ("Moderate" if sev_val >= 4 else "Mild")
+        # 2. Deep Clinical Analysis & Medical Narrative Synthesis
+        analysis_result = ClinicalAnalysisEngine.analyze(
+            chief_complaint=complaint,
+            qa_pairs=qa_pairs,
+            context=context
+        )
 
-        timeline_parts = []
-        if context and context.onset: timeline_parts.append(f"onset {context.onset}")
-        if context and context.duration: timeline_parts.append(f"duration {context.duration}")
-        if context and context.location: timeline_parts.append(f"located in {context.location}")
-        if context and context.character: timeline_parts.append(f"described as {context.character}")
-        timeline_phrase = ", ".join(timeline_parts) if timeline_parts else ""
+        sev_val = analysis_result.severity_score
+        sev_label = analysis_result.severity_label
 
-        # Attempt Gemma synthesis
+        # Attempt Gemma synthesis if available
         gemma_synthesized = ""
         if qa_evidence_lines or complaint:
             try:
-                synthesis_prompt = f"""You are an expert clinical documentation specialist. Write a concise, detailed History of Present Illness (HPI) narrative for physician review.
+                synthesis_prompt = f"""You are an expert clinical documentation specialist. Write a concise, professional History of Present Illness (HPI) narrative for physician review.
 
-Patient Chief Complaint: {complaint}
+Primary Presenting Complaint: {complaint}
 Symptom Severity: {sev_val}/10 ({sev_label})
-Clinical Timeline & Characteristics: {timeline_phrase if timeline_phrase else 'Documented during intake'}
 
-Patient Interview Dialogue Evidence:
+Patient Interview Evidence:
 {chr(10).join(qa_evidence_lines)}
 
-INSTRUCTIONS:
-- Write a flowing 3-4 sentence clinical narrative paragraph in standard medical documentation format.
-- Synthesize all patient statements, radiation, triggers, relieving factors, and associated symptoms into a single cohesive paragraph.
-- DO NOT list questions or use bullet points.
-- DO NOT include headings or meta text. Write ONLY the clinical narrative paragraph."""
+STRICT RULES:
+1. Write EXACTLY 3-5 sentences as a single cohesive clinical narrative paragraph.
+2. SYNTHESIZE and PARAPHRASE the patient's words into professional medical terminology. Do NOT copy patient answers verbatim or join them with commas.
+3. Structure chronologically: onset/mechanism → presenting symptoms → severity/characteristics → aggravating/relieving factors → functional impact.
+4. NEVER invent symptoms, diagnoses, or exam findings not stated by the patient.
+5. DO NOT use lists, bullet points, Q&A format, numbered items, or semicolon-separated phrases.
+6. DO NOT include headers, labels, or introductory phrases like "Here is the summary" or "During clinical interview, the patient reported:".
+7. DO NOT repeat the same information twice in different forms."""
 
                 gemma_synthesized = await self.gemma.generate_response(
                     prompt=synthesis_prompt,
-                    system_prompt="You are a senior clinical documentation specialist writing HPI narratives for physician review. Be concise, accurate, and use standard medical documentation style.",
+                    system_prompt="You are a senior clinical documentation specialist. Your sole task is to convert patient interview transcripts into professional, cohesive HPI narratives. Never echo raw patient language. Always paraphrase into clinical terminology.",
                     temperature=0.15
                 )
                 gemma_synthesized = gemma_synthesized.strip()
-                if len(gemma_synthesized) < 20 or "ai_unavailable" in gemma_synthesized.lower() or "Q:" in gemma_synthesized:
+                
+                # Robust validation to reject malformed, echoed, or raw-dump AI outputs
+                reject_terms = ["q:", "a:", "question:", "answer:", "additional reported details", 
+                               "clinical dialogue findings", "here is the", "here's the",
+                               "based on the interview", "based on the transcript",
+                               "during clinical interview", "patient reported the following"]
+                lower_synth = gemma_synthesized.lower()
+                
+                verbatim_echo_count = 0
+                for pair in qa_pairs:
+                    raw_ans = pair["answer"].lower().strip()
+                    if len(raw_ans) > 15 and raw_ans in lower_synth:
+                        verbatim_echo_count += 1
+                
+                if (len(gemma_synthesized) < 30 or 
+                    "ai_unavailable" in lower_synth or 
+                    any(term in lower_synth for term in reject_terms) or 
+                    gemma_synthesized.count(";") > 4 or 
+                    gemma_synthesized.count("\n") > 4 or
+                    gemma_synthesized.count(",") > 12 or
+                    verbatim_echo_count >= 2):
+                    logger.info("Gemma HPI output rejected or unavailable. Using Clinical Analysis Engine narrative.")
                     gemma_synthesized = ""
             except Exception as e:
                 logger.warning(f"Gemma HPI synthesis notice: {e}")
@@ -120,14 +149,18 @@ INSTRUCTIONS:
         if gemma_synthesized:
             hpi_full = gemma_synthesized
         else:
-            # High-quality deterministic clinical narrative synthesis fallback (no bullet points, no Q&A lists)
-            time_sentence = f" with {timeline_phrase}" if timeline_phrase else ""
-            ans_clean = [a for a in qa_answer_only_parts if len(a) > 2 and a.lower() not in ["no", "none", "n/a", "no trigger"]]
-            details_sentence = f" Additional reported details: {'; '.join(ans_clean)}." if ans_clean else ""
-            hpi_full = f"Patient presents with {complaint}{time_sentence}. Symptom severity is rated at Level {sev_val}/10 ({sev_label}).{details_sentence} Patient has been routed for clinical evaluation."
+            # High-grade medical HPI synthesized by ClinicalAnalysisEngine
+            hpi_full = analysis_result.hpi_narrative
 
-        progression = context.progression if context and context.progression else "No acute deterioration noted during intake"
-        associated = context.associated_symptoms if context and context.associated_symptoms else []
+        progression = (context.progression if context and context.progression and context.progression != "No acute deterioration noted during intake"
+                       else analysis_result.symptom_progression)
+        
+        # Merge associated symptoms from both context and clinical analysis
+        base_assoc = list(context.associated_symptoms) if context and context.associated_symptoms else []
+        for s in analysis_result.associated_symptoms:
+            if s not in base_assoc:
+                base_assoc.append(s)
+        associated = base_assoc
 
         # 3. Dynamic Ayurvedic Dosha & Agni Synthesis using AyurGenixAI Dataset & BharatGenAI AyurParam (ONLY in AYUSH OPD mode)
         opd_mode_str = str(getattr(context, "opd_mode", "GENERAL_OPD")).upper() if context else "GENERAL_OPD"
