@@ -1,8 +1,6 @@
 const PatientIntake = {
   currentStep: 1,
   currentSessionId: null,
-  selectedFiles: [],
-  uploadedDocuments: [],
   currentPatientId: null,
   currentQuestionId: null,
   currentQuestionText: "",
@@ -720,96 +718,32 @@ const PatientIntake = {
 
   handleFileSelect(e) {
     const input = e.target;
-    if (!input || !input.files || input.files.length === 0) return;
-
-    if (!this.selectedFiles) this.selectedFiles = [];
-
-    // Add all selected files without duplicates
-    for (let i = 0; i < input.files.length; i++) {
-      const f = input.files[i];
-      const exists = this.selectedFiles.some(existing => existing.name === f.name && existing.size === f.size);
-      if (!exists) {
-        this.selectedFiles.push(f);
-      }
-    }
-
-    // Reset input so user can browse and add more files
-    try { input.value = ''; } catch(err) {}
-
-    this.renderSelectedFilesPreview();
-  },
-
-  removeSelectedFile(index) {
-    if (this.selectedFiles && this.selectedFiles[index]) {
-      this.selectedFiles.splice(index, 1);
-      this.renderSelectedFilesPreview();
-    }
-  },
-
-  renderSelectedFilesPreview() {
+    if (!input || !input.files || !input.files[0]) return;
+    const file = input.files[0];
     const previewContainer = document.getElementById("doc-file-selected-preview");
-    const uploadBtn = document.getElementById("btn-upload-doc");
     if (!previewContainer) return;
 
-    if (!this.selectedFiles || this.selectedFiles.length === 0) {
-      previewContainer.style.display = "none";
-      previewContainer.innerHTML = "";
-      if (uploadBtn) {
-        const count = (this.uploadedDocuments && this.uploadedDocuments.length) || 0;
-        if (count > 0) {
-          uploadBtn.style.display = "none";
-        } else {
-          uploadBtn.style.display = "inline-flex";
-          uploadBtn.disabled = true;
-          uploadBtn.innerHTML = `<span>Upload & Run OCR</span> →`;
-        }
-      }
-      return;
-    }
+    const isImage = file.type.startsWith("image/");
+    const localUrl = isImage ? URL.createObjectURL(file) : "";
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
 
     previewContainer.style.display = "block";
-    const totalFiles = this.selectedFiles.length;
-
-    let itemsHtml = this.selectedFiles.map((file, idx) => {
-      const isImage = file.type.startsWith("image/");
-      const localUrl = isImage ? URL.createObjectURL(file) : "";
-      const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
-      return `
-        <div style="background:#ffffff; border:1px solid #bfdbfe; border-radius:8px; padding:0.65rem 0.85rem; margin-bottom:0.5rem; display:flex; align-items:center; justify-content:space-between; gap:0.75rem; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-          <div style="display:flex; align-items:center; gap:0.65rem; min-width:0; flex:1;">
-            ${isImage && localUrl ? `<img src="${localUrl}" style="width:40px; height:40px; object-fit:cover; border-radius:4px; border:1px solid #93c5fd; flex-shrink:0;" />` : `<div style="width:40px; height:40px; background:#eff6ff; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:#1d4ed8; flex-shrink:0;">📄</div>`}
-            <div style="min-width:0; flex:1;">
-              <p style="font-weight:700; color:#1e40af; margin:0; font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${file.name}</p>
-              <p style="font-size:0.75rem; color:#64748b; margin:2px 0 0 0;">${sizeMb} MB • Ready to Upload</p>
-            </div>
-          </div>
-          <button type="button" onclick="PatientIntake.removeSelectedFile(${idx})" title="Remove file" style="background:#fee2e2; border:1px solid #fca5a5; color:#991b1b; width:28px; height:28px; border-radius:50%; cursor:pointer; font-weight:700; font-size:0.85rem; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-            ✕
-          </button>
-        </div>
-      `;
-    }).join("");
-
     previewContainer.innerHTML = `
-      <div style="background:#f0f9ff; border:1.5px solid #7dd3fc; border-radius:8px; padding:0.85rem; margin-top:0.75rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem;">
-          <span style="font-weight:700; color:#0369a1; font-size:0.88rem;">
-            📎 Selected Documents (${totalFiles}) — No Upload Limit
-          </span>
-          <span style="font-size:0.72rem; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:12px; font-weight:600;">
-            Unlimited Uploads Allowed
-          </span>
+      <div style="background:#eff6ff; border:1.5px solid #93c5fd; border-radius:8px; padding:0.85rem; margin-top:0.75rem;">
+        <div style="display:flex; align-items:center; gap:0.85rem;">
+          ${isImage ? `<img src="${localUrl}" style="width:65px; height:65px; object-fit:cover; border-radius:6px; border:1px solid #60a5fa; box-shadow:0 2px 6px rgba(0,0,0,0.15);" />` : `<div style="width:65px; height:65px; background:#dbeafe; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:2rem; color:#1d4ed8;">📄</div>`}
+          <div style="flex:1; overflow:hidden;">
+            <p style="font-weight:700; color:#1e40af; margin:0; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📄 ${file.name}</p>
+            <p style="font-size:0.8rem; color:#2563eb; margin:0.25rem 0 0 0;">Size: ${sizeMb} MB • Ready for Cloud Encryption & OCR Analysis</p>
+          </div>
         </div>
-        ${itemsHtml}
+        ${isImage ? `
+          <div style="margin-top:0.6rem; text-align:center;">
+            <img src="${localUrl}" style="max-width:100%; max-height:180px; border-radius:6px; border:1px solid #bfdbfe; object-fit:contain;" />
+          </div>
+        ` : ''}
       </div>
     `;
-
-    if (uploadBtn) {
-      uploadBtn.style.display = "inline-flex";
-      uploadBtn.disabled = false;
-      const fileLabel = totalFiles === 1 ? "1 Document" : `${totalFiles} Documents`;
-      uploadBtn.innerHTML = `<span>Upload & Run OCR (${fileLabel})</span> →`;
-    }
   },
 
   toggleFullOcrText() {
@@ -831,29 +765,30 @@ const PatientIntake = {
   cameraFacingMode: "environment",
   capturedBlobUrl: null,
 
-  openCameraScanner() {
+  async openCameraScanner() {
     const modal = document.getElementById("camera-capture-modal");
-    if (!modal) return;
-    modal.style.display = "flex";
-
+    const video = document.getElementById("camera-video-feed");
     const viewfinder = document.getElementById("camera-viewfinder-container");
     const snapshotPreview = document.getElementById("camera-snapshot-preview");
     const liveControls = document.getElementById("camera-live-controls");
     const confirmControls = document.getElementById("camera-confirm-controls");
-    const notice = document.getElementById("camera-fallback-notice");
+    const notice = document.getElementById("camera-permission-notice");
 
+    if (!modal || !video) return;
+
+    modal.style.display = "flex";
     if (viewfinder) viewfinder.style.display = "flex";
     if (snapshotPreview) snapshotPreview.style.display = "none";
     if (liveControls) liveControls.style.display = "flex";
     if (confirmControls) confirmControls.style.display = "none";
     if (notice) notice.style.display = "none";
 
-    this.startCameraStream();
+    await this.startCameraStream();
   },
 
   async startCameraStream() {
     const video = document.getElementById("camera-video-feed");
-    const notice = document.getElementById("camera-fallback-notice");
+    const notice = document.getElementById("camera-permission-notice");
     if (!video) return;
 
     if (this.cameraStream) {
@@ -948,10 +883,14 @@ const PatientIntake = {
   confirmCameraPhoto() {
     if (!this.capturedCameraFile) return;
 
-    if (!this.selectedFiles) this.selectedFiles = [];
-    this.selectedFiles.push(this.capturedCameraFile);
+    try {
+      const container = new DataTransfer();
+      container.items.add(this.capturedCameraFile);
+      const fileInput = document.getElementById("doc-file-input");
+      if (fileInput) fileInput.files = container.files;
+    } catch (e) {}
 
-    this.renderSelectedFilesPreview();
+    this.handleFileSelect({ target: { files: [this.capturedCameraFile] } });
     this.closeCameraModal();
   },
 
@@ -967,27 +906,17 @@ const PatientIntake = {
   },
 
   async handleDocUpload(e) {
-    if (e) e.preventDefault();
-
+    e.preventDefault();
     const fileInput = document.getElementById("doc-file-input");
-    if ((!this.selectedFiles || this.selectedFiles.length === 0) && fileInput && fileInput.files && fileInput.files.length > 0) {
-      this.selectedFiles = Array.from(fileInput.files);
-    }
-
-    if (!this.selectedFiles || this.selectedFiles.length === 0) {
-      if (this.uploadedDocuments && this.uploadedDocuments.length > 0) {
-        this.handleStep6Continue();
-        return;
-      }
+    const file = (fileInput && fileInput.files && fileInput.files.length) ? fileInput.files[0] : this.capturedCameraFile;
+    if (!file) {
       this.startSocraticIntake();
       return;
     }
 
     const btn = document.getElementById("btn-upload-doc");
-    if (btn) btn.disabled = true;
-
-    const filesToUpload = [...this.selectedFiles];
-    const totalCount = filesToUpload.length;
+    btn.disabled = true;
+    btn.innerText = "1/3 Uploading & Storing Document...";
 
     const ocrDiv = document.getElementById("doc-ocr-result");
     if (ocrDiv) {
@@ -995,196 +924,148 @@ const PatientIntake = {
         <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:var(--radius-md); padding:1rem; margin-top:1rem;">
           <div style="display:flex; align-items:center; gap:8px;">
             <span class="spinner" style="display:inline-block;">⏳</span>
-            <p id="doc-upload-progress-text" style="font-weight:600; color:#334155; font-size:0.95rem;">
-              Uploading ${totalCount} document${totalCount > 1 ? 's' : ''} to secure cloud vault...
-            </p>
+            <p style="font-weight:600; color:#334155; font-size:0.95rem;">Uploading to secure cloud vault...</p>
           </div>
         </div>
       `;
     }
 
-    if (!this.uploadedDocuments) this.uploadedDocuments = [];
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("session_id", this.currentSessionId || `sess_${Date.now()}`);
+      formData.append("patient_id", this.currentPatientId || `pat_${Date.now()}`);
+      formData.append("document_type", "medical_report");
+      formData.append("perform_ocr", "true");
 
-    for (let i = 0; i < totalCount; i++) {
-      const file = filesToUpload[i];
-      const progressText = document.getElementById("doc-upload-progress-text");
-      if (progressText) {
-        progressText.innerText = `Uploading and encrypting document ${i + 1} of ${totalCount}: ${file.name}...`;
-      }
-      if (btn) {
-        btn.innerText = `Uploading ${i + 1} of ${totalCount}...`;
-      }
-
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("session_id", this.currentSessionId || `sess_${Date.now()}`);
-        formData.append("patient_id", this.currentPatientId || `pat_${Date.now()}`);
-        formData.append("document_type", "medical_report");
-        formData.append("perform_ocr", "true");
-
-        const res = await api.uploadDocument(formData);
-        const uploadedAccessUrl = res.access_url || '';
-        const localFileUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : '';
-        const docPreviewUrl = uploadedAccessUrl || localFileUrl;
-
-        const docRecord = {
-          document_id: res.document_id,
-          filename: file.name,
-          file_size: file.size,
-          access_url: docPreviewUrl,
-          ocr_status: res.ocr_status || "PROCESSING",
-          extracted_text: ""
-        };
-
-        this.uploadedDocuments.push(docRecord);
-
-        // Start background OCR polling for this document
-        this.pollOcrForDoc(docRecord);
-      } catch (err) {
-        console.warn(`Error uploading ${file.name}:`, err.message);
-      }
-    }
-
-    // Clear selected files now that they are uploaded
-    this.selectedFiles = [];
-    this.renderSelectedFilesPreview();
-
-    // Re-render uploaded documents list
-    this.renderUploadedDocumentsList();
-
-    // Speak native confirmation
-    const nativeDocSuccess = {
-      en: "Medical reports uploaded and stored securely. You can add more documents or proceed to consultation.",
-      hi: "मेडिकल दस्तावेज़ सफलतापूर्वक अपलोड और सुरक्षित कर दिए गए हैं। आप और दस्तावेज़ जोड़ सकते हैं या आगे बढ़ सकते हैं।",
-      kn: "ವೈದ್ಯಕೀಯ ದಾಖಲೆಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಅಪ್‌ಲೋಡ್ ಮಾಡಲಾಗಿದೆ. ನೀವು ಹೆಚ್ಚಿನ ದಾಖಲೆಗಳನ್ನು ಸೇರಿಸಬಹುದು ಅಥವಾ ಮುಂದುವರಿಯಬಹುದು.",
-      ta: "மருத்துவ ஆவணங்கள் வெற்றிகரமாக பதிவேற்றப்பட்டன. நீங்கள் மேலும் ஆவணங்களை சேர்க்கலாம் அல்லது தொடரலாம்.",
-      te: "వైద్య పత్రాలు విజయవంతంగా అప్‌లోడ్ చేయబడ్డాయి. మీరు మరిన్ని పత్రాలను జోడించవచ్చు లేదా కొనసాగవచ్చు.",
-      ml: "മെഡിക്കൽ രേഖകൾ വിജയകരമായി അപ്‌ലോഡ് ചെയ്തു. നിങ്ങൾക്ക് കൂടുതൽ രേഖകൾ ചേർക്കാം അല്ലെങ്കിൽ തുടരാം.",
-      mr: "वैद्यकीय कागदपत्रे यशस्वीरित्या अपलोड झाली आहेत. आपण आणखी कागदपत्रे जोडू शकता किंवा पुढे जाऊ शकता.",
-      bn: "মেডিকেল নথি সফলভাবে আপলোড হয়েছে। আপনি আরও নথি যোগ করতে পারেন বা এগিয়ে যেতে পারেন।",
-      gu: "મેડિકલ દસ્તાવેજો સફળતાપૂર્વક અપલોડ થઈ ગયા છે. તમે વધુ દસ્તાવેજો ઉમેરી શકો છો અથવા આગળ વધી શકો છો.",
-      pa: "ਮੈਡੀਕਲ ਦਸਤਾਵੇਜ਼ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਕੀਤੇ ਗਏ ਹਨ।"
-    };
-    const docMsg = nativeDocSuccess[this.language] || nativeDocSuccess["en"];
-    if (typeof SpeechManager !== "undefined" && SpeechManager.speakText) {
-      SpeechManager.speakText(docMsg, this.language);
-    }
-
-    if (btn) btn.disabled = false;
-  },
-
-  pollOcrForDoc(docRecord) {
-    const docId = docRecord.document_id;
-    let attempts = 0;
-    const pollInterval = setInterval(async () => {
-      attempts++;
-      try {
-        const statusRes = await api.getDocumentStatus(docId);
-        if (statusRes.ocr_status === "COMPLETED" || statusRes.ocr_status === "OCR_COMPLETE") {
-          docRecord.ocr_status = "COMPLETED";
-          docRecord.extracted_text = statusRes.extracted_text || statusRes.extracted_text_preview || 'Clinical entities digitized successfully.';
-          if (statusRes.access_url) docRecord.access_url = statusRes.access_url;
-          clearInterval(pollInterval);
-          PatientIntake.renderUploadedDocumentsList();
-        } else if (statusRes.ocr_status === "FAILED") {
-          docRecord.ocr_status = "FAILED";
-          clearInterval(pollInterval);
-          PatientIntake.renderUploadedDocumentsList();
-        }
-      } catch (e) {
-        console.warn("OCR polling notice:", e.message);
-      }
-      if (attempts >= 10) {
-        clearInterval(pollInterval);
-      }
-    }, 1000);
-  },
-
-  renderUploadedDocumentsList() {
-    const ocrDiv = document.getElementById("doc-ocr-result");
-    if (!ocrDiv) return;
-
-    if (!this.uploadedDocuments || this.uploadedDocuments.length === 0) {
-      ocrDiv.innerHTML = "";
-      return;
-    }
-
-    const totalUploaded = this.uploadedDocuments.length;
-    let docsHtml = this.uploadedDocuments.map((doc, idx) => {
-      const sizeMb = doc.file_size ? (doc.file_size / (1024 * 1024)).toFixed(2) + " MB" : "";
-      const isOcrDone = doc.ocr_status === "COMPLETED" || doc.ocr_status === "OCR_COMPLETE";
-      const ocrBadge = isOcrDone
-        ? `<span style="font-size:0.75rem; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; padding:2px 8px; border-radius:12px; font-weight:700;">✓ OCR Digested</span>`
-        : `<span style="font-size:0.75rem; background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; padding:2px 8px; border-radius:12px; font-weight:600;"><span class="spinner" style="display:inline-block;">⏳</span> Digitizing Entities...</span>`;
-
-      return `
-        <div style="background:#ffffff; border:1.5px solid #86efac; border-radius:8px; padding:0.85rem; margin-bottom:0.6rem; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-            <div style="display:flex; align-items:center; gap:0.6rem; min-width:0; flex:1;">
+      const res = await api.uploadDocument(formData);
+      const uploadedAccessUrl = res.access_url || '';
+      const localFileUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : '';
+      const docPreviewUrl = uploadedAccessUrl || localFileUrl;
+      
+      // Document is securely stored in cloud and metadata recorded (<400ms)
+      if (ocrDiv) {
+        ocrDiv.innerHTML = `
+          <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:var(--radius-md); padding:1.15rem; margin-top:1rem;">
+            <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-size:1.3rem;">✅</span>
-              <div style="min-width:0; flex:1;">
-                <p style="font-weight:700; color:#15803d; margin:0; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                  ${doc.filename}
-                </p>
-                <p style="font-size:0.75rem; color:#166534; margin:2px 0 0 0;">
-                  ${sizeMb ? sizeMb + ' • ' : ''}Encrypted & Stored in Cloud Vault ✓
-                </p>
+              <p style="font-weight:700; color:#15803d; font-size:1rem;">Document Encrypted & Stored ✓</p>
+            </div>
+            <p style="font-size:0.85rem; color:#166534; margin-top:0.35rem;">
+              Your document is securely attached to your clinical consultation record.
+            </p>
+            <div id="ocr-polling-status" style="font-size:0.8rem; color:#475569; margin-top:0.5rem;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="spinner">⏳</span> Digitizing laboratory values and clinical entities in background...
               </div>
             </div>
-            <div>${ocrBadge}</div>
           </div>
+        `;
+      }
 
-          ${doc.access_url && (doc.filename.match(/\.(jpg|jpeg|png|webp|bmp|gif)$/i) || doc.access_url.startsWith('data:image/')) ? `
-            <div style="margin-top:0.6rem; text-align:center; background:#f8fafc; border-radius:6px; padding:0.4rem; max-height:140px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
-              <img src="${doc.access_url}" alt="Preview" style="max-height:130px; max-width:100%; object-fit:contain; border-radius:4px;" />
-            </div>
-          ` : ''}
+      // Non-blocking status polling with 800ms intervals
+      const docId = res.document_id;
+      let attempts = 0;
+      const pollOcr = async () => {
+        attempts++;
+        try {
+          const statusRes = await api.getDocumentStatus(docId);
+          if (statusRes.ocr_status === "COMPLETED" || statusRes.ocr_status === "OCR_COMPLETE") {
+            const pollStatusEl = document.getElementById("ocr-polling-status");
+            if (pollStatusEl) {
+              const fullText = statusRes.extracted_text || statusRes.extracted_text_preview || 'Clinical entities digitized successfully.';
+              const activeViewUrl = statusRes.access_url || docPreviewUrl;
+              pollStatusEl.innerHTML = `
+                <div style="width:100%; margin-top:0.5rem;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem; flex-wrap:wrap; gap:0.5rem;">
+                    <span style="color:#15803d; font-weight:700; font-size:0.9rem;">✓ OCR Digitization Complete</span>
+                    <button type="button" onclick="PatientIntake.toggleFullOcrText()" style="background:#e0f2fe; color:#0369a1; border:1px solid #7dd3fc; padding:4px 10px; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer;">
+                      <span id="btn-toggle-ocr-text-label">📖 Show Full Extracted Text ▼</span>
+                    </button>
+                  </div>
 
-          ${isOcrDone && doc.extracted_text ? `
-            <div style="margin-top:0.5rem;">
-              <div style="font-size:0.78rem; font-weight:700; color:#166534; margin-bottom:0.25rem;">📄 Digitized Clinical Facts:</div>
-              <div style="font-size:0.8rem; color:#1e293b; font-family:monospace; background:#f8fafc; padding:0.5rem 0.75rem; border-radius:6px; border:1px solid #cbd5e1; max-height:100px; overflow-y:auto; white-space:pre-wrap; word-break:break-word;">
-                ${doc.extracted_text}
-              </div>
-            </div>
-          ` : ''}
-        </div>
+                  ${activeViewUrl ? `
+                    <div style="margin-bottom:0.75rem; text-align:center; background:white; border:1px solid #bbf7d0; border-radius:8px; padding:0.6rem; max-height:240px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+                      <img src="${activeViewUrl}" alt="Document Scan Preview" style="max-width:100%; max-height:220px; border-radius:6px; object-fit:contain; box-shadow:0 2px 10px rgba(0,0,0,0.12);" />
+                    </div>
+                  ` : ''}
+
+                  <div style="font-weight:700; font-size:0.8rem; color:#166534; margin-bottom:0.35rem;">
+                    📄 Extracted Clinical Content:
+                  </div>
+                  <div id="full-ocr-text-container" style="font-size:0.85rem; color:#1e293b; font-family:monospace; background:white; padding:0.85rem 1rem; border-radius:8px; border:1px solid #bbf7d0; max-height:160px; overflow-y:auto; white-space:pre-wrap; word-break:break-word; transition:all 0.3s ease; box-shadow:inset 0 1px 3px rgba(0,0,0,0.05);">
+                    ${fullText}
+                  </div>
+                </div>
+              `;
+            }
+            return true;
+          } else if (statusRes.ocr_status === "FAILED") {
+            const pollStatusEl = document.getElementById("ocr-polling-status");
+            if (pollStatusEl) {
+              pollStatusEl.innerHTML = `<span style="color:#64748b;">(Original document safely attached for physician review)</span>`;
+            }
+            return true;
+          }
+        } catch (e) {
+          console.warn("OCR polling notice:", e.message);
+        }
+        return false;
+      };
+
+      // Speak native confirmation
+      const nativeDocSuccess = {
+        en: "Medical report uploaded and stored successfully. Proceeding to consultation.",
+        hi: "मेडिकल रिपोर्ट सफलतापूर्वक अपलोड और सुरक्षित कर दी गई है।",
+        kn: "ವೈದ್ಯಕೀಯ ವರದಿ ಯಶಸ್ವಿಯಾಗಿ ಅಪ್‌ಲೋಡ್ ಆಗಿದೆ.",
+        ta: "மருத்துவ அறிக்கை வெற்றிகரமாக பதிவேற்றப்பட்டது.",
+        te: "వైద్య నివేదిక విజయవంతంగా అప్‌లోడ్ చేయబడింది.",
+        ml: "മെഡിക്കൽ റിപ്പോർട്ട് വിജയകരമായി അപ്‌ಲೋഡ് ചെയ്തു.",
+        mr: "वैद्यकीय अहवाल यशस्वीरित्या अपलोड झाला आहे.",
+        bn: "মেডিকেল রিপোর্ট সফলভাবে আপলোড হয়েছে।",
+        gu: "મેડિકલ રિપોર્ટ સફળતાપૂર્વક અપલોડ થઈ ગયો છે.",
+        pa: "ਮੈਡੀਕਲ ਰਿਪੋਰਟ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਈ ਹੈ।"
+      };
+      const docMsg = nativeDocSuccess[this.language] || nativeDocSuccess["en"];
+      SpeechManager.speakText(docMsg, this.language);
+
+      // Background poll in parallel — do NOT auto-advance, wait for Proceed button
+      const pollInterval = setInterval(async () => {
+        const done = await pollOcr();
+        if (done || attempts >= 8) {
+          clearInterval(pollInterval);
+        }
+      }, 800);
+
+      // Show Proceed button inside the OCR result area (NO auto-advance)
+      btn.style.display = "none";
+      const proceedDiv = document.createElement('div');
+      proceedDiv.style.cssText = 'margin-top:1rem; text-align:center;';
+      proceedDiv.innerHTML = `
+        <button type="button" id="btn-proceed-after-ocr" class="btn-primary-action" style="padding:0.75rem 2rem; font-size:1rem; font-weight:700;" onclick="PatientIntake.handleStep6Continue()">
+          ✓ Proceed to AI Clinical Interview →
+        </button>
       `;
-    }).join("");
+      const ocrParent = document.getElementById('doc-ocr-result');
+      if (ocrParent) ocrParent.appendChild(proceedDiv);
 
-    ocrDiv.innerHTML = `
-      <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:var(--radius-md); padding:1.15rem; margin-top:1rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span style="font-size:1.3rem;">📋</span>
-            <span style="font-weight:800; color:#15803d; font-size:1rem;">
-              Attached Patient Documents (${totalUploaded}) — No Limit
-            </span>
-          </div>
-          <span style="font-size:0.75rem; background:#dcfce7; color:#166534; padding:3px 10px; border-radius:12px; font-weight:700; border:1px solid #86efac;">
-            ✓ Attached to Consultation
-          </span>
-        </div>
-
-        ${docsHtml}
-
-        <div style="margin-top:1rem; display:flex; flex-wrap:wrap; gap:0.75rem; justify-content:space-between; align-items:center; padding-top:0.75rem; border-top:1px dashed #86efac;">
-          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-            <button type="button" class="btn-secondary-action" style="font-size:0.82rem; padding:0.4rem 0.85rem; background:#ffffff; border-color:#86efac; color:#15803d; font-weight:700;" onclick="document.getElementById('doc-file-input').click()">
-              + Upload More Files
-            </button>
-            <button type="button" class="btn-secondary-action" style="font-size:0.82rem; padding:0.4rem 0.85rem; background:#ffffff; border-color:#86efac; color:#15803d; font-weight:700;" onclick="PatientIntake.openCameraScanner()">
-              📷 Snap Another Photo
+    } catch (err) {
+      console.warn("Document upload error:", err.message);
+      const ocrDiv = document.getElementById("doc-ocr-result");
+      if (ocrDiv) {
+        ocrDiv.innerHTML = `
+          <div style="background:#fef2f2; border:1px solid #fca5a5; border-radius:var(--radius-md); padding:1rem; margin-top:1rem;">
+            <p style="font-weight:700; color:#991b1b;">⚠️ Upload Notice</p>
+            <p style="font-size:0.85rem; color:#7f1d1d; margin-top:0.25rem;">We could not upload this file, but you can continue with your voice consultation.</p>
+            <button type="button" class="btn-primary-action" style="margin-top:0.75rem; padding:0.6rem 1.5rem;" onclick="PatientIntake.handleStep6Continue()">
+              Proceed to Interview →
             </button>
           </div>
-
-          <button type="button" id="btn-proceed-after-ocr" class="btn-primary-action" style="padding:0.65rem 1.5rem; font-size:0.95rem; font-weight:700;" onclick="PatientIntake.handleStep6Continue()">
-            ✓ Proceed to AI Clinical Interview (${totalUploaded} Document${totalUploaded > 1 ? 's' : ''}) →
-          </button>
-        </div>
-      </div>
-    `;
+        `;
+      }
+    } finally {
+      btn.disabled = false;
+    }
   },
 
   async startSocraticIntake() {

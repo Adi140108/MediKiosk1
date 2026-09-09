@@ -127,7 +127,7 @@ const api = {
     return res.json();
   },
 
-  async updateAnswer(sessionId, questionId, newAnswer, physicianId = "unknown_physician") {
+  async updateAnswer(sessionId, questionId, newAnswer, physicianId = "dr_sharma_cardio") {
     const res = await fetchWithTimeout(`${API_BASE}/intake/answer/update`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

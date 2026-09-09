@@ -39,13 +39,7 @@ class QueueRepository(BaseRepository):
 
     def list_all_queue_items(self) -> List[PriorityQueueItem]:
         items = self.list_docs(self.COLLECTION)
-        valid_items = []
-        for d in items:
-            try:
-                valid_items.append(PriorityQueueItem.model_validate(d))
-            except Exception:
-                pass
-        return valid_items
+        return [PriorityQueueItem.model_validate(d) for d in items]
 
     def update_queue_status(self, queue_id: str, new_status: QueueStatus, physician_id: Optional[str] = None) -> Optional[PriorityQueueItem]:
         item = self.get_queue_item(queue_id)
