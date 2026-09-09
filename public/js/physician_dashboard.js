@@ -515,24 +515,17 @@ const PhysicianDashboard = {
     // 3.5 Detailed Clinical Summary Card & Narrative Highlights
     const detComplaintEl = document.getElementById("det-chief-complaint");
     const detChief = draft_summary.chief_complaint || data.context?.chief_complaint || data.queue_item?.chief_complaint_summary || "Patient presents for consultation review.";
-    const detChiefDisplay = (typeof I18n !== "undefined" && I18n.translateClinicalText) ? I18n.translateClinicalText(detChief) : detChief;
-    if (detComplaintEl) detComplaintEl.innerText = detChiefDisplay;
+    if (detComplaintEl) detComplaintEl.innerText = detChief;
 
     const detTagsEl = document.getElementById("det-symptom-tags");
     if (detTagsEl) {
       const tags = [];
       const lowerComplaint = detChief.toLowerCase();
-      const tagChest = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("tag_chest_pain") : "🫀 Chest Pain";
-      const tagJoint = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("tag_joint_pain") : "🦴 Joint Pain";
-      const tagHead = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("tag_headache") : "🧠 Headache";
-      const tagAbdo = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("tag_abdominal_pain") : "🩺 Abdominal Pain";
-      const tagGen = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("tag_general_triage") : "🩺 General Triage";
-
-      if (lowerComplaint.includes("chest") || lowerComplaint.includes("छाती") || lowerComplaint.includes("सीने") || lowerComplaint.includes("ಎದೆ")) tags.push(`<span class="gap-pill" style="background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe;">${tagChest}</span>`);
-      if (lowerComplaint.includes("joint") || lowerComplaint.includes("जोड़") || lowerComplaint.includes("घुटने") || lowerComplaint.includes("ಕೀಲು")) tags.push(`<span class="gap-pill" style="background:#fef3c7; color:#b45309; border-color:#fde68a;">${tagJoint}</span>`);
-      if (lowerComplaint.includes("head") || lowerComplaint.includes("सिर") || lowerComplaint.includes("ತಲೆ")) tags.push(`<span class="gap-pill" style="background:#fdf2f8; color:#9d174d; border-color:#fbcfe8;">${tagHead}</span>`);
-      if (lowerComplaint.includes("stomach") || lowerComplaint.includes("पेट") || lowerComplaint.includes("ಹೊಟ್ಟೆ")) tags.push(`<span class="gap-pill" style="background:#f0fdf4; color:#15803d; border-color:#bbf7d0;">${tagAbdo}</span>`);
-      if (tags.length === 0) tags.push(`<span class="gap-pill" style="background:#f8fafc; color:#475569; border-color:#cbd5e1;">${tagGen}</span>`);
+      if (lowerComplaint.includes("chest") || lowerComplaint.includes("छाती") || lowerComplaint.includes("सीने")) tags.push(`<span class="gap-pill" style="background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe;">🫀 Chest Pain</span>`);
+      if (lowerComplaint.includes("joint") || lowerComplaint.includes("जोड़") || lowerComplaint.includes("घुटने")) tags.push(`<span class="gap-pill" style="background:#fef3c7; color:#b45309; border-color:#fde68a;">🦴 Joint Pain</span>`);
+      if (lowerComplaint.includes("head") || lowerComplaint.includes("सिर")) tags.push(`<span class="gap-pill" style="background:#fdf2f8; color:#9d174d; border-color:#fbcfe8;">🧠 Headache</span>`);
+      if (lowerComplaint.includes("stomach") || lowerComplaint.includes("पेट")) tags.push(`<span class="gap-pill" style="background:#f0fdf4; color:#15803d; border-color:#bbf7d0;">🩺 Abdominal Pain</span>`);
+      if (tags.length === 0) tags.push(`<span class="gap-pill" style="background:#f8fafc; color:#475569; border-color:#cbd5e1;">🩺 General Triage</span>`);
       detTagsEl.innerHTML = tags.join(" ");
     }
 
@@ -554,12 +547,10 @@ const PhysicianDashboard = {
     const detDurInfo = document.getElementById("det-duration-info");
     if (detTrajectory) {
       const prog = draft_summary.symptom_progression || data.context?.progression || "Active presentation, continuous clinical monitoring";
-      const progDisplay = (typeof I18n !== "undefined" && I18n.translateClinicalText) ? I18n.translateClinicalText(prog) : prog;
-      detTrajectory.innerText = progDisplay;
+      detTrajectory.innerText = prog;
     }
     if (detDurInfo) {
-      const socraticDoc = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("socratic_interview_documented") : "Documented during AI Socratic interview";
-      detDurInfo.innerText = data.context?.onset_time || socraticDoc;
+      detDurInfo.innerText = data.context?.onset_time || "Documented during AI Socratic interview";
     }
 
     const detMedHistory = document.getElementById("det-medical-history");
@@ -570,29 +561,20 @@ const PhysicianDashboard = {
       const rxNotes = data.context?.prescription_notes || "";
 
       let items = [];
-      const condLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("conditions_heading") : "Conditions:";
-      const medsLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("daily_meds_heading") : "Ongoing Daily Meds:";
-      const surgLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("past_surgeries_heading") : "Past Surgeries/Allergies:";
-      const rxLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("dictated_rx_heading") : "🗣️ Dictated Rx Notes:";
-      const noneLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("no_conditions_recorded") : "No pre-existing conditions or daily medications recorded.";
-
       if (conds && conds.length > 0) {
-        items.push(`<div style="margin-bottom:0.25rem;"><strong>${condLabel}</strong> ${conds.map(c => {
-          const cDisplay = (typeof I18n !== "undefined" && I18n.translateCondition) ? I18n.translateCondition(c) : c;
-          return `<span class="gap-pill" style="background:#fef2f2; color:#991b1b; border-color:#fecaca; font-size:0.75rem;">${cDisplay}</span>`;
-        }).join(" ")}</div>`);
+        items.push(`<div style="margin-bottom:0.25rem;"><strong>Conditions:</strong> ${conds.map(c => `<span class="gap-pill" style="background:#fef2f2; color:#991b1b; border-color:#fecaca; font-size:0.75rem;">${c}</span>`).join(" ")}</div>`);
       }
       if (meds && meds.length > 0) {
-        items.push(`<div style="margin-bottom:0.25rem;"><strong>${medsLabel}</strong> ${meds.map(m => `<span class="gap-pill" style="background:#eff6ff; color:#1e40af; border-color:#bfdbfe; font-size:0.75rem;">💊 ${m}</span>`).join(" ")}</div>`);
+        items.push(`<div style="margin-bottom:0.25rem;"><strong>Ongoing Daily Meds:</strong> ${meds.map(m => `<span class="gap-pill" style="background:#eff6ff; color:#1e40af; border-color:#bfdbfe; font-size:0.75rem;">💊 ${m}</span>`).join(" ")}</div>`);
       }
       if (pastHistory) {
-        items.push(`<div style="margin-bottom:0.25rem; font-size:0.8rem; color:#475569;"><strong>${surgLabel}</strong> ${pastHistory}</div>`);
+        items.push(`<div style="margin-bottom:0.25rem; font-size:0.8rem; color:#475569;"><strong>Past Surgeries/Allergies:</strong> ${pastHistory}</div>`);
       }
       if (rxNotes) {
-        items.push(`<div style="font-size:0.8rem; color:#15803d; background:#f0fdf4; padding:0.35rem 0.6rem; border-radius:4px; border:1px solid #bbf7d0; margin-top:0.25rem;"><strong>${rxLabel}</strong> ${rxNotes}</div>`);
+        items.push(`<div style="font-size:0.8rem; color:#15803d; background:#f0fdf4; padding:0.35rem 0.6rem; border-radius:4px; border:1px solid #bbf7d0; margin-top:0.25rem;"><strong>🗣️ Dictated Rx Notes:</strong> ${rxNotes}</div>`);
       }
 
-      detMedHistory.innerHTML = items.length > 0 ? items.join("") : `<span style='color:#64748b;'>${noneLabel}</span>`;
+      detMedHistory.innerHTML = items.length > 0 ? items.join("") : "<span style='color:#64748b;'>No pre-existing conditions or daily medications recorded.</span>";
     }
 
     const detHpiNarrative = document.getElementById("det-hpi-narrative");
@@ -610,19 +592,18 @@ const PhysicianDashboard = {
       fullHpi = fullHpi.split("\n").filter(line => !line.trim().startsWith("Q:") && !line.trim().startsWith("A:")).join("\n").trim();
     }
     
-    const fullHpiDisplay = (typeof I18n !== "undefined" && I18n.translateClinicalNarrative) ? I18n.translateClinicalNarrative(fullHpi) : fullHpi;
-    if (detHpiNarrative) detHpiNarrative.innerText = fullHpiDisplay;
-    if (detEditNarrative) detEditNarrative.value = fullHpiDisplay;
+    if (detHpiNarrative) detHpiNarrative.innerText = fullHpi;
+    if (detEditNarrative) detEditNarrative.value = fullHpi;
 
     // 4. Modern Clinical Brief
     const complaintText = document.getElementById("case-chief-complaint-text");
     if (complaintText) {
-      complaintText.innerText = detChiefDisplay;
+      complaintText.innerText = detChief;
     }
 
     const hpiText = document.getElementById("case-hpi-text");
     if (hpiText) {
-      hpiText.innerText = fullHpiDisplay;
+      hpiText.innerText = fullHpi;
     }
 
     const progText = document.getElementById("case-progression-text");
@@ -630,8 +611,7 @@ const PhysicianDashboard = {
       const assoc = (draft_summary.associated_symptoms && draft_summary.associated_symptoms.length > 0)
         ? draft_summary.associated_symptoms.join(", ")
         : (draft_summary.symptom_progression || data.context?.progression || "No specific associated symptoms reported.");
-      const assocDisplay = (typeof I18n !== "undefined" && I18n.translateClinicalText) ? I18n.translateClinicalText(assoc) : assoc;
-      progText.innerText = assocDisplay;
+      progText.innerText = assoc;
     }
 
     const medHistText = document.getElementById("case-medical-history-text");
@@ -641,19 +621,13 @@ const PhysicianDashboard = {
       const pastHistory = data.context?.past_medical_history || "";
       const rxNotes = data.context?.prescription_notes || "";
 
-      const condLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("conditions_heading") : "Conditions:";
-      const medsLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("daily_meds_heading") : "Daily Meds:";
-      const surgLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("past_surgeries_heading") : "History/Allergies:";
-      const rxLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("dictated_rx_heading") : "Dictated Advice:";
-      const noneLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("no_conditions_recorded") : "None reported";
-
       let parts = [];
-      if (conds.length > 0) parts.push(`${condLabel} ${conds.map(c => (typeof I18n !== "undefined" && I18n.translateCondition) ? I18n.translateCondition(c) : c).join(", ")}`);
-      if (meds.length > 0) parts.push(`${medsLabel} ${meds.join(", ")}`);
-      if (pastHistory) parts.push(`${surgLabel} ${pastHistory}`);
-      if (rxNotes) parts.push(`${rxLabel} "${rxNotes}"`);
+      if (conds.length > 0) parts.push(`Conditions: ${conds.join(", ")}`);
+      if (meds.length > 0) parts.push(`Daily Meds: ${meds.join(", ")}`);
+      if (pastHistory) parts.push(`History/Allergies: ${pastHistory}`);
+      if (rxNotes) parts.push(`Dictated Advice: "${rxNotes}"`);
 
-      medHistText.innerText = parts.length > 0 ? parts.join(" | ") : noneLabel;
+      medHistText.innerText = parts.length > 0 ? parts.join(" | ") : "None reported";
     }
 
     // 5. Ayurvedic Perspective & AYUSH 4-Layer Assessment Engine

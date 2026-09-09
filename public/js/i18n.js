@@ -3,22 +3,6 @@
 
 const TRANSLATIONS = {
   en: {
-    pain_level_prefix: "Level",
-    pain_critical_desc: "Critical / Maximum pain severity recorded.",
-    pain_severe_desc: "Severe distress reported during initial patient triage.",
-    pain_moderate_desc: "Moderate distress reported during initial triage.",
-    pain_mild_desc: "Mild symptoms reported during initial triage.",
-    socratic_interview_documented: "Documented during AI Socratic interview",
-    conditions_heading: "Conditions:",
-    daily_meds_heading: "Ongoing Daily Meds:",
-    past_surgeries_heading: "Past Surgeries/Allergies:",
-    dictated_rx_heading: "🗣️ Dictated Rx Notes:",
-    no_conditions_recorded: "No pre-existing conditions or daily medications recorded.",
-    tag_chest_pain: "🫀 Chest Pain",
-    tag_joint_pain: "🦴 Joint Pain",
-    tag_headache: "🧠 Headache",
-    tag_abdominal_pain: "🩺 Abdominal Pain",
-    tag_general_triage: "🩺 General Triage",
     physician_tagline: "Clinical Command Center & Patient Triage Queue",
     clinical_access: "CLINICAL ACCESS",
     explore_ayur_rag: "Explore Ayurvedic RAG Knowledge Base",
@@ -303,22 +287,6 @@ const TRANSLATIONS = {
 escalate_emergency: '🚨 Escalate to Emergency'
   },
   hi: {
-    pain_level_prefix: "स्तर",
-    pain_critical_desc: "अत्यधिक गंभीर / अधिकतम दर्द का स्तर दर्ज किया गया।",
-    pain_severe_desc: "प्रारंभिक रोगी ट्राइएज के दौरान गंभीर परेशानी दर्ज की गई।",
-    pain_moderate_desc: "प्रारंभिक ट्राइएज के दौरान मध्यम स्तर की परेशानी दर्ज की गई।",
-    pain_mild_desc: "प्रारंभिक ट्राइएज के दौरान हल्के लक्षण दर्ज किए गए।",
-    socratic_interview_documented: "AI सुकराती साक्षात्कार में प्रलेखित",
-    conditions_heading: "पूर्व बीमारियाँ:",
-    daily_meds_heading: "नियमित दवाएं:",
-    past_surgeries_heading: "पिछली सर्जरी / एलर्जी:",
-    dictated_rx_heading: "🗣️ बोलकर दर्ज किए गए नुस्खे नोट्स:",
-    no_conditions_recorded: "कोई पूर्व बीमारी या नियमित दवाएं दर्ज नहीं हैं।",
-    tag_chest_pain: "🫀 सीने में दर्द (Chest Pain)",
-    tag_joint_pain: "🦴 जोड़ों का दर्द (Joint Pain)",
-    tag_headache: "🧠 सिरदर्द (Headache)",
-    tag_abdominal_pain: "🩺 पेट दर्द (Abdominal Pain)",
-    tag_general_triage: "🩺 सामान्य ट्राइएज (General Triage)",
     physician_tagline: "क्लिनिकल कमांड सेंटर और रोगी ट्राइएज कतार",
     clinical_access: "क्लिनिकल एक्सेस",
     explore_ayur_rag: "आयुर्वेदिक RAG ज्ञान कोष देखें",
@@ -603,22 +571,6 @@ escalate_emergency: '🚨 Escalate to Emergency'
 escalate_emergency: '🚨 इमरजेंसी में भेजें'
   },
   kn: {
-    pain_level_prefix: "ಹಂತ",
-    pain_critical_desc: "ಅತ್ಯಂತ ಗಂಭೀರ / ಗರಿಷ್ಠ ನೋವಿನ ತೀವ್ರತೆ ದಾಖಲಾಗಿದೆ.",
-    pain_severe_desc: "ಆರಂಭಿಕ ರೋಗಿ ಟ್ರಯಾಜ್ ಸಮಯದಲ್ಲಿ ತೀವ್ರ ನೋವು ದಾಖಲಾಗಿದೆ.",
-    pain_moderate_desc: "ಆರಂಭಿಕ ಟ್ರಯಾಜ್ ಸಮಯದಲ್ಲಿ ಮಧ್ಯಮ ಮಟ್ಟದ ನೋವು ದಾಖಲಾಗಿದೆ.",
-    pain_mild_desc: "ಆರಂಭಿಕ ಟ್ರಯಾಜ್ ಸಮಯದಲ್ಲಿ ಸೌಮ್ಯ ಲಕ್ಷಣಗಳು ದಾಖಲಾಗಿವೆ.",
-    socratic_interview_documented: "AI ಸಾಕ್ರಟಿಕ್ ಸಂದರ್ಶನದಲ್ಲಿ ದಾಖಲಿಸಲಾಗಿದೆ",
-    conditions_heading: "ತಿಳಿದಿರುವ ಕಾಯಿಲೆಗಳು:",
-    daily_meds_heading: "ದಿನನಿತ್ಯದ ಔಷಧಿಗಳು:",
-    past_surgeries_heading: "ಹಿಂದಿನ ಶಸ್ತ್ರಚಿಕಿತ್ಸೆ / ಅಲರ್ಜಿಗಳು:",
-    dictated_rx_heading: "🗣️ ದಾಖಲಿಸಿದ ಟಿಪ್ಪಣಿಗಳು:",
-    no_conditions_recorded: "ಯಾವುದೇ ಹಿಂದಿನ ಕಾಯಿಲೆಗಳು ಅಥವಾ ಔಷಧಿಗಳು ದಾಖಲಾಗಿಲ್ಲ.",
-    tag_chest_pain: "🫀 ಎದೆ ನೋವು (Chest Pain)",
-    tag_joint_pain: "🦴 ಕೀಲು ನೋವು (Joint Pain)",
-    tag_headache: "🧠 ತಲೆನೋವು (Headache)",
-    tag_abdominal_pain: "🩺 ಹೊಟ್ಟೆ ನೋವು (Abdominal Pain)",
-    tag_general_triage: "🩺 ಸಾಮಾನ್ಯ ಟ್ರಯಾಜ್ (General Triage)",
     physician_tagline: "ಕ್ಲಿನಿಕಲ್ ಕಮಾಂಡ್ ಸೆಂಟರ್ ಮತ್ತು ರೋಗಿಗಳ ಟ್ರಯೇಜ್ ಸರತಿ ಸಾಲು",
     clinical_access: "ಕ್ಲಿನಿಕಲ್ ಪ್ರವೇಶ",
     explore_ayur_rag: "ಆಯುರ್ವೇದ RAG ಜ್ಞಾನ ಭಂಡಾರವನ್ನು ಅನ್ವೇಷಿಸಿ",
@@ -903,22 +855,6 @@ escalate_emergency: '🚨 इमरजेंसी में भेजें'
 escalate_emergency: '🚨 ತುರ್ತು ಚಿಕಿತ್ಸೆಗೆ ವರ್ಗಾಯಿಸಿ'
   },
   ta: {
-    pain_level_prefix: "நிலை",
-    pain_critical_desc: "மிகவும் தீவிரமான வலி அளவு பதிவாகியுள்ளது.",
-    pain_severe_desc: "ஆரம்ப நோயாளி மதிப்பீட்டின் போது கடுமையான வலி பதிவாகியுள்ளது.",
-    pain_moderate_desc: "ஆரம்ப மதிப்பீட்டின் போது மிதமான வலி பதிவாகியுள்ளது.",
-    pain_mild_desc: "ஆரம்ப மதிப்பீட்டின் போது லேசான அறிகுறிகள் பதிவாகியுள்ளன.",
-    socratic_interview_documented: "AI சாக்ரடிக் நேர்காணலில் ஆவணப்படுத்தப்பட்டது",
-    conditions_heading: "அறியப்பட்ட நோய்கள்:",
-    daily_meds_heading: "தினசரி மருந்துகள்:",
-    past_surgeries_heading: "முந்தைய அறுவை சிகிச்சை / ஒவ்வாமை:",
-    dictated_rx_heading: "🗣️ பதிவு செய்யப்பட்ட மருத்துவக் குறிப்புகள்:",
-    no_conditions_recorded: "முந்தைய நோய்கள் அல்லது தினசரி மருந்துகள் எதுவும் பதிவாகவில்லை.",
-    tag_chest_pain: "🫀 நெஞ்சு வலி (Chest Pain)",
-    tag_joint_pain: "🦴 மூட்டு வலி (Joint Pain)",
-    tag_headache: "🧠 தலைவலி (Headache)",
-    tag_abdominal_pain: "🩺 வயிற்று வலி (Abdominal Pain)",
-    tag_general_triage: "🩺 பொது மதிப்பீடு (General Triage)",
     physician_tagline: "மருத்துவ கட்டளை மையம் மற்றும் நோயாளி வரிசை மேலாண்மை",
     clinical_access: "மருத்துவ அணுகல்",
     explore_ayur_rag: "ஆயுர்வேத RAG அறிவுத் தளத்தை ஆராய்க",
@@ -1203,22 +1139,6 @@ escalate_emergency: '🚨 ತುರ್ತು ಚಿಕಿತ್ಸೆಗೆ ವ�
 escalate_emergency: '🚨 அவசர சிகிச்சைக்கு மாற்றவும்'
   },
   te: {
-    pain_level_prefix: "స్థాయి",
-    pain_critical_desc: "అత్యంత తీవ్రమైన నొప్పి స్థాయి నమోదైంది.",
-    pain_severe_desc: "ప్రారంభ రోగి ట్రయాజ్ సమయంలో తీవ్రమైన బాధ నమోదైంది.",
-    pain_moderate_desc: "ప్రారంభ ట్రయాజ్ సమయంలో మధ్యస్థ బాధ నమోదైంది.",
-    pain_mild_desc: "ప్రారంభ ట్రయాజ్ సమయంలో తేలికపాటి లక్షణాలు నమోదయ్యాయి.",
-    socratic_interview_documented: "AI సోక్రటిక్ ఇంటర్వ్యూలో నమోదు చేయబడింది",
-    conditions_heading: "తెలిసిన వ్యాధులు:",
-    daily_meds_heading: "రోజువారీ మందులు:",
-    past_surgeries_heading: "గత శస్త్రచికిత్సలు / అలర్జీలు:",
-    dictated_rx_heading: "🗣️ నమోదు చేయబడిన ప్రిస్క్రిప్షన్ నోట్స్:",
-    no_conditions_recorded: "మునుపటి వ్యాధులు లేదా రోజువారీ మందులు ఏవీ నమోదు కాలేదు.",
-    tag_chest_pain: "🫀 ఛాతీ నొప్పి (Chest Pain)",
-    tag_joint_pain: "🦴 కీళ్ల నొప్పి (Joint Pain)",
-    tag_headache: "🧠 తలనొప్పి (Headache)",
-    tag_abdominal_pain: "🩺 కడుపు నొప్పి (Abdominal Pain)",
-    tag_general_triage: "🩺 సాధారణ ట్రయాజ్ (General Triage)",
     physician_tagline: "క్లినికల్ కమాండ్ సెంటర్ మరియు రోగి ట్రయాజ్ క్యూ",
     clinical_access: "క్లినికల్ యాక్సెస్",
     explore_ayur_rag: "ఆయుర్వేద RAG నాలెడ్జ్ బేస్‌ను అన్వేషించండి",
@@ -1503,22 +1423,6 @@ escalate_emergency: '🚨 அவசர சிகிச்சைக்கு ம�
 escalate_emergency: '🚨 ఎమర్జెన్సీకి పంపండి'
   },
   ml: {
-    pain_level_prefix: "ലെവൽ",
-    pain_critical_desc: "അതീവ ഗുരുതരമായ വേദന രേഖപ്പെടുത്തിയിട്ടുണ്ട്.",
-    pain_severe_desc: "പ്രാഥമിക പരിശോധനയിൽ കഠിനമായ വേദന രേഖപ്പെടുത്തിയിട്ടുണ്ട്.",
-    pain_moderate_desc: "പ്രാഥമിക പരിശോധനയിൽ മിതമായ വേദന രേഖപ്പെടുത്തിയിട്ടുണ്ട്.",
-    pain_mild_desc: "പ്രാഥമിക പരിശോധനയിൽ ലഘുവായ ലക്ഷണങ്ങൾ രേഖപ്പെടുത്തിയിട്ടുണ്ട്.",
-    socratic_interview_documented: "AI സോക്രാറ്റിക് അഭിമുഖത്തിൽ രേഖപ്പെടുത്തിയിട്ടുണ്ട്",
-    conditions_heading: "പൂർവ്വ രോഗങ്ങൾ:",
-    daily_meds_heading: "ദിവസേനയുള്ള മരുന്നുകൾ:",
-    past_surgeries_heading: "മുൻകാല ശസ്ത്രക്രിയകൾ / അലർജികൾ:",
-    dictated_rx_heading: "🗣️ നിർദ്ദേശിച്ച കുറിപ്പുകൾ:",
-    no_conditions_recorded: "മുൻകാല രോഗങ്ങളോ ദിവസേനയുള്ള മരുന്നുകളോ രേഖപ്പെടുത്തിയിട്ടില്ല.",
-    tag_chest_pain: "🫀 നെഞ്ചുവേദന (Chest Pain)",
-    tag_joint_pain: "🦴 സന്ധിവേദന (Joint Pain)",
-    tag_headache: "🧠 തലവേദന (Headache)",
-    tag_abdominal_pain: "🩺 വയറുവേദന (Abdominal Pain)",
-    tag_general_triage: "🩺 ജനറൽ ട്രയാജ് (General Triage)",
     physician_tagline: "ക്ലിനിക്കൽ കമാൻഡ് സെന്ററും രോഗി ട്രയാജ് ക്യൂവും",
     clinical_access: "ക്ലിനിക്കൽ ആക്സസ്",
     explore_ayur_rag: "ആയുർവേദ RAG നോളജ് ബേസ് പരിശോധിക്കുക",
@@ -1803,22 +1707,6 @@ escalate_emergency: '🚨 ఎమర్జెన్సీకి పంపండ�
 escalate_emergency: '🚨 എമർജൻസിയിലേക്ക് മാറ്റുക'
   },
   mr: {
-    pain_level_prefix: "पातळी",
-    pain_critical_desc: "अत्यंत गंभीर वेदना पातळी नोंदवली गेली.",
-    pain_severe_desc: "रुग्णाच्या सुरुवातीच्या तपासणीत तीव्र त्रास नोंदवला गेला.",
-    pain_moderate_desc: "सुरुवातीच्या तपासणीत मध्यम त्रास नोंदवला गेला.",
-    pain_mild_desc: "सुरुवातीच्या तपासणीत सौम्य लक्षणे नोंदवली गेली.",
-    socratic_interview_documented: "AI सॉक्रॅटिक मुलाखतीत नोंदवले गेले",
-    conditions_heading: "मागील आजार:",
-    daily_meds_heading: "रोजची औषधे:",
-    past_surgeries_heading: "मागील शस्त्रक्रिया / ॲलर्जी:",
-    dictated_rx_heading: "🗣️ नोंदवलेल्या चिठ्ठी नोट्स:",
-    no_conditions_recorded: "कोणतेही मागील आजार किंवा रोजची औषधे नोंदवलेली नाहीत.",
-    tag_chest_pain: "🫀 छातीत दुखणे (Chest Pain)",
-    tag_joint_pain: "🦴 सांधेदुखी (Joint Pain)",
-    tag_headache: "🧠 डोकेदुखी (Headache)",
-    tag_abdominal_pain: "🩺 पोटदुखी (Abdominal Pain)",
-    tag_general_triage: "🩺 सामान्य तपासणी (General Triage)",
     physician_tagline: "क्लिनिकल कमांड सेंटर आणि रुग्ण ट्रायज रांग",
     clinical_access: "क्लिनिकल प्रवेश",
     explore_ayur_rag: "आयुर्वेदिक RAG ज्ञानकोश एक्सप्लोर करा",
@@ -2103,22 +1991,6 @@ escalate_emergency: '🚨 എമർജൻസിയിലേക്ക് മാ�
 escalate_emergency: '🚨 इमर्जन्सीमध्ये पाठवा'
   },
   bn: {
-    pain_level_prefix: "মাত্রা",
-    pain_critical_desc: "অত্যন্ত গুরুতর ব্যথার মাত্রা রেকর্ড করা হয়েছে।",
-    pain_severe_desc: "প্রাথমিক ট্রায়াজের সময় তীব্র যন্ত্রণা রেকর্ড করা হয়েছে।",
-    pain_moderate_desc: "প্রাথমিক ট্রায়াজে মাঝারি যন্ত্রণা রেকর্ড করা হয়েছে।",
-    pain_mild_desc: "প্রাথমিক ট্রায়াজে মৃদু উপসর্গ রেকর্ড করা হয়েছে।",
-    socratic_interview_documented: "AI সক্রেটিক ইন্টারভিউতে রেকর্ড করা হয়েছে",
-    conditions_heading: "পূর্ববর্তী রোগ:",
-    daily_meds_heading: "নিয়মিত ওষুধ:",
-    past_surgeries_heading: "পূর্ববর্তী সার্জারি / অ্যালার্জি:",
-    dictated_rx_heading: "🗣️ ডিক্টেশন দেওয়া প্রেসক্রিপশন নোট:",
-    no_conditions_recorded: "কোনও পূর্ববর্তী রোগ বা নিয়মিত ওষুধ রেকর্ড করা হয়নি।",
-    tag_chest_pain: "🫀 বুকে ব্যথা (Chest Pain)",
-    tag_joint_pain: "🦴 গাঁটের ব্যথা (Joint Pain)",
-    tag_headache: "🧠 মাথাব্যথা (Headache)",
-    tag_abdominal_pain: "🩺 পেটে ব্যথা (Abdominal Pain)",
-    tag_general_triage: "🩺 সাধারণ ট্রায়াজ (General Triage)",
     physician_tagline: "ক্লিনিক্যাল কমান্ড সেন্টার ও রোগী ট্রায়াজ সারি",
     clinical_access: "ক্লিনিক্যাল অ্যাক্সেস",
     explore_ayur_rag: "আয়ুর্বেদিক RAG জ্ঞানভাণ্ডার অন্বেষণ করুন",
@@ -2403,22 +2275,6 @@ escalate_emergency: '🚨 इमर्जन्सीमध्ये पाठ�
 escalate_emergency: '🚨 ইমার্জেন্সিতে পাঠান'
   },
   gu: {
-    pain_level_prefix: "સ્તર",
-    pain_critical_desc: "અતિ ગંભીર પીડા સ્તર નોંધાયું.",
-    pain_severe_desc: "પ્રારંભિક દર્દી ટ્રાયાજ દરમિયાન ગંભીર તકલીફ નોંધાઈ.",
-    pain_moderate_desc: "પ્રારંભિક ટ્રાયાજ દરમિયાન મધ્યમ તકલીફ નોંધાઈ.",
-    pain_mild_desc: "પ્રારંભિક ટ્રાયાજ દરમિયાન હળવા લક્ષણો નોંધાયા.",
-    socratic_interview_documented: "AI સોક્રેટીક ઇન્ટરવ્યુ દરમિયાન નોંધાયું",
-    conditions_heading: "જાણીતી બીમારીઓ:",
-    daily_meds_heading: "દૈનિક દવાઓ:",
-    past_surgeries_heading: "ભૂતકાળની સર્જરી / એલર્જી:",
-    dictated_rx_heading: "🗣️ લખાવેલી પ્રિસ્ક્રિપ્શન નોંધો:",
-    no_conditions_recorded: "કોઈ અગાઉની બીમારીઓ કે દૈનિક દવાઓ નોંધાઈ નથી.",
-    tag_chest_pain: "🫀 છાતીમાં દુખાવો (Chest Pain)",
-    tag_joint_pain: "🦴 સાંધાનો દુખાવો (Joint Pain)",
-    tag_headache: "🧠 માથાનો દુખાવો (Headache)",
-    tag_abdominal_pain: "🩺 પેટમાં દુખાવો (Abdominal Pain)",
-    tag_general_triage: "🩺 સામાન્ય ટ્રાયાજ (General Triage)",
     physician_tagline: "ક્લિનિકલ કમાન્ડ સેન્ટર અને દર્દી ટ્રાયઝ કતાર",
     clinical_access: "ક્લિનિકલ એક્સેસ",
     explore_ayur_rag: "આયુર્વેદિક RAG નોલેજ બેઝ અન્વેષણ કરો",
@@ -2703,22 +2559,6 @@ escalate_emergency: '🚨 ইমার্জেন্সিতে পাঠা�
 escalate_emergency: '🚨 ઈમરજન્સીમાં મોકલો'
   },
   pa: {
-    pain_level_prefix: "ਪੱਧਰ",
-    pain_critical_desc: "ਬਹੁਤ ਜ਼ਿਆਦਾ ਗੰਭੀਰ ਦਰਦ ਦਰਜ ਕੀਤਾ ਗਿਆ।",
-    pain_severe_desc: "ਮੁੱਢਲੀ ਜਾਂਚ ਦੌਰਾਨ ਗੰਭੀਰ ਦਰਦ ਦਰਜ ਕੀਤਾ ਗਿਆ।",
-    pain_moderate_desc: "ਮੁੱਢਲੀ ਜਾਂਚ ਦੌਰਾਨ ਦਰਮਿਆਨਾ ਦਰਦ ਦਰਜ ਕੀਤਾ ਗਿਆ।",
-    pain_mild_desc: "ਮੁੱਢਲੀ ਜਾਂਚ ਦੌਰਾਨ ਹਲਕੇ ਲੱਛਣ ਦਰਜ ਕੀਤੇ ਗਏ।",
-    socratic_interview_documented: "AI ਸੁਕਰਾਤੀ ਇੰਟਰਵਿਊ ਦੌਰਾਨ ਦਰਜ ਕੀਤਾ ਗਿਆ",
-    conditions_heading: "ਪੁਰਾਣੀਆਂ ਬਿਮਾਰੀਆਂ:",
-    daily_meds_heading: "ਰੋਜ਼ਾਨਾ ਦੀਆਂ ਦਵਾਈਆਂ:",
-    past_surgeries_heading: "ਪਿਛਲੀਆਂ ਸਰਜਰੀਆਂ / ਐਲਰਜੀਆਂ:",
-    dictated_rx_heading: "🗣️ ਲਿਖਵਾਈਆਂ ਗਈਆਂ ਪਰਚੀ ਨੋਟਸ:",
-    no_conditions_recorded: "ਕੋਈ ਪੁਰਾਣੀ ਬਿਮਾਰੀ ਜਾਂ ਰੋਜ਼ਾਨਾ ਦੀਆਂ ਦਵਾਈਆਂ ਦਰਜ ਨਹੀਂ ਹਨ।",
-    tag_chest_pain: "🫀 ਛਾਤੀ ਵਿੱਚ ਦਰਦ (Chest Pain)",
-    tag_joint_pain: "🦴 ਜੋੜਾਂ ਦਾ ਦਰਦ (Joint Pain)",
-    tag_headache: "🧠 ਸਿਰਦਰਦ (Headache)",
-    tag_abdominal_pain: "🩺 ਢਿੱਡ ਪੀੜ (Abdominal Pain)",
-    tag_general_triage: "🩺 ਆਮ ਜਾਂਚ (General Triage)",
     physician_tagline: "ਕਲੀਨਿਕਲ ਕਮਾਂਡ ਸੈਂਟਰ ਅਤੇ ਮਰੀਜ਼ ਟ੍ਰਾਈਏਜ ਕਤਾਰ",
     clinical_access: "ਕਲੀਨਿਕਲ ਪਹੁੰਚ",
     explore_ayur_rag: "ਆਯੁਰਵੈਦਿਕ RAG ਗਿਆਨ ਕੋਸ਼ ਦੀ ਪੜਚੋਲ ਕਰੋ",
@@ -3243,456 +3083,9 @@ const I18n = {
     if (langBadge) {
       langBadge.innerText = lang.toUpperCase();
     }
-  },
-
-  // ─── CLINICAL KNOWLEDGE & DYNAMIC NARRATIVE TRANSLATION ENGINE ───
-
-  clinicalDictionary: {
-    conditions: {
-      "arthritis": {
-        kn: "ಸಂಧಿವಾತ (Arthritis)",
-        hi: "गठिया / आर्थराइटिस (Arthritis)",
-        ta: "மூட்டுவாதம் (Arthritis)",
-        te: "కీళ్లవాతం (Arthritis)",
-        ml: "സന്ധിവാതം (Arthritis)",
-        mr: "संधिवात (Arthritis)",
-        bn: "বাতরোগ (Arthritis)",
-        gu: "સંધિવા (Arthritis)",
-        pa: "ਗਠੀਆ (Arthritis)"
-      },
-      "diabetes": {
-        kn: "ಮಧುಮೇಹ (Diabetes)",
-        hi: "मधुमेह (Diabetes)",
-        ta: "நீரிழிவு (Diabetes)",
-        te: "మధుమేహం (Diabetes)",
-        ml: "പ്രമേഹം (Diabetes)",
-        mr: "मधुमेह (Diabetes)",
-        bn: "ডায়াবেটিস (Diabetes)",
-        gu: "ડાયાબિટીસ (Diabetes)",
-        pa: "ਸ਼ੂਗਰ (Diabetes)"
-      },
-      "hypertension": {
-        kn: "ರಕ್ತದೊತ್ತಡ (Hypertension)",
-        hi: "उच्च रक्तचाप (Hypertension)",
-        ta: "இரத்த அழுத்தம் (Hypertension)",
-        te: "రక్తపోటు (Hypertension)",
-        ml: "രക്താതിമർദ്ദം (Hypertension)",
-        mr: "उच्च रक्तदाब (Hypertension)",
-        bn: "উচ্চ রক্তচাপ (Hypertension)",
-        gu: "હાઈ બ્લડ પ્રેશર (Hypertension)",
-        pa: "ਹਾਈ ਬਲੱਡ ਪ੍ਰੈਸ਼ਰ (Hypertension)"
-      },
-      "asthma": {
-        kn: "ದಮ್ಮು / ಉಬ್ಬಸ (Asthma)",
-        hi: "दमा / अस्थमा (Asthma)",
-        ta: "ஆஸ்துமா (Asthma)",
-        te: "ఆస్తమా (Asthma)",
-        ml: "ആസ്ത്മ (Asthma)",
-        mr: "दमा (Asthma)",
-        bn: "হাঁপানি (Asthma)",
-        gu: "દમ (Asthma)",
-        pa: "ਦਮਾ (Asthma)"
-      },
-      "thyroid": {
-        kn: "ಥೈರಾಯ್ಡ್ (Thyroid)",
-        hi: "थायराइड (Thyroid)",
-        ta: "தைராய்டு (Thyroid)",
-        te: "థైరాయిడ్ (Thyroid)",
-        ml: "തൈറോയ്ഡ് (Thyroid)",
-        mr: "थायरॉईड (Thyroid)",
-        bn: "থাইরয়েড (Thyroid)",
-        gu: "થાઇરોઇડ (Thyroid)",
-        pa: "ਥਾਇਰਾਇਡ (Thyroid)"
-      },
-      "heart": {
-        kn: "ಹೃದ್ರೋಗ (Heart Disease)",
-        hi: "हृदय रोग (Heart Disease)",
-        ta: "இதய நோய் (Heart Disease)",
-        te: "గుండె జబ్బు (Heart Disease)",
-        ml: "ഹൃദ്രോഗം (Heart Disease)",
-        mr: "हृदयरोग (Heart Disease)",
-        bn: "হৃদরোগ (Heart Disease)",
-        gu: "હૃદય રોગ (Heart Disease)",
-        pa: "ਦਿਲ ਦੀ ਬਿਮਾਰੀ (Heart Disease)"
-      },
-      "kidney": {
-        kn: "ಮೂತ್ರಪಿಂಡ ಕಾಯಿಲೆ (Kidney Disease)",
-        hi: "गुर्दे की बीमारी (Kidney Disease)",
-        ta: "சிறுநீரக நோய் (Kidney Disease)",
-        te: "మూత్రపిండాల వ్యాధి (Kidney Disease)",
-        ml: "വൃക്കരോഗം (Kidney Disease)",
-        mr: "मूत्रपिंडाचे आजार (Kidney Disease)",
-        bn: "কিডনি রোগ (Kidney Disease)",
-        gu: "કિડની રોગ (Kidney Disease)",
-        pa: "ਗੁਰਦੇ ਦੀ ਬਿਮਾਰੀ (Kidney Disease)"
-      }
-    },
-
-    complaints: {
-      "joint swelling": {
-        kn: "ಕೀಲು ಊತ (Joint swelling)",
-        hi: "जोड़ों में सूजन (Joint swelling)",
-        ta: "மூட்டு வீக்கம் (Joint swelling)",
-        te: "కీళ్ల వాపు (Joint swelling)",
-        ml: "സന്ധി വീക്കം (Joint swelling)",
-        mr: "सांध्याची सूज (Joint swelling)",
-        bn: "গাঁটের ফোলা (Joint swelling)",
-        gu: "સાંધાનો સોજો (Joint swelling)",
-        pa: "ਜੋੜਾਂ ਦੀ ਸੋਜ (Joint swelling)"
-      },
-      "chest pain": {
-        kn: "ಎದೆ ನೋವು (Chest pain)",
-        hi: "सीने में दर्द (Chest pain)",
-        ta: "நெஞ்சு வலி (Chest pain)",
-        te: "ఛాతీ నొప్పి (Chest pain)",
-        ml: "നെഞ്ചുവേദന (Chest pain)",
-        mr: "छातीत दुखणे (Chest pain)",
-        bn: "বুকে ব্যথা (Chest pain)",
-        gu: "છાતીમાં દુખાવો (Chest pain)",
-        pa: "ਛਾਤੀ ਵਿੱਚ ਦਰਦ (Chest pain)"
-      },
-      "headache": {
-        kn: "ತಲೆನೋವು (Headache)",
-        hi: "सिरदर्द (Headache)",
-        ta: "தலைவலி (Headache)",
-        te: "తలనొప్పి (Headache)",
-        ml: "തലവേദന (Headache)",
-        mr: "डोकेदुखी (Headache)",
-        bn: "মাথাব্যথা (Headache)",
-        gu: "માથાનો દુખાવો (Headache)",
-        pa: "ਸਿਰਦਰਦ (Headache)"
-      },
-      "abdominal pain": {
-        kn: "ಹೊಟ್ಟೆ ನೋವು (Abdominal pain)",
-        hi: "पेट दर्द (Abdominal pain)",
-        ta: "வயிற்று வலி (Abdominal pain)",
-        te: "కడుపు నొప్పి (Abdominal pain)",
-        ml: "വയറുവേദന (Abdominal pain)",
-        mr: "पोटदुखी (Abdominal pain)",
-        bn: "পেটে ব্যথা (Abdominal pain)",
-        gu: "પેટમાં દુખાવો (Abdominal pain)",
-        pa: "ਢਿੱਡ ਪੀੜ (Abdominal pain)"
-      },
-      "fever": {
-        kn: "ಜ್ವರ (Fever)",
-        hi: "बुखार (Fever)",
-        ta: "காய்ச்சல் (Fever)",
-        te: "జ్వరం (Fever)",
-        ml: "പനി (Fever)",
-        mr: "ताप (Fever)",
-        bn: "জ্বর (Fever)",
-        gu: "તાવ (Fever)",
-        pa: "ਬੁਖਾਰ (Fever)"
-      },
-      "cough": {
-        kn: "ಕೆಮ್ಮು (Cough)",
-        hi: "खांसी (Cough)",
-        ta: "இருமல் (Cough)",
-        te: "దగ్గు (Cough)",
-        ml: "ചുമ (Cough)",
-        mr: "खोकला (Cough)",
-        bn: "কাশি (Cough)",
-        gu: "ખાંસી (Cough)",
-        pa: "ਖੰਘ (Cough)"
-      },
-      "back pain": {
-        kn: "ಬೆನ್ನು ನೋವು (Back pain)",
-        hi: "पीठ दर्द (Back pain)",
-        ta: "முதுகு வலி (Back pain)",
-        te: "వెన్నునొప్పి (Back pain)",
-        ml: "മുതുക് വേദന (Back pain)",
-        mr: "पाठदुखी (Back pain)",
-        bn: "পিঠে ব্যথা (Back pain)",
-        gu: "પીઠનો દુખાવો (Back pain)",
-        pa: "ਪਿੱਠ ਦਰਦ (Back pain)"
-      },
-      "shortness of breath": {
-        kn: "ಉಸಿರಾಟದ ತೊಂದರೆ (Shortness of breath)",
-        hi: "सांस लेने में कठिनाई (Shortness of breath)",
-        ta: "மூச்சுத்திணறல் (Shortness of breath)",
-        te: "శ్వాస ఆడకపోవడం (Shortness of breath)",
-        ml: "ശ്വാസതടസ്സം (Shortness of breath)",
-        mr: "श्वास घेण्यास त्रास (Shortness of breath)",
-        bn: "শ্বাসকষ্ট (Shortness of breath)",
-        gu: "શ્વાસ લેવામાં તકલીફ (Shortness of breath)",
-        pa: "ਸਾਹ ਲੈਣ ਵਿੱਚ ਤਕਲੀਫ਼ (Shortness of breath)"
-      }
-    }
-  },
-
-  translateCondition(condName, targetLang) {
-    if (!condName) return "";
-    const lang = targetLang || this.currentLang || "en";
-    if (lang === "en") return condName;
-    const lower = condName.toLowerCase().trim();
-    for (const [k, dict] of Object.entries(this.clinicalDictionary.conditions)) {
-      if (lower.includes(k) && dict[lang]) {
-        return dict[lang];
-      }
-    }
-    return condName;
-  },
-
-  translateClinicalText(text, targetLang) {
-    if (!text) return "";
-    const lang = targetLang || this.currentLang || "en";
-    if (lang === "en") return text;
-
-    const lower = text.toLowerCase().trim();
-
-    // Check exact chief complaint match
-    for (const [k, dict] of Object.entries(this.clinicalDictionary.complaints)) {
-      if (lower === k || lower.includes(k)) {
-        if (dict[lang]) return dict[lang];
-      }
-    }
-
-    // Check trajectory template: "Active ... course ; severity rated ... with functional limitation"
-    const trajMatch = text.match(/Active\s+(.+?)\s+course\s*;\s*severity\s+rated\s+(\d+\/\d+)\s*\((.+?)\)\s*with\s+functional\s+limitation/i);
-    if (trajMatch) {
-      const dur = trajMatch[1];
-      const sev = trajMatch[2];
-      const sevLabel = trajMatch[3];
-
-      const durKn = dur.replace(/it's been/i, '').replace(/days?/i, 'ದಿನಗಳ').trim();
-      const durHi = dur.replace(/it's been/i, '').replace(/days?/i, 'दिन').trim();
-
-      if (lang === 'kn') {
-        return `ಸಕ್ರಿಯ ${durKn} ಕೋರ್ಸ್; ತೀವ್ರತೆ ${sev} (ಮಧ್ಯಮದಿಂದ ತೀವ್ರ) ಕ್ರಿಯಾತ್ಮಕ ಮಿತಿಯೊಂದಿಗೆ`;
-      } else if (lang === 'hi') {
-        return `सक्रिय ${durHi} का कोर्स; गंभीरता ${sev} (मध्यम से गंभीर) कार्यात्मक सीमा के साथ`;
-      } else if (lang === 'ta') {
-        return `செயலில் உள்ள ${dur} படிப்பு; தீவிரத்தன்மை ${sev} (${sevLabel}) செயல்பாட்டு வரம்புடன்`;
-      } else if (lang === 'te') {
-        return `క్రియాశీల ${dur} కోర్సు; తీవ్రత ${sev} (${sevLabel}) కార్యాచరణ పరిమితితో`;
-      } else if (lang === 'mr') {
-        return `सक्रिय ${dur} चा कोर्स; तीव्रता ${sev} (${sevLabel}) कार्यात्मक मर्यादेसह`;
-      }
-    }
-
-    return text;
-  },
-
-  translateClinicalNarrative(narrativeText, targetLang) {
-    if (!narrativeText) return "";
-    const lang = targetLang || this.currentLang || "en";
-    if (lang === "en") return narrativeText;
-
-    // Detect if this is the standard ClinicalAnalysisEngine synthesis
-    // e.g.:
-    // "Patient presents with an acute-onset complaint of joint swelling.
-    // Symptoms originated approximately it's been 2 days following mechanical trauma sustained from a fall.
-    // Symptom severity is graded at 6/10 (moderate-to-severe) and noted.
-    // Clinical features indicate periarticular soft tissue edema.
-    // Symptoms are exacerbated by active joint mobilization."
-
-    const sentences = narrativeText.split(/(?<=[.!?])\s+/);
-    const translatedSentences = [];
-
-    for (const sent of sentences) {
-      const trimmed = sent.trim();
-      if (!trimmed) continue;
-      const lower = trimmed.toLowerCase();
-
-      // Sentence 1: Presentation & Chief Complaint
-      if (lower.includes("patient presents with") || lower.includes("patient presented with")) {
-        let acuityKn = "ತೀವ್ರ ಪ್ರಾರಂಭದ";
-        let acuityHi = "तीव्र शुरुआत की";
-        if (lower.includes("gradual") || lower.includes("insidiously")) {
-          acuityKn = "ನಿಧಾನವಾಗಿ ಪ್ರಾರಂಭವಾದ";
-          acuityHi = "धीरे-धीरे विकसित हुई";
-        }
-
-        let compKn = "ಕೀಲು ಊತ";
-        let compHi = "जोड़ों में सूजन";
-        let compTa = "மூட்டு வீக்கம்";
-        let compTe = "కీళ్ల వాపు";
-        let compMr = "सांध्याची सूज";
-
-        if (lower.includes("chest pain") || lower.includes("chest")) {
-          compKn = "ಎದೆ ನೋವು"; compHi = "सीने में दर्द"; compTa = "நெஞ்சு வலி"; compTe = "ఛాతీ నొప్పి"; compMr = "छातीत दुखणे";
-        } else if (lower.includes("headache") || lower.includes("head")) {
-          compKn = "ತಲೆನೋವು"; compHi = "सिरदर्द"; compTa = "தலைவலி"; compTe = "తలనొప్పి"; compMr = "डोकेदुखी";
-        } else if (lower.includes("abdominal") || lower.includes("stomach")) {
-          compKn = "ಹೊಟ್ಟೆ ನೋವು"; compHi = "पेट दर्द"; compTa = "வயிற்று வலி"; compTe = "కడుపు నొప్పి"; compMr = "पोटदुखी";
-        } else if (lower.includes("fever")) {
-          compKn = "ಜ್ವರ"; compHi = "बुखार"; compTa = "காய்ச்சல்"; compTe = "జ్వరం"; compMr = "ताप";
-        }
-
-        if (lang === "kn") {
-          translatedSentences.push(`ರೋಗಿಯು ${compKn}ದ ${acuityKn} ದೂರಿನೊಂದಿಗೆ ಹಾಜರಾಗಿದ್ದಾರೆ.`);
-        } else if (lang === "hi") {
-          translatedSentences.push(`मरीज ${compHi} की ${acuityHi} शिकायत के साथ उपस्थित हुआ है।`);
-        } else if (lang === "ta") {
-          translatedSentences.push(`நோயாளி ${compTa}ின் தீவிர தொடக்க புகாருடன் வந்துள்ளார்.`);
-        } else if (lang === "te") {
-          translatedSentences.push(`రోగి ${compTe} యొక్క తీవ్రమైన ప్రారంభ ఫిర్యాదుతో హాజరయ్యారు.`);
-        } else if (lang === "mr") {
-          translatedSentences.push(`रुग्ण ${compMr} च्या तीव्र तक्रारीसह उपस्थित झाला आहे.`);
-        } else if (lang === "bn") {
-          translatedSentences.push(`রোগী জয়েন্ট ফোলা তীব্র অভিযোগ নিয়ে উপস্থিত হয়েছেন।`);
-        } else if (lang === "gu") {
-          translatedSentences.push(`દર્દી સાંધાના સોજાની ગંભીર ફરિયાદ સાથે ઉપસ્થિત થયા છે.`);
-        } else if (lang === "pa") {
-          translatedSentences.push(`ਮਰੀਜ਼ ਜੋੜਾਂ ਦੀ ਸੋਜ ਦੀ ਗੰਭੀਰ ਸ਼ਿਕਾਇਤ ਨਾਲ ਆਇਆ ਹੈ।`);
-        } else if (lang === "ml") {
-          translatedSentences.push(`രോഗി സന്ധിവീക്കത്തിന്റെ തീവ്രമായ പരാതിയോടെ എത്തിയിരിക്കുന്നു.`);
-        } else {
-          translatedSentences.push(sent);
-        }
-        continue;
-      }
-
-      // Sentence 2: Chronology & Mechanism
-      if (lower.includes("symptoms originated") || lower.includes("symptoms have been active")) {
-        let mechKn = "ಬಿದ್ದ ನಂತರ ಉಂಟಾದ ಆಘಾತದಿಂದ";
-        let mechHi = "गिरने से लगी चोट के बाद";
-        let mechTa = "கீழே விழுந்ததால் ஏற்பட்ட அதிர்ச்சியைத் தொடர்ந்து";
-        let mechTe = "కింద పడటం వల్ల తగిలిన గాయం తర్వాత";
-        let mechMr = "पडल्यामुळे झालेल्या दुखापतीनंतर";
-
-        if (lower.includes("twist") || lower.includes("twisting")) {
-          mechKn = "ತಿರುಚಿದ ಗಾಯದಿಂದ"; mechHi = "मुड़ने या मोच आने के बाद";
-        } else if (lower.includes("lifting") || lower.includes("strain")) {
-          mechKn = "ತೂಕ ಎತ್ತುವುದರಿಂದ ಉಂಟಾದ ಸೆಳೆತದಿಂದ"; mechHi = "वजन उठाने से आए खिंचाव के बाद";
-        }
-
-        let durKn = "ಸುಮಾರು 2 ದಿನಗಳ ಹಿಂದೆ";
-        let durHi = "लगभग 2 दिन पहले";
-        let durTa = "சுமார் 2 நாட்களுக்கு முன்பு";
-        let durTe = "సుమారు 2 రోజుల క్రితం";
-        let durMr = "सुमारे २ दिवसांपूर्वी";
-
-        const durNumMatch = lower.match(/(\d+)\s*days?/);
-        if (durNumMatch) {
-          durKn = `ಸುಮಾರು ${durNumMatch[1]} ದಿನಗಳ ಹಿಂದೆ`;
-          durHi = `लगभग ${durNumMatch[1]} दिन पहले`;
-          durTa = `சுமார் ${durNumMatch[1]} நாட்களுக்கு முன்பு`;
-          durTe = `సుమారు ${durNumMatch[1]} రోజుల క్రితం`;
-          durMr = `सुमारे ${durNumMatch[1]} दिवसांपूर्वी`;
-        }
-
-        if (lang === "kn") {
-          translatedSentences.push(`${mechKn} ${durKn} ಲಕ್ಷಣಗಳು ಪ್ರಾರಂಭವಾದವು.`);
-        } else if (lang === "hi") {
-          translatedSentences.push(`${mechHi} ${durHi} लक्षण शुरू हुए थे।`);
-        } else if (lang === "ta") {
-          translatedSentences.push(`${mechTa} ${durTa} அறிகுறிகள் தொடங்கின.`);
-        } else if (lang === "te") {
-          translatedSentences.push(`${mechTe} ${durTe} లక్షణాలు ప్రారంభమయ్యాయి.`);
-        } else if (lang === "mr") {
-          translatedSentences.push(`${mechMr} ${durMr} लक्षणे सुरू झाली.`);
-        } else if (lang === "bn") {
-          translatedSentences.push(`পড়ে গিয়ে আঘাত পাওয়ার পর প্রায় ২ দিন আগে উপসর্গ শুরু হয়েছিল।`);
-        } else if (lang === "gu") {
-          translatedSentences.push(`પડવાથી થયેલી ઈજા પછી આશરે ૨ દિવસ પહેલાં લક્ષણો શરૂ થયા હતા.`);
-        } else if (lang === "pa") {
-          translatedSentences.push(`ਡਿੱਗਣ ਕਾਰਨ ਲੱਗੀ ਸੱਟ ਤੋਂ ਬਾਅਦ ਲਗਭਗ 2 ਦਿਨ ਪਹਿਲਾਂ ਲੱਛਣ ਸ਼ੁਰੂ ਹੋਏ ਸਨ।`);
-        } else if (lang === "ml") {
-          translatedSentences.push(`വീണുണ്ടായ പരിക്കിനെ തുടർന്ന് ഏകദേശം 2 ദിവസം മുമ്പ് ലക്ഷണങ്ങൾ ആരംഭിച്ചു.`);
-        } else {
-          translatedSentences.push(sent);
-        }
-        continue;
-      }
-
-      // Sentence 3: Pain Severity & Character
-      if (lower.includes("severity is graded") || lower.includes("pain intensity is graded") || lower.includes("severity score rated")) {
-        const scoreMatch = lower.match(/(\d+\/10)/) || ["6/10", "6/10"];
-        const sc = scoreMatch[1] || "6/10";
-
-        if (lang === "kn") {
-          translatedSentences.push(`ರೋಗಲಕ್ಷಣದ ತೀವ್ರತೆಯನ್ನು ${sc} (ಮಧ್ಯಮದಿಂದ ತೀವ್ರ) ಎಂದು ಶ್ರೇಣೀಕರಿಸಲಾಗಿದೆ ಮತ್ತು ಗಮನಿಸಲಾಗಿದೆ.`);
-        } else if (lang === "hi") {
-          translatedSentences.push(`लक्षण की गंभीरता को ${sc} (मध्यम से गंभीर) आंका गया है और दर्ज किया गया है।`);
-        } else if (lang === "ta") {
-          translatedSentences.push(`அறிகுறிகளின் தீவிரம் ${sc} (மிதமானது முதல் தீவிரமானது) என மதிப்பிடப்பட்டுள்ளது.`);
-        } else if (lang === "te") {
-          translatedSentences.push(`లక్షణ తీవ్రత ${sc} (మధ్యస్థం నుండి తీవ్రం) గా నమోదు చేయబడింది.`);
-        } else if (lang === "mr") {
-          translatedSentences.push(`लक्षणांची तीव्रता ${sc} (मध्यम ते तीव्र) नोंदवली गेली आहे.`);
-        } else if (lang === "bn") {
-          translatedSentences.push(`উপসর্গের তীব্রতা ${sc} (মাঝারি থেকে তীব্র) হিসাবে মূল্যায়ন করা হয়েছে।`);
-        } else if (lang === "gu") {
-          translatedSentences.push(`લક્ષણોની તીવ્રતા ${sc} (મધ્યમથી ગંભીર) તરીકે મૂલ્યાંકન કરવામાં આવી છે.`);
-        } else if (lang === "pa") {
-          translatedSentences.push(`ਲੱਛਣਾਂ ਦੀ ਗੰਭੀਰਤਾ ${sc} (ਦਰਮਿਆਨੀ ਤੋਂ ਗੰਭੀਰ) ਦੱਸੀ ਗਈ ਹੈ।`);
-        } else if (lang === "ml") {
-          translatedSentences.push(`ലക്ഷണങ്ങളുടെ തീവ്രത ${sc} (മിതമായത് മുതൽ തീവ്രമായത് വരെ) എന്ന് രേഖപ്പെടുത്തിയിരിക്കുന്നു.`);
-        } else {
-          translatedSentences.push(sent);
-        }
-        continue;
-      }
-
-      // Sentence 4: Clinical Features / Objective Signs
-      if (lower.includes("clinical features indicate") || lower.includes("periarticular soft tissue edema") || lower.includes("clinical assessment confirms")) {
-        if (lang === "kn") {
-          translatedSentences.push(`ಕ್ಲಿನಿಕಲ್ ಲಕ್ಷಣಗಳು ಕೀಲು ಸುತ್ತಲಿನ ಮೃದು ಅಂಗಾಂಶ ಊತವನ್ನು ಸೂಚಿಸುತ್ತವೆ.`);
-        } else if (lang === "hi") {
-          translatedSentences.push(`नैदानिक लक्षण जोड़ों के आसपास नरम ऊतकों की सूजन का संकेत देते हैं।`);
-        } else if (lang === "ta") {
-          translatedSentences.push(`மருத்துவ அறிகுறிகள் மூட்டைச் சுற்றியுள்ள மென்மையான திசு வீக்கத்தைக் குறிக்கின்றன.`);
-        } else if (lang === "te") {
-          translatedSentences.push(`క్లినికల్ లక్షణాలు కీలు చుట్టూ మృదు కಣజాల వాపును సూచిస్తున్నాయి.`);
-        } else if (lang === "mr") {
-          translatedSentences.push(`क्लिनिकल लक्षणे सांध्याभोवती मऊ ऊतींची सूज दर्शवतात.`);
-        } else if (lang === "bn") {
-          translatedSentences.push(`ক্লিনিকাল লক্ষণগুলি জয়েন্টের চারপাশে নরম টিস্যু ফুলে যাওয়া নির্দেশ করে।`);
-        } else if (lang === "gu") {
-          translatedSentences.push(`ક્લિનિકલ લક્ષણો સાંધાની આસપાસ નરમ પેશીઓના સોજા દર્શાવે છે.`);
-        } else if (lang === "pa") {
-          translatedSentences.push(`ਕਲੀਨਿਕਲ ਲੱਛਣ ਜੋੜਾਂ ਦੇ ਆਲੇ-ਦੁਆਲੇ ਨਰਮ ਟਿਸ਼ੂ ਦੀ ਸੋਜ ਵੱਲ ਇਸ਼ਾਰਾ ਕਰਦੇ ਹਨ।`);
-        } else if (lang === "ml") {
-          translatedSentences.push(`ക്ലിനിക്കൽ ലക്ഷണങ്ങൾ സന്ധികൾക്ക് ചുറ്റുമുള്ള മൃദുവായ കോശജ്വലനത്തെ സൂചിപ്പിക്കുന്നു.`);
-        } else {
-          translatedSentences.push(sent);
-        }
-        continue;
-      }
-
-      // Sentence 5: Modulating Factors (Exacerbated / Relieved)
-      if (lower.includes("exacerbated by") || lower.includes("worsened by") || lower.includes("mitigated by")) {
-        if (lang === "kn") {
-          translatedSentences.push(`ಸಕ್ರಿಯ ಕೀಲು ಚಲನೆಯಿಂದ ರೋಗಲಕ್ಷಣಗಳು ಉಲ್ಬಣಗೊಳ್ಳುತ್ತವೆ.`);
-        } else if (lang === "hi") {
-          translatedSentences.push(`सक्रिय जोड़ हिलाने या चलने-फिरने से लक्षण बढ़ जाते हैं।`);
-        } else if (lang === "ta") {
-          translatedSentences.push(`மூட்டை அசைப்பதன் மூலம் அறிகுறிகள் அதிகரிக்கின்றன.`);
-        } else if (lang === "te") {
-          translatedSentences.push(`కీలు కదలిక వల్ల లక్షణాలు తీవ్రమవుతాయి.`);
-        } else if (lang === "mr") {
-          translatedSentences.push(`सांध्याची हालचाल केल्याने लक्षणे वाढतात.`);
-        } else if (lang === "bn") {
-          translatedSentences.push(`জয়েন্টের নড়াচড়ায় উপসর্গ বৃদ্ধি পায়।`);
-        } else if (lang === "gu") {
-          translatedSentences.push(`સાંધાની હલનચલનથી લક્ષણો વધી જાય છે.`);
-        } else if (lang === "pa") {
-          translatedSentences.push(`ਜੋੜਾਂ ਦੀ ਹਰਕਤ ਨਾਲ ਲੱਛਣ ਵਧ ਜਾਂਦੇ ਹਨ।`);
-        } else if (lang === "ml") {
-          translatedSentences.push(`സന്ധികൾ ചലിപ്പിക്കുമ്പോൾ ലക്ഷണങ്ങൾ കൂടുന്നു.`);
-        } else {
-          translatedSentences.push(sent);
-        }
-        continue;
-      }
-
-      // Default fallback
-      translatedSentences.push(sent);
-    }
-
-    return translatedSentences.join(" ");
   }
-
 };
-
 
 if (typeof window !== 'undefined') {
   window.I18n = I18n;
-}
-if (typeof global !== 'undefined') {
-  global.I18n = I18n;
-}
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = I18n;
 }
