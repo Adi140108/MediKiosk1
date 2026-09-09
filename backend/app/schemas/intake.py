@@ -34,7 +34,7 @@ class QuestionItem(BaseModel):
     clinical_domain: str = "general"
     ayurvedic_domain: Optional[str] = None  # e.g., 'AGNI', 'MALA', 'NIDRA', 'AHARA', 'VIHARA'
     display_label: Optional[str] = None  # e.g. '(Agni)', '(Digestion)'
-    options: Optional[List[Any]] = None
+    options: Optional[List[str]] = None
     language: str = "en"
     sequence: int = 1
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

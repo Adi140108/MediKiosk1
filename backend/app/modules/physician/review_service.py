@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import uuid
 from datetime import datetime, timezone
@@ -106,19 +105,16 @@ INSTRUCTIONS:
 - DO NOT list questions or use bullet points.
 - DO NOT include headings or meta text. Write ONLY the clinical narrative paragraph."""
 
-                gemma_synthesized = await asyncio.wait_for(
-                    self.gemma.generate_response(
-                        prompt=synthesis_prompt,
-                        system_prompt="You are a senior clinical documentation specialist writing HPI narratives for physician review. Be concise, accurate, and use standard medical documentation style.",
-                        temperature=0.15
-                    ),
-                    timeout=2.5
+                gemma_synthesized = await self.gemma.generate_response(
+                    prompt=synthesis_prompt,
+                    system_prompt="You are a senior clinical documentation specialist writing HPI narratives for physician review. Be concise, accurate, and use standard medical documentation style.",
+                    temperature=0.15
                 )
                 gemma_synthesized = gemma_synthesized.strip()
                 if len(gemma_synthesized) < 20 or "ai_unavailable" in gemma_synthesized.lower() or "Q:" in gemma_synthesized:
                     gemma_synthesized = ""
             except Exception as e:
-                logger.warning(f"Gemma HPI synthesis notice (falling back to deterministic narrative): {e}")
+                logger.warning(f"Gemma HPI synthesis notice: {e}")
                 gemma_synthesized = ""
 
         if gemma_synthesized:

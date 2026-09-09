@@ -56,11 +56,11 @@ def test_planner_no_duplicate_questions(planner):
     assert q["question_id"] != "PRAK_BUILD_001"
 
 def test_planner_domain_sufficiency_skips_completed(planner):
-    """When a domain is marked completed, planner skips to the next domain."""
+    """When a domain has >= 3 evidence items, planner skips to the next domain."""
     state = AyushAssessmentSessionState(
         session_id="s1",
         patient_id="p1",
-        completed_domains=["PRAKRITI"]
+        domain_evidence_count={"PRAKRITI": 3}
     )
     q = planner.select_next_question(state)
     assert q is not None

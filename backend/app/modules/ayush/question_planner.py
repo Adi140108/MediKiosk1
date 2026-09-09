@@ -1,5 +1,5 @@
 """
-AYUSH Question Planner & Session State Module — MediKiosk V3.2.0
+AYUSH Question Planner & Session State Module — MediKiosk V3.1
 
 Single Source of Truth:
 Loads and indexes all question-bank JSON files under `backend/app/modules/ayush/question_bank/`.
@@ -9,7 +9,7 @@ Features:
 - Two-Track Assessment:
   - Track A: AYUSH Core Profile (Baseline Prakriti, Agni, Koshta, Nidra, Satva)
   - Track B: Complaint-Specific Ayurvedic Assessment (Nidana, Samprapti, Vikriti)
-- Domain-Specific Sufficiency: Dynamic criteria based on feature coverage and question bank specifications (NOT a universal 3-count rule).
+- Domain Sufficiency: Stops asking questions for a domain when evidence threshold (>= 3 valid observations or all domain questions completed) is reached.
 - Non-LLM, Data-Driven Execution: 100% deterministic decision logic based on JSON priority, dependencies, required_for, and feature_targets.
 """
 
@@ -18,7 +18,6 @@ import json
 import logging
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
-from app.core.version import ASSESSMENT_VERSION, QUESTIONNAIRE_VERSION, KNOWLEDGE_BASE_VERSION
 
 logger = logging.getLogger("medikiosk.ayush.question_planner")
 
@@ -35,9 +34,9 @@ class AyushAssessmentSessionState(BaseModel):
     domain_evidence_count: Dict[str, int] = Field(default_factory=dict)
     active_track: str = "CORE_PROFILE"  # "CORE_PROFILE" or "COMPLAINT_SPECIFIC"
     chief_complaint: str = ""
-    assessment_version: str = ASSESSMENT_VERSION
-    questionnaire_version: str = QUESTIONNAIRE_VERSION
-    knowledge_base_version: str = KNOWLEDGE_BASE_VERSION
+    assessment_version: str = "3.1"
+    questionnaire_version: str = "3.1"
+    knowledge_base_version: str = "3.1"
 
 class AyushQuestionPlanner:
     def __init__(self, question_bank_dir: Optional[str] = None):
@@ -79,29 +78,6 @@ class AyushQuestionPlanner:
         logger.info("Loaded AYUSH Question Bank: %d domains, %d total questions indexed.",
                     len(self.question_bank), len(self.questions_by_id))
 
-    def _is_domain_sufficient(self, domain: str, evidence_count: int, asked_questions_in_domain: List[str]) -> bool:
-        """Domain-specific sufficiency check based on mentor requirements."""
-        domain_q_count = len(self.questions_by_domain.get(domain, []))
-        if domain_q_count == 0:
-            return True
-
-        if domain == "PRAKRITI":
-            # Multi-dimensional coverage required (minimum 3-4 feature domains answered or all questions)
-            return len(asked_questions_in_domain) >= min(4, domain_q_count)
-        elif domain == "AGNI":
-            # Requires hunger & digestion response
-            return len(asked_questions_in_domain) >= min(2, domain_q_count)
-        elif domain == "NIDRA":
-            # Requires sleep pattern response
-            return len(asked_questions_in_domain) >= min(1, domain_q_count)
-        elif domain == "SATVA":
-            # Requires mental resilience response
-            return len(asked_questions_in_domain) >= min(1, domain_q_count)
-        elif domain == "KOSHTA":
-            return len(asked_questions_in_domain) >= min(1, domain_q_count)
-        else:
-            return len(asked_questions_in_domain) >= min(2, domain_q_count)
-
     def select_next_question(
         self,
         session_state: AyushAssessmentSessionState,
@@ -110,46 +86,47 @@ class AyushQuestionPlanner:
         """
         Determines the next exact JSON question candidate by `question_id`.
         Enforces Track A (Core Profile) -> Track B (Complaint Specific) progression
-        and domain-specific sufficiency criteria.
+        and domain stopping criteria.
         """
         asked = set(session_state.asked_question_ids + (asked_ids or []))
 
+        # Core Profile Domain Priority sequence
         core_domain_sequence = ["PRAKRITI", "AGNI", "KOSHTA", "AMA", "NIDRA", "SATVA", "HARA_VYAYAMA"]
         complaint_domain_sequence = ["NIDANA", "SAMPRAPTI", "PRAMANA"]
 
         # Track A: Core Profile
         for domain in core_domain_sequence:
-            domain_questions = self.questions_by_domain.get(domain, [])
-            asked_in_domain = [q.get("question_id") for q in domain_questions if q.get("question_id") in asked]
-            evidence_count = len(asked_in_domain)
-
-            if self._is_domain_sufficient(domain, evidence_count, asked_in_domain) or domain in session_state.completed_domains:
-                if domain not in session_state.completed_domains:
-                    session_state.completed_domains.append(domain)
+            evidence_count = session_state.domain_evidence_count.get(domain, 0)
+            if evidence_count >= 3 or domain in session_state.completed_domains:
                 continue
 
+            domain_questions = self.questions_by_domain.get(domain, [])
             for q in domain_questions:
                 q_id = q.get("question_id")
                 if q_id and q_id not in asked:
                     return q
 
-        # Track B: Complaint Specific
+            # Mark domain completed if all questions asked
+            if domain not in session_state.completed_domains:
+                session_state.completed_domains.append(domain)
+
+        # Transition to Track B: Complaint Specific
         session_state.active_track = "COMPLAINT_SPECIFIC"
         for domain in complaint_domain_sequence:
-            domain_questions = self.questions_by_domain.get(domain, [])
-            asked_in_domain = [q.get("question_id") for q in domain_questions if q.get("question_id") in asked]
-            evidence_count = len(asked_in_domain)
-
-            if self._is_domain_sufficient(domain, evidence_count, asked_in_domain) or domain in session_state.completed_domains:
-                if domain not in session_state.completed_domains:
-                    session_state.completed_domains.append(domain)
+            evidence_count = session_state.domain_evidence_count.get(domain, 0)
+            if evidence_count >= 3 or domain in session_state.completed_domains:
                 continue
 
+            domain_questions = self.questions_by_domain.get(domain, [])
             for q in domain_questions:
                 q_id = q.get("question_id")
                 if q_id and q_id not in asked:
                     return q
 
+            if domain not in session_state.completed_domains:
+                session_state.completed_domains.append(domain)
+
+        # All AYUSH domains sufficiently evaluated
         return None
 
     def get_question_by_id(self, question_id: str) -> Optional[Dict[str, Any]]:

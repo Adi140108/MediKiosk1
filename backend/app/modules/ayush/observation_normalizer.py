@@ -1,14 +1,14 @@
 """
-Observation Normalizer Module — MediKiosk AYUSH V3.2.0
+Observation Normalizer Module — MediKiosk AYUSH V2
 
 Normalizes raw patient responses (multilingual text or structured options) into
-structured observation objects with deterministic dosha weights and metadata.
+structured observation objects.
 
 Handles:
-- Option metadata extraction
-- Text-to-dosha weight extraction when option metadata is missing (backwards compatibility wrapper)
 - Negation detection ("I do not have bloating" -> normalized_value: "absent", severity: 0)
-- Frequency & severity classification
+- Frequency & severity classification (present, absent, occasional, frequent, severe, mild, historical)
+- Baseline vs. Current (Vikriti) trajectory
+- Audit traceability (preserves raw answer)
 """
 
 import re
@@ -44,7 +44,7 @@ class ObservationNormalizer:
     
     HISTORICAL_TERMS = [
         "used to", "in the past", "previously", "earlier", "years ago", "months ago", "not anymore", "cured",
-        "पहले था", "पुराना", "पहले होता था", "ಹಿಂದೆ ಇತ್ತು", "ಹಳೆಯದು", "முன்பು இருந்தது", "గతంలో ఉండేది"
+        "पहले था", "पुराना", "पहले होता था", "ಹಿಂದೆ ಇತ್ತು", "ಹಳೆಯದು", "முன்பு இருந்தது", "గతంలో ఉండేది"
     ]
 
     OCCASIONAL_TERMS = [
@@ -97,22 +97,6 @@ class ObservationNormalizer:
                     feature_targets=feature_targets
                 )
 
-        # If option_meta is not supplied, infer structured option metadata from raw text for compatibility
-        if not dosha_weights:
-            v_score, p_score, k_score = 0, 0, 0
-            if any(k in text_lower for k in ["slender", "thin", "dry", "light", "variable", "bloating", "constipated", "krura"]):
-                v_score = 2
-                option_val = option_val or "slender"
-            if any(k in text_lower for k in ["warm", "spicy", "acidity", "medium", "intense", "tikshna", "mridu", "burning"]):
-                p_score = 2
-                option_val = option_val or "medium"
-            if any(k in text_lower for k in ["broad", "large", "heavy", "slow", "sluggish", "manda", "madhyama"]):
-                k_score = 2
-                option_val = option_val or "broad"
-            
-            if v_score or p_score or k_score:
-                dosha_weights = {"VATA": v_score, "PITTA": p_score, "KAPHA": k_score}
-
         # 2. Check for explicit negation in free-text answer
         is_negated = any(re.search(rf"\b{re.escape(term)}\b", text_lower) for term in self.NEGATION_TERMS)
         if is_negated and not any(k in text_lower for k in ["not bad", "not severe", "not really a problem"]):
@@ -126,9 +110,7 @@ class ObservationNormalizer:
                 severity=0,
                 frequency="never",
                 is_denial=True,
-                confidence=0.95,
-                dosha_weights=dosha_weights,
-                option_value=option_val
+                confidence=0.95
             )
 
         # 3. Check for historical statement (past symptom, not current)
@@ -144,9 +126,7 @@ class ObservationNormalizer:
                 severity=0,
                 frequency="historical",
                 is_historical=True,
-                confidence=0.90,
-                dosha_weights=dosha_weights,
-                option_value=option_val
+                confidence=0.90
             )
 
         # 4. Determine frequency and severity

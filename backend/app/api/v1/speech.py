@@ -24,6 +24,16 @@ class SynthesizeRequest(BaseModel):
     language: str
     gender: Optional[str] = "female"
 
+async def fetch_tts_audio_bytes(text: str, language: str) -> Optional[bytes]:
+    """
+    Fetches high-quality TTS audio bytes for Indian languages.
+    """
+    if not text or not text.strip():
+        return None
+
+    cache_key = f"{language}_{text.strip()}"
+    if cache_key in _tts_cache:
+        return _tts_cache[cache_key]
 
 INDIC_VOICE_MAP = {
     "kn": "kn-IN-SapnaNeural",
@@ -101,20 +111,6 @@ async def fetch_tts_audio_bytes(text: str, language: str) -> Optional[bytes]:
             return raw
     except Exception as e:
         logger.debug("AI4Bharat TTS fallback: %s", e)
-
-    # 3. Guaranteed HTTP GET Fallback for Serverless / Cloud Deployments (Vercel, Render, Docker)
-    try:
-        encoded_text = urllib.parse.quote(synthesis_text[:500])
-        gtts_url = f"https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl={lang_code}&q={encoded_text}"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-        async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
-            resp = await client.get(gtts_url, headers=headers)
-            if resp.status_code == 200 and len(resp.content) > 200:
-                result = resp.content
-                _tts_cache[cache_key] = result
-                return result
-    except Exception as e:
-        logger.warning("HTTP TTS fallback error: %s", str(e))
 
     return None
 

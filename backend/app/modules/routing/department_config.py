@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional
 from app.schemas.routing import DepartmentId, DepartmentInfo
 
-# General OPD Department Registry (Single Source of Truth)
+# General OPD Department Registry
 GENERAL_DEPARTMENTS: List[DepartmentInfo] = [
     DepartmentInfo(
         id=DepartmentId.GENERAL_MEDICINE,
@@ -76,20 +76,20 @@ GENERAL_DEPARTMENTS: List[DepartmentInfo] = [
     DepartmentInfo(
         id=DepartmentId.EMERGENCY,
         name="Emergency",
-        display_name="Emergency / Trauma",
+        display_name="Emergency",
         icon="🚨",
         description="Immediate acute resuscitation, critical trauma, shock"
     ),
     DepartmentInfo(
-        id=DepartmentId.GENERAL_UNSPECIFIED,
-        name="General Unspecified",
-        display_name="General Unspecified / Triage Desk",
+        id=DepartmentId.UNSPECIFIED,
+        name="Unspecified",
+        display_name="Unspecified",
         icon="📋",
-        description="Unassigned, ambiguous, or multi-system General OPD triage"
+        description="Unassigned, ambiguous, or multi-system pending clinical triage"
     )
 ]
 
-# AYUSH OPD Department Registry (Single Source of Truth)
+# AYUSH OPD Department Registry
 AYUSH_DEPARTMENTS: List[DepartmentInfo] = [
     DepartmentInfo(
         id=DepartmentId.AYUSH,
@@ -99,6 +99,12 @@ AYUSH_DEPARTMENTS: List[DepartmentInfo] = [
         description="Ayurvedic general outpatient care, Prakriti constitution assessment and holistic triage"
     ),
     DepartmentInfo(
+        id=DepartmentId.KAYACHIKITS,
+        name="Kayachikitsa",
+        display_name="Kayachikitsa (Internal Medicine)",
+        icon="🍵",
+        description="Agni, Dhatu, Ama, systemic illnesses, digestive and metabolic disorders"
+    ) if hasattr(DepartmentId, 'KAYACHIKITS') else DepartmentInfo(
         id=DepartmentId.KAYACHIKITSA,
         name="Kayachikitsa",
         display_name="Kayachikitsa (Internal Medicine)",
@@ -153,20 +159,6 @@ AYUSH_DEPARTMENTS: List[DepartmentInfo] = [
         display_name="Agada Tantra (Toxicology & Allergies)",
         icon="🧪",
         description="Environmental allergies, toxicities, skin hypersensitivities and insect bites"
-    ),
-    DepartmentInfo(
-        id=DepartmentId.EMERGENCY,
-        name="Emergency",
-        display_name="Emergency / Trauma",
-        icon="🚨",
-        description="Emergency escalation safety net"
-    ),
-    DepartmentInfo(
-        id=DepartmentId.AYUSH_UNSPECIFIED,
-        name="AYUSH Unspecified",
-        display_name="AYUSH Unspecified / Triage Desk",
-        icon="📋",
-        description="Unassigned or ambiguous AYUSH clinical presentation awaiting specialized assessment"
     )
 ]
 
@@ -182,20 +174,17 @@ def get_departments_for_mode(opd_mode: Optional[str] = "GENERAL_OPD") -> List[De
     return GENERAL_DEPARTMENTS
 
 def get_department_by_id(dept_id: str) -> DepartmentInfo:
-    dept_str = str(getattr(dept_id, "value", dept_id)).lower()
     for dept in DEPARTMENTS_REGISTRY:
-        if dept.id.value.lower() == dept_str or dept.id.name.lower() == dept_str:
+        if dept.id.value == dept_id or dept.id == dept_id:
             return dept
-    # Default fallback per mode if not found
-    return GENERAL_DEPARTMENTS[-1]
+    # Default fallback
+    return GENERAL_DEPARTMENTS[-1]  # Unspecified
 
 def is_department_valid_for_mode(dept_id: str, opd_mode: str) -> bool:
     mode = str(opd_mode or "GENERAL_OPD").upper()
-    dept_str = str(getattr(dept_id, "value", dept_id)).lower()
-    
-    # Emergency is allowed in both modes as explicit critical safety escalation
-    if dept_str == DepartmentId.EMERGENCY.value.lower():
-        return True
-
     valid_list = AYUSH_DEPARTMENTS if "AYUSH" in mode else GENERAL_DEPARTMENTS
-    return any(d.id.value.lower() == dept_str for d in valid_list)
+    # Emergency is always allowed as a safety net
+    if dept_id in [DepartmentId.EMERGENCY.value, DepartmentId.EMERGENCY]:
+        return True
+    return any(dept.id.value == dept_id or dept.id == dept_id for dept in valid_list)
+

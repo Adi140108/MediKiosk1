@@ -99,9 +99,9 @@ def test_all_23_domains_evaluated():
 def test_prakriti_v2_scoring():
     engine = AyurvedicScoringEngine()
     obs = [
-        StructuredObservation(question_id="1", domain="prakriti", feature="build", raw_answer="Naturally thin slender frame", normalized_value="present", severity=1, dosha_weights={"VATA": 2, "PITTA": 0, "KAPHA": 0}, option_value="slender"),
-        StructuredObservation(question_id="2", domain="prakriti", feature="skin", raw_answer="Dry rough skin", normalized_value="present", severity=1, dosha_weights={"VATA": 2, "PITTA": 0, "KAPHA": 0}, option_value="dry"),
-        StructuredObservation(question_id="3", domain="prakriti", feature="sleep", raw_answer="Light sleep wake up easily", normalized_value="present", severity=1, dosha_weights={"VATA": 2, "PITTA": 0, "KAPHA": 0}, option_value="light"),
+        StructuredObservation(question_id="1", domain="prakriti", feature="build", raw_answer="Naturally thin slender frame", normalized_value="present", severity=1),
+        StructuredObservation(question_id="2", domain="prakriti", feature="skin", raw_answer="Dry rough skin", normalized_value="present", severity=1),
+        StructuredObservation(question_id="3", domain="prakriti", feature="sleep", raw_answer="Light sleep wake up easily", normalized_value="present", severity=1),
     ]
     res = engine.evaluate_prakriti(obs)
     assert res.status == "SUFFICIENT_DATA"
@@ -111,7 +111,7 @@ def test_prakriti_v2_scoring():
 def test_agni_classification():
     engine = AyurvedicScoringEngine()
     obs = [
-        StructuredObservation(question_id="1", domain="agni", feature="digestion", raw_answer="Variable hunger with bloating", normalized_value="present", severity=1, option_value="vishama")
+        StructuredObservation(question_id="1", domain="agni", feature="digestion", raw_answer="Variable hunger with bloating", normalized_value="present", severity=1)
     ]
     res = engine.evaluate_agni(obs)
     assert res.status == "SUFFICIENT_DATA"
@@ -120,7 +120,7 @@ def test_agni_classification():
 def test_koshta_classification():
     engine = AyurvedicScoringEngine()
     obs = [
-        StructuredObservation(question_id="1", domain="koshta", feature="bowel", raw_answer="Hard dry constipated stool", normalized_value="present", severity=1, option_value="krura")
+        StructuredObservation(question_id="1", domain="koshta", feature="bowel", raw_answer="Hard dry constipated stool", normalized_value="present", severity=1)
     ]
     res = engine.evaluate_koshta(obs)
     assert res.status == "SUFFICIENT_DATA"
@@ -129,8 +129,8 @@ def test_koshta_classification():
 def test_ama_classification():
     engine = AyurvedicScoringEngine()
     obs = [
-        StructuredObservation(question_id="1", domain="ama", feature="tongue", raw_answer="Heavy coated tongue with foul odor", normalized_value="present", severity=2, option_value="saama"),
-        StructuredObservation(question_id="2", domain="ama", feature="heaviness", raw_answer="Severe morning heaviness", normalized_value="present", severity=2, option_value="saama")
+        StructuredObservation(question_id="1", domain="ama", feature="tongue", raw_answer="Heavy coated tongue with foul odor", normalized_value="present", severity=2),
+        StructuredObservation(question_id="2", domain="ama", feature="heaviness", raw_answer="Severe morning heaviness", normalized_value="present", severity=2)
     ]
     res = engine.evaluate_ama(obs)
     assert res.status == "SUFFICIENT_DATA"
@@ -138,12 +138,12 @@ def test_ama_classification():
 
 def test_satva_scoring():
     engine = AyurvedicScoringEngine()
-    obs_high = [StructuredObservation(question_id="1", domain="satva", feature="resilience", raw_answer="Calm under pressure, highly resilient", normalized_value="present", severity=1, option_value="pravara")]
+    obs_high = [StructuredObservation(question_id="1", domain="satva", feature="resilience", raw_answer="Calm under pressure, highly resilient", normalized_value="present", severity=1)]
     res_high = engine.evaluate_satva(obs_high)
     assert res_high.primary_category == "Pravara"
     assert res_high.scores["satva_score"] == 3
 
-    obs_low = [StructuredObservation(question_id="1", domain="satva", feature="resilience", raw_answer="Easily anxious and overwhelmed", normalized_value="present", severity=1, option_value="avara")]
+    obs_low = [StructuredObservation(question_id="1", domain="satva", feature="resilience", raw_answer="Easily anxious and overwhelmed", normalized_value="present", severity=1)]
     res_low = engine.evaluate_satva(obs_low)
     assert res_low.primary_category == "Avara"
     assert res_low.scores["satva_score"] == 1
