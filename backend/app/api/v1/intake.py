@@ -54,7 +54,7 @@ class UpdateAnswerRequest(BaseModel):
     session_id: str
     question_id: str
     new_answer: str
-    physician_id: Optional[str] = "dr_sharma_cardio"
+    physician_id: Optional[str] = None
 
 class CompleteIntakeRequest(BaseModel):
     session_id: str
