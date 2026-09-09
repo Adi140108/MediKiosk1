@@ -52,7 +52,7 @@ class PhysicianQueueService:
             opd_mode_filter=opd_mode_filter
         )
 
-    def get_department_metrics(self, department_id: DepartmentId) -> DepartmentDashboardMetrics:
+    def get_department_metrics(self, department_id: DepartmentId, opd_mode: Optional[str] = None) -> DepartmentDashboardMetrics:
         """
         Computes real-time dynamic queue metrics for the selected department.
         Never returns fabricated numbers.
@@ -70,6 +70,17 @@ class PhysicianQueueService:
                 it for it in all_items
                 if (it.assigned_department.value if isinstance(it.assigned_department, DepartmentId) else str(it.assigned_department or "").lower().replace("_", "-")) == target_val
             ]
+
+        if opd_mode:
+            filtered_dept_items = []
+            for item in dept_items:
+                item_mode = (getattr(item, "opd_mode", "GENERAL_OPD") or "GENERAL_OPD").upper()
+                if "AYUSH" in opd_mode.upper() and "AYUSH" not in item_mode:
+                    continue
+                if "GENERAL" in opd_mode.upper() and "AYUSH" in item_mode:
+                    continue
+                filtered_dept_items.append(item)
+            dept_items = filtered_dept_items
 
         now_utc = datetime.now(timezone.utc)
         waiting_count = 0
