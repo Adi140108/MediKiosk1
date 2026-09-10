@@ -1059,25 +1059,6 @@ const PatientIntake = {
     }
     const modal = document.getElementById("camera-capture-modal");
     if (modal) modal.style.display = "none";
-=======
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-
-      const previewImg = document.getElementById("camera-preview-img");
-      const snapshot = document.getElementById("camera-snapshot-preview");
-      const viewfinder = document.getElementById("camera-viewfinder-container");
-      const liveControls = document.getElementById("camera-live-controls");
-      const confirmControls = document.getElementById("camera-confirm-controls");
-
-      if (previewImg) previewImg.src = dataUrl;
-      if (snapshot) snapshot.style.display = "block";
-      if (viewfinder) viewfinder.style.display = "none";
-      if (liveControls) liveControls.style.display = "none";
-      if (confirmControls) confirmControls.style.display = "flex";
-
-      // Store blob for later confirmation
-      this._pendingCameraBlob = blob;
-    }, "image/jpeg", 0.92);
->>>>>>> uiux
   },
 
   retakeCameraPhoto() {

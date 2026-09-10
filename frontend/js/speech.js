@@ -876,16 +876,9 @@ const SpeechManager = {
         utterance.pitch = 1.0;
         utterance.voice = assignedVoice;
 
-<<<<<<< HEAD
-        let audioStarted = false;
-
-        utterance.onstart = () => {
-          audioStarted = true;
-=======
         let speechStarted = false;
         utterance.onstart = () => {
           speechStarted = true;
->>>>>>> uiux
           this.isSpeaking = true;
           this.updateButtonStates('playing');
         };
