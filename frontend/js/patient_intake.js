@@ -50,39 +50,43 @@ const PatientIntake = {
     try { this.updateStepIndicator(1); } catch (e) {}
     try { this.updateLanguageGridUI(this.language); } catch (e) {}
 
-    // 2. IMMEDIATE WELCOMING AUTO-SPEECH
+    // 2. SINGLE WELCOMING AUTO-SPEECH (Guarded against duplicate execution)
+    let welcomeTriggered = false;
     const triggerWelcomeSpeech = () => {
-      try {
-        if (this.currentStep === 1 && !this.hasSpokenInitialWelcome && typeof SpeechManager !== "undefined" && !SpeechManager.isMuted) {
-          this.hasSpokenInitialWelcome = true;
-          if (SpeechManager.resumeAudioAndSpeak) {
-            SpeechManager.resumeAudioAndSpeak(1, this.language);
-          }
-        }
-      } catch (e) {}
-    };
+      if (welcomeTriggered || this.hasSpokenInitialWelcome) return;
+      if (this.currentStep !== 1) return;
+      if (typeof SpeechManager !== "undefined" && SpeechManager.isMuted) return;
 
-    // Immediate attempt on load (50ms)
-    setTimeout(triggerWelcomeSpeech, 50);
-    setTimeout(triggerWelcomeSpeech, 250);
+      welcomeTriggered = true;
+      this.hasSpokenInitialWelcome = true;
 
-    // Unlock audio instantly on any first micro-interaction
-    const unlockAndSpeak = () => {
       try {
         if (typeof SpeechManager !== "undefined") {
           if (SpeechManager.synth) SpeechManager.synth.resume();
           const ctx = SpeechManager.getAudioContext();
           if (ctx && ctx.state === 'suspended') ctx.resume();
+          if (SpeechManager.resumeAudioAndSpeak) {
+            SpeechManager.resumeAudioAndSpeak(1, this.language);
+          }
         }
-      } catch(e) {}
-      triggerWelcomeSpeech();
+      } catch (e) {
+        console.warn("Welcome speech notice:", e);
+      }
     };
 
-    ['click', 'touchstart', 'touchend', 'pointerdown', 'pointermove', 'mousemove', 'keydown', 'scroll', 'focus'].forEach(evt => {
-      try {
-        window.addEventListener(evt, unlockAndSpeak, { once: true, passive: true });
-      } catch (e) {}
-    });
+    // Single delayed trigger after DOM is settled
+    setTimeout(triggerWelcomeSpeech, 250);
+
+    // Fallback: If autoplay policy blocked initial speech, trigger once on first user click/touch
+    const onFirstUserGesture = () => {
+      window.removeEventListener('click', onFirstUserGesture, true);
+      window.removeEventListener('touchstart', onFirstUserGesture, true);
+      window.removeEventListener('keydown', onFirstUserGesture, true);
+      triggerWelcomeSpeech();
+    };
+    window.addEventListener('click', onFirstUserGesture, true);
+    window.addEventListener('touchstart', onFirstUserGesture, true);
+    window.addEventListener('keydown', onFirstUserGesture, true);
   },
 
   getActiveOpdMode() {
@@ -237,6 +241,11 @@ const PatientIntake = {
     const isForward = stepNum >= prevStep;
     this.currentStep = stepNum;
 
+    if (stepNum < 8) {
+      this._isFinishing = false;
+      this._isSubmittingAnswer = false;
+    }
+
     // Show milestone notification when advancing after completing a step
     if (isForward && prevStep !== stepNum) {
       this.showStepMilestoneToast(prevStep, stepNum);
@@ -328,14 +337,14 @@ const PatientIntake = {
 
   showStepMilestoneToast(completedStep, nextStep) {
     const milestones = {
-      1: { icon: "✓", title: "Registration Started", sub: "Step 1 of 8 Completed", badge: "STEP 1" },
-      2: { icon: "🌐", title: "Language Selected", sub: "Step 2 of 8 Completed", badge: "STEP 2" },
-      3: { icon: "🛡️", title: "Consent Confirmed", sub: "Step 3 of 8 Completed", badge: "STEP 3" },
-      4: { icon: "👤", title: "Patient Details Saved", sub: "Step 4 of 8 Completed", badge: "STEP 4" },
-      5: { icon: "🩺", title: "Symptoms & Vitals Saved", sub: "Step 5 of 8 Completed", badge: "STEP 5" },
-      6: { icon: "📄", title: "Documents Attached", sub: "Step 6 of 8 Completed", badge: "STEP 6" },
-      7: { icon: "📋", title: "Clinical Inquiry Finished", sub: "Step 7 of 8 Completed", badge: "STEP 7" },
-      8: { icon: "🎫", title: "Consultation Ticket Issued", sub: "OPD Check-In Completed", badge: "COMPLETE" }
+      1: { icon: "1", title: "Registration Started", sub: "Step 1 of 8 Completed", badge: "STEP 1" },
+      2: { icon: "2", title: "Language Selected", sub: "Step 2 of 8 Completed", badge: "STEP 2" },
+      3: { icon: "3", title: "Consent Confirmed", sub: "Step 3 of 8 Completed", badge: "STEP 3" },
+      4: { icon: "4", title: "Patient Details Saved", sub: "Step 4 of 8 Completed", badge: "STEP 4" },
+      5: { icon: "5", title: "Symptoms & Vitals Saved", sub: "Step 5 of 8 Completed", badge: "STEP 5" },
+      6: { icon: "6", title: "Documents Attached", sub: "Step 6 of 8 Completed", badge: "STEP 6" },
+      7: { icon: "7", title: "Clinical Inquiry Finished", sub: "Step 7 of 8 Completed", badge: "STEP 7" },
+      8: { icon: "8", title: "Consultation Ticket Issued", sub: "OPD Check-In Completed", badge: "COMPLETE" }
     };
 
     const data = milestones[completedStep] || milestones[1];
@@ -367,6 +376,16 @@ const PatientIntake = {
   },
 
   updateStepIndicator(stepNum, prevStep = null) {
+    const bar = document.getElementById("kiosk-step-indicator");
+
+    // Strictly hide indicators on Step 1 (Welcome page)
+    if (stepNum === 1) {
+      if (bar) bar.style.display = "none";
+      return;
+    } else {
+      if (bar) bar.style.display = "flex";
+    }
+
     for (let i = 1; i <= 8; i++) {
       const node = document.getElementById(`step-node-${i}`);
       const line = document.getElementById(`step-line-${i}`);
@@ -374,7 +393,7 @@ const PatientIntake = {
         node.className = "wizard-step-node";
         if (i < stepNum || (i === 8 && stepNum === 8)) {
           node.classList.add("completed");
-          node.innerHTML = "✓";
+          node.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
           if (prevStep && i === prevStep) {
             node.classList.add("node-shockwave");
             setTimeout(() => node.classList.remove("node-shockwave"), 750);
@@ -427,7 +446,7 @@ const PatientIntake = {
         tile.classList.add("selected");
         if (badge) {
           badge.className = "lang-tile-badge lang-badge-selected";
-          badge.innerText = "✓ SELECTED";
+          badge.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:3px;"><polyline points="20 6 9 17 4 12"></polyline></svg>SELECTED';
         }
       } else {
         tile.classList.remove("selected");
@@ -530,7 +549,7 @@ const PatientIntake = {
           wrapper.style.backgroundColor = "#ffffff";
         }, 2500);
       }
-      alert("⚠️ Please check the agreement box to confirm your consent before proceeding.");
+      alert("️ Please check the agreement box to confirm your consent before proceeding.");
       return;
     }
     this.goToStep(4);
@@ -644,52 +663,95 @@ const PatientIntake = {
     }
   },
 
-  selectPainLevel(level) {
+  onPainSliderInput(level) {
+    this.updatePainDisplay(level);
+  },
+
+  setSliderVal(level) {
+    const slider = document.getElementById("pain-slider");
+    if (slider) slider.value = level;
+    this.selectPainLevel(level);
+  },
+
+  updatePainDisplay(level) {
     this.painLevel = parseInt(level, 10);
     const hiddenInput = document.getElementById("pain-range");
     if (hiddenInput) hiddenInput.value = this.painLevel;
 
-    // Update active button state in grid
-    document.querySelectorAll(".pain-num-btn").forEach((btn) => {
-      const val = parseInt(btn.getAttribute("data-val"), 10);
-      if (val === this.painLevel) {
-        btn.classList.add("selected");
-      } else {
-        btn.classList.remove("selected");
-      }
-    });
-
-    const displayBadge = document.getElementById("pain-val-display");
-    if (displayBadge) {
-      if (this.painLevel <= 3) {
-        displayBadge.style.cssText = "background:#ecfdf5; color:#065f46; border:1px solid #10b981; font-size:0.875rem; padding:0.3rem 0.75rem; font-weight:700;";
-        displayBadge.innerText = `Level ${this.painLevel} — Mild Discomfort`;
-      } else if (this.painLevel <= 6) {
-        displayBadge.style.cssText = "background:#fef3c7; color:#92400e; border:1px solid #f59e0b; font-size:0.875rem; padding:0.3rem 0.75rem; font-weight:700;";
-        displayBadge.innerText = `Level ${this.painLevel} — Moderate Pain`;
-      } else if (this.painLevel <= 8) {
-        displayBadge.style.cssText = "background:#ffedd5; color:#9a3412; border:1px solid #f97316; font-size:0.875rem; padding:0.3rem 0.75rem; font-weight:700;";
-        displayBadge.innerText = `Level ${this.painLevel} — Severe Pain`;
-      } else {
-        displayBadge.style.cssText = "background:#fee2e2; color:#991b1b; border:1px solid #ef4444; font-size:0.875rem; padding:0.3rem 0.75rem; font-weight:700;";
-        displayBadge.innerText = `Level ${this.painLevel} — Critical Pain`;
-      }
+    const slider = document.getElementById("pain-slider");
+    if (slider && parseInt(slider.value, 10) !== this.painLevel) {
+      slider.value = this.painLevel;
     }
 
-    const nativePainConfirm = {
-      en: `Pain level ${this.painLevel} selected`,
-      hi: `दर्द का स्तर ${this.painLevel} चुना गया`,
-      kn: `ನೋವಿನ ಪ್ರಮಾಣ ${this.painLevel} ಆಯ್ಕೆಮಾಡಲಾಗಿದೆ`,
-      ta: `வலி அளவு ${this.painLevel} தேர்ந்தெடுக்கப்பட்டது`,
-      te: `నొప్పి స్థాయి ${this.painLevel} ఎంపిక చేయబడింది`,
-      ml: `വേദനയുടെ അളവ് ${this.painLevel} തിരഞ്ഞെടുത്തു`,
-      mr: `वेदनेचा स्तर ${this.painLevel} निवडला आहे`,
-      bn: `ব্যথার মাত্রা ${this.painLevel} নির্বাচিত হয়েছে`,
-      gu: `દુખાવાનું પ્રમાણ ${this.painLevel} પસંદ કરવામાં આવ્યું`,
-      pa: `ਦਰਦ ਦਾ ਪੱਧਰ ${this.painLevel} ਚੁਣਿਆ ਗਿਆ`
-    };
-    const painMsg = nativePainConfirm[this.language] || nativePainConfirm["en"];
-    SpeechManager.speakText(painMsg, this.language);
+    const displayBadge = document.getElementById("pain-val-display");
+    let primaryColor = "#10b981";
+    let statusText = "Mild Discomfort";
+    let bgCol = "#ecfdf5";
+    let textCol = "#065f46";
+
+    if (this.painLevel <= 3) {
+      primaryColor = "#10b981";
+      statusText = "Mild Discomfort";
+      bgCol = "#ecfdf5";
+      textCol = "#065f46";
+    } else if (this.painLevel <= 6) {
+      primaryColor = "#f59e0b";
+      statusText = "Moderate Pain";
+      bgCol = "#fef3c7";
+      textCol = "#92400e";
+    } else if (this.painLevel <= 8) {
+      primaryColor = "#f97316";
+      statusText = "Severe Pain";
+      bgCol = "#ffedd5";
+      textCol = "#9a3412";
+    } else {
+      primaryColor = "#ef4444";
+      statusText = "Critical / Emergency";
+      bgCol = "#fee2e2";
+      textCol = "#991b1b";
+    }
+
+    if (displayBadge) {
+      displayBadge.style.cssText = `background:${bgCol}; color:${textCol}; border:1.5px solid ${primaryColor}; font-size:0.88rem; padding:0.35rem 0.95rem; font-weight:700; border-radius:9999px;`;
+      displayBadge.innerText = `Level ${this.painLevel} — ${statusText}`;
+    }
+    
+    if (slider) {
+      slider.style.setProperty('--primary-color', primaryColor);
+      slider.style.setProperty('--slider-thumb-color', primaryColor);
+    }
+
+    // Highlight active tick
+    try {
+      const allTicks = document.querySelectorAll("#pain-ticks-container span");
+      allTicks.forEach(t => t.classList.remove("active-tick"));
+      const currentTick = document.getElementById(`pain-tick-${this.painLevel}`);
+      if (currentTick) currentTick.classList.add("active-tick");
+    } catch (e) {}
+  },
+
+  selectPainLevel(level) {
+    this.updatePainDisplay(level);
+
+    if (this._painSpeakTimeout) clearTimeout(this._painSpeakTimeout);
+    this._painSpeakTimeout = setTimeout(() => {
+      const nativePainConfirm = {
+        en: `Pain level ${this.painLevel} selected`,
+        hi: `दर्द का स्तर ${this.painLevel} चुना गया`,
+        kn: `ನೋವಿನ ಪ್ರಮಾಣ ${this.painLevel} ಆಯ್ಕೆಮಾಡಲಾಗಿದೆ`,
+        ta: `வலி அளவு ${this.painLevel} தேர்ந்தெடுக்கப்பட்டது`,
+        te: `నొప్పి స్థాయి ${this.painLevel} ఎంపిక చేయబడింది`,
+        ml: `വേദനയുടെ അളവ് ${this.painLevel} തിരഞ്ഞെടുത്തു`,
+        mr: `वेदनेचा स्तर ${this.painLevel} निवडला आहे`,
+        bn: `ব্যথার মাত্রা ${this.painLevel} নির্বাচিত হয়েছে`,
+        gu: `દુખાવાનું પ્રમાણ ${this.painLevel} પસંદ કરવામાં આવ્યું`,
+        pa: `ਦਰਦ ਦਾ ਪੱਧਰ ${this.painLevel} ਚੁਣਿਆ ਗਿਆ`
+      };
+      const painMsg = nativePainConfirm[this.language] || nativePainConfirm["en"];
+      if (typeof SpeechManager !== "undefined" && !SpeechManager.isMuted) {
+        SpeechManager.speakText(painMsg, this.language);
+      }
+    }, 400);
   },
 
   handleComplaintNext() {
@@ -777,7 +839,7 @@ const PatientIntake = {
       return `
         <div style="background:#ffffff; border:1px solid #bfdbfe; border-radius:8px; padding:0.65rem 0.85rem; margin-bottom:0.5rem; display:flex; align-items:center; justify-content:space-between; gap:0.75rem; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
           <div style="display:flex; align-items:center; gap:0.65rem; min-width:0; flex:1;">
-            ${isImage && localUrl ? `<img src="${localUrl}" style="width:40px; height:40px; object-fit:cover; border-radius:4px; border:1px solid #93c5fd; flex-shrink:0;" />` : `<div style="width:40px; height:40px; background:#eff6ff; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:#1d4ed8; flex-shrink:0;">📄</div>`}
+            ${isImage && localUrl ? `<img src="${localUrl}" style="width:40px; height:40px; object-fit:cover; border-radius:4px; border:1px solid #93c5fd; flex-shrink:0;" />` : `<div style="width:40px; height:40px; background:#eff6ff; border-radius:4px; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></div>`}
             <div style="min-width:0; flex:1;">
               <p style="font-weight:700; color:#1e40af; margin:0; font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${file.name}</p>
               <p style="font-size:0.75rem; color:#64748b; margin:2px 0 0 0;">${sizeMb} MB • Ready to Upload</p>
@@ -819,7 +881,7 @@ const PatientIntake = {
     const isExpanded = el.style.maxHeight === "none" || el.style.maxHeight === "1000px";
     if (isExpanded) {
       el.style.maxHeight = "160px";
-      if (label) label.innerText = "📖 Show Full Extracted Text ▼";
+      if (label) label.innerText = "Show Full Extracted Text ▼";
     } else {
       el.style.maxHeight = "none";
       if (label) label.innerText = "▲ Collapse Text";
@@ -829,31 +891,37 @@ const PatientIntake = {
   cameraStream: null,
   capturedCameraFile: null,
   cameraFacingMode: "environment",
+  _cameraFacingMode: "environment",
   capturedBlobUrl: null,
 
   openCameraScanner() {
+    this.openCameraModal();
+  },
+
+  async openCameraModal() {
     const modal = document.getElementById("camera-capture-modal");
     if (!modal) return;
     modal.style.display = "flex";
 
-    const viewfinder = document.getElementById("camera-viewfinder-container");
-    const snapshotPreview = document.getElementById("camera-snapshot-preview");
+    // Reset to live-view state
     const liveControls = document.getElementById("camera-live-controls");
     const confirmControls = document.getElementById("camera-confirm-controls");
-    const notice = document.getElementById("camera-fallback-notice");
-
-    if (viewfinder) viewfinder.style.display = "flex";
-    if (snapshotPreview) snapshotPreview.style.display = "none";
+    const viewfinder = document.getElementById("camera-viewfinder-container");
+    const snapshot = document.getElementById("camera-snapshot-preview");
+    const permNotice = document.getElementById("camera-permission-notice");
     if (liveControls) liveControls.style.display = "flex";
     if (confirmControls) confirmControls.style.display = "none";
-    if (notice) notice.style.display = "none";
+    if (viewfinder) viewfinder.style.display = "block";
+    if (snapshot) snapshot.style.display = "none";
+    if (permNotice) permNotice.style.display = "none";
 
-    this.startCameraStream();
+    await this.startCameraStream();
   },
 
   async startCameraStream() {
     const video = document.getElementById("camera-video-feed");
-    const notice = document.getElementById("camera-fallback-notice");
+    const permNotice = document.getElementById("camera-permission-notice") || document.getElementById("camera-fallback-notice");
+    const liveControls = document.getElementById("camera-live-controls");
     if (!video) return;
 
     if (this.cameraStream) {
@@ -863,38 +931,56 @@ const PatientIntake = {
       this.cameraStream = null;
     }
 
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: this.cameraFacingMode },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          }
-        });
-        this.cameraStream = stream;
-        video.srcObject = stream;
-        await video.play();
-      } else {
-        throw new Error("getUserMedia not supported");
-      }
-    } catch (err) {
-      console.warn("Camera stream initial error, attempting relaxed constraints:", err);
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (permNotice) permNotice.style.display = "block";
+      if (liveControls) liveControls.style.display = "flex";
+      return;
+    }
+
+    const mode = this.cameraFacingMode || this._cameraFacingMode || "environment";
+    const constraintsList = [
+      { video: { facingMode: { ideal: mode }, width: { ideal: 1920 }, height: { ideal: 1080 } } },
+      { video: { facingMode: { ideal: mode }, width: { ideal: 1280 }, height: { ideal: 720 } } },
+      { video: { facingMode: { ideal: mode } } },
+      { video: true }
+    ];
+
+    let stream = null;
+    for (const constraints of constraintsList) {
       try {
-        const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        this.cameraStream = fallbackStream;
-        video.srcObject = fallbackStream;
-        await video.play();
-      } catch (fallbackErr) {
-        console.warn("Camera access denied or unavailable:", fallbackErr);
-        if (notice) notice.style.display = "block";
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        if (stream) break;
+      } catch (err) {
+        console.warn("Camera constraint attempt failed:", constraints, err.message);
       }
+    }
+
+    if (stream) {
+      this.cameraStream = stream;
+      video.srcObject = stream;
+      if (mode === "user") {
+        video.style.transform = "scaleX(-1)";
+      } else {
+        video.style.transform = "none";
+      }
+      await video.play().catch(() => {});
+      if (permNotice) permNotice.style.display = "none";
+      if (liveControls) liveControls.style.display = "flex";
+    } else {
+      console.warn("Could not acquire video stream with any constraints.");
+      if (permNotice) permNotice.style.display = "block";
+      if (liveControls) liveControls.style.display = "flex";
     }
   },
 
   async switchCamera() {
     this.cameraFacingMode = this.cameraFacingMode === "environment" ? "user" : "environment";
     await this.startCameraStream();
+  },
+
+  async switchCamera() {
+    this._cameraFacingMode = (this._cameraFacingMode === "environment") ? "user" : "environment";
+    await this._startCameraStream();
   },
 
   capturePhotoFromWebcam() {
@@ -906,7 +992,15 @@ const PatientIntake = {
     const liveControls = document.getElementById("camera-live-controls");
     const confirmControls = document.getElementById("camera-confirm-controls");
 
-    if (!video || !canvas) return;
+    // Graceful fallback if video stream has no active frames
+    if (!video.videoWidth || !this.cameraStream) {
+      const camInput = document.getElementById("doc-camera-input") || document.getElementById("doc-file-input");
+      if (camInput) {
+        camInput.click();
+        this.closeCameraModal();
+      }
+      return;
+    }
 
     const width = video.videoWidth || 1280;
     const height = video.videoHeight || 720;
@@ -916,6 +1010,7 @@ const PatientIntake = {
     const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0, width, height);
 
+    // Show snapshot preview and confirm controls
     canvas.toBlob((blob) => {
       if (!blob) return;
       if (this.capturedBlobUrl) {
@@ -964,6 +1059,55 @@ const PatientIntake = {
     }
     const modal = document.getElementById("camera-capture-modal");
     if (modal) modal.style.display = "none";
+=======
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+
+      const previewImg = document.getElementById("camera-preview-img");
+      const snapshot = document.getElementById("camera-snapshot-preview");
+      const viewfinder = document.getElementById("camera-viewfinder-container");
+      const liveControls = document.getElementById("camera-live-controls");
+      const confirmControls = document.getElementById("camera-confirm-controls");
+
+      if (previewImg) previewImg.src = dataUrl;
+      if (snapshot) snapshot.style.display = "block";
+      if (viewfinder) viewfinder.style.display = "none";
+      if (liveControls) liveControls.style.display = "none";
+      if (confirmControls) confirmControls.style.display = "flex";
+
+      // Store blob for later confirmation
+      this._pendingCameraBlob = blob;
+    }, "image/jpeg", 0.92);
+>>>>>>> uiux
+  },
+
+  retakeCameraPhoto() {
+    this._pendingCameraBlob = null;
+    const snapshot = document.getElementById("camera-snapshot-preview");
+    const viewfinder = document.getElementById("camera-viewfinder-container");
+    const liveControls = document.getElementById("camera-live-controls");
+    const confirmControls = document.getElementById("camera-confirm-controls");
+    if (snapshot) snapshot.style.display = "none";
+    if (viewfinder) viewfinder.style.display = "block";
+    if (liveControls) liveControls.style.display = "flex";
+    if (confirmControls) confirmControls.style.display = "none";
+  },
+
+  confirmCameraPhoto() {
+    const blob = this._pendingCameraBlob;
+    if (!blob) return;
+    this._pendingCameraBlob = null;
+    const file = new File([blob], `camera_scan_${Date.now()}.jpg`, { type: "image/jpeg" });
+    this.capturedCameraFile = file;
+
+    try {
+      const container = new DataTransfer();
+      container.items.add(file);
+      const fileInput = document.getElementById("doc-file-input");
+      if (fileInput) fileInput.files = container.files;
+    } catch (e) {}
+
+    this.handleFileSelect({ target: { files: [file] } });
+    this.closeCameraModal();
   },
 
   async handleDocUpload(e) {
@@ -994,7 +1138,7 @@ const PatientIntake = {
       ocrDiv.innerHTML = `
         <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:var(--radius-md); padding:1rem; margin-top:1rem;">
           <div style="display:flex; align-items:center; gap:8px;">
-            <span class="spinner" style="display:inline-block;">⏳</span>
+            <span class="spinner" style="display:inline-block;"></span>
             <p id="doc-upload-progress-text" style="font-weight:600; color:#334155; font-size:0.95rem;">
               Uploading ${totalCount} document${totalCount > 1 ? 's' : ''} to secure cloud vault...
             </p>
@@ -1062,7 +1206,7 @@ const PatientIntake = {
       te: "వైద్య పత్రాలు విజయవంతంగా అప్‌లోడ్ చేయబడ్డాయి. మీరు మరిన్ని పత్రాలను జోడించవచ్చు లేదా కొనసాగవచ్చు.",
       ml: "മെഡിക്കൽ രേഖകൾ വിജയകരമായി അപ്‌ലോഡ് ചെയ്തു. നിങ്ങൾക്ക് കൂടുതൽ രേഖകൾ ചേർക്കാം അല്ലെങ്കിൽ തുടരാം.",
       mr: "वैद्यकीय कागदपत्रे यशस्वीरित्या अपलोड झाली आहेत. आपण आणखी कागदपत्रे जोडू शकता किंवा पुढे जाऊ शकता.",
-      bn: "মেডিকেল নথি সফলভাবে আপলোড হয়েছে। আপনি আরও নথি যোগ করতে পারেন বা এগিয়ে যেতে পারেন।",
+      bn: "মেডিকেল নথি সফলভাবে আপলোড হয়েছে। আপনি আরও নথি যোগ করতে পারেন বা এগিয়ে যেতে পারেন.",
       gu: "મેડિકલ દસ્તાવેજો સફળતાપૂર્વક અપલોડ થઈ ગયા છે. તમે વધુ દસ્તાવેજો ઉમેરી શકો છો અથવા આગળ વધી શકો છો.",
       pa: "ਮੈਡੀਕਲ ਦਸਤਾਵੇਜ਼ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਕੀਤੇ ਗਏ ਹਨ।"
     };
@@ -1150,6 +1294,43 @@ const PatientIntake = {
             </div>
           ` : ''}
         </div>
+          console.warn("OCR polling notice:", e.message);
+        }
+        return false;
+      };
+
+      // Speak native confirmation
+      const nativeDocSuccess = {
+        en: "Medical report uploaded and stored successfully. Proceeding to consultation.",
+        hi: "मेडिकल रिपोर्ट सफलतापूर्वक अपलोड और सुरक्षित कर दी गई है।",
+        kn: "ವೈದ್ಯಕೀಯ ವರದಿ ಯಶಸ್ವಿಯಾಗಿ ಅಪ್‌ಲೋಡ್ ಆಗಿದೆ.",
+        ta: "மருத்துவ அறிக்கை வெற்றிகரமாக பதிவேற்றப்பட்டது.",
+        te: "వైద్య నివేదిక విజయవంతంగా అప్‌లోడ్ చేయబడింది.",
+        ml: "മെഡിക്കൽ റിപ്പോർട്ട് വിജയകരമായി അപ്‌ಲೋഡ് ചെയ്തു.",
+        mr: "वैद्यकीय अहवाल यशस्वीरित्या अपलोड झाला आहे.",
+        bn: "মেডিকেল রিপোর্ট সফলভাবে আপলোড হয়েছে।",
+        gu: "મેડિકલ રિપોર્ટ સફળતાપૂર્વક અપલોડ થઈ ગયો છે.",
+        pa: "ਮੈਡੀਕਲ ਰਿਪੋਰਟ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਈ ਹੈ।"
+      };
+      const docMsg = nativeDocSuccess[this.language] || nativeDocSuccess["en"];
+      SpeechManager.speakText(docMsg, this.language);
+
+      // Background poll in parallel — do NOT auto-advance, wait for Proceed button
+      const pollInterval = setInterval(async () => {
+        const done = await pollOcr();
+        if (done || attempts >= 8) {
+          clearInterval(pollInterval);
+        }
+      }, 800);
+
+      // Show Proceed button inside the OCR result area (NO auto-advance)
+      btn.style.display = "none";
+      const proceedDiv = document.createElement('div');
+      proceedDiv.style.cssText = 'margin-top:1rem; text-align:center;';
+      proceedDiv.innerHTML = `
+        <button type="button" id="btn-proceed-after-ocr" class="btn-primary-action" style="padding:0.75rem 2rem; font-size:1rem; font-weight:700;" onclick="PatientIntake.handleStep6Continue()">
+          Proceed to AI Clinical Interview →
+        </button>
       `;
     }).join("");
 
@@ -1308,11 +1489,17 @@ const PatientIntake = {
   },
 
   selectOption(val, label, weights) {
+    if (this._isSubmittingAnswer || this._isFinishing || this.currentStep >= 8) return;
     const input = document.getElementById("patient-answer-input");
     if (input) {
       input.value = label || val;
     }
     this.selectedOptionMeta = { value: val, label: label, weights: weights };
+
+    // Disable option buttons to prevent multiple clicks
+    const allPills = document.querySelectorAll(".btn-option-pill");
+    allPills.forEach(p => { p.disabled = true; p.style.opacity = "0.7"; });
+
     this.handleAnswerSubmit();
   },
 
@@ -1326,10 +1513,15 @@ const PatientIntake = {
     }
   },
 
-  async handleAnswerSubmit() {
-    SpeechManager.stopListening();
-    if (this._isSubmittingAnswer || this._isFinishingIntake || this._intakeCompleted) return;
-    
+  _isSubmittingAnswer: false,
+  _isFinishing: false,
+
+    try {
+      if (typeof SpeechManager !== "undefined" && SpeechManager.stopListening) {
+        SpeechManager.stopListening();
+      }
+    } catch (e) {}
+    if (this._isSubmittingAnswer || this._isFinishingIntake || this._intakeCompleted || this._isFinishing) return;
     const input = document.getElementById("patient-answer-input");
     const answer = input ? input.value.trim() : "";
     if (!answer) return;
@@ -1347,7 +1539,7 @@ const PatientIntake = {
     const originalText = btn ? btn.innerHTML : "Submit Answer";
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = `<span style="margin-right:6px;">⏳</span> Recording answer...`;
+      btn.innerHTML = ` Recording answer...`;
     }
 
     try {
@@ -1375,27 +1567,35 @@ const PatientIntake = {
       }
     } catch (err) {
       console.warn("Answer submission notice:", err.message);
-      // Auto-retry once in case of serverless wake-up
-      try {
-        const retryRes = await api.submitAnswer(
-          this.currentSessionId,
-          this.currentQuestionId,
-          answer,
-          this.isAttendant ? "ATTENDANT" : "PATIENT",
-          this.attendantId,
-          this.language
-        );
-        if (retryRes && (retryRes.is_finished || !retryRes.next_question)) {
-          await this.finishIntake();
-        } else if (retryRes && retryRes.next_question) {
-          this.renderQuestion(retryRes.next_question);
+      if (!this._isFinishing && this.currentStep === 7) {
+        try {
+          const retryRes = await api.submitAnswer(
+            this.currentSessionId,
+            this.currentQuestionId,
+            answer,
+            this.isAttendant ? "ATTENDANT" : "PATIENT",
+            this.attendantId,
+            this.language
+          );
+          if (retryRes && (retryRes.is_finished || !retryRes.next_question)) {
+            await this.finishIntake();
+          } else if (retryRes && retryRes.next_question) {
+            this.renderQuestion(retryRes.next_question);
+          } else {
+            await this.finishIntake();
+          }
+        } catch (retryErr) {
+          console.warn("Retry submission failed, finalizing registration cleanly:", retryErr.message);
+          if (!this._isFinishing && this.currentStep === 7) {
+            await this.finishIntake();
+          }
         }
       } catch (retryErr) {
         console.warn("Retry submit answer failed:", retryErr.message);
       }
     } finally {
       this._isSubmittingAnswer = false;
-      if (btn && !this._isFinishingIntake) {
+      if (btn && this.currentStep < 8 && !this._isFinishing && !this._isFinishingIntake) {
         btn.disabled = false;
         btn.innerHTML = originalText;
       }
@@ -1405,7 +1605,8 @@ const PatientIntake = {
   renderTicketDetails(data = {}) {
     const bodyEl = document.getElementById("ticket-details-body");
     if (bodyEl) {
-      const rawDept = (data.department || this.department || 'General Medicine').toLowerCase();
+      const patientName = (data && data.patient_name) || this.registeredData?.name || 'Registered Patient';
+      const rawDept = ((data && data.department) || this.department || 'General Medicine').toLowerCase();
       const deptDisplayMap = {
         "kayachikitsa": "KAYACHIKITSA (INTERNAL MEDICINE)",
         "panchakarma": "PANCHAKARMA (DETOX & PURIFICATION)",
@@ -1429,9 +1630,8 @@ const PatientIntake = {
         "emergency": "EMERGENCY / TRAUMA"
       };
       const dept = deptDisplayMap[rawDept] || rawDept.toUpperCase().replace(/-/g, ' ');
-      const patientName = data.patient_name || this.registeredData?.name || 'Registered Patient';
-      const complaint = data.chief_complaint || this.chiefComplaint || 'Clinical intake recorded successfully.';
-      const reasoning = data.reasoning || 'Patient triaged and queued for attending physician consultation.';
+      const complaint = (data && data.chief_complaint) || this.chiefComplaint || 'Clinical intake recorded successfully.';
+      const reasoning = (data && data.reasoning) || 'Patient triaged and queued for attending physician consultation.';
 
       bodyEl.innerHTML = `
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.25rem; margin-bottom:1.25rem;">
@@ -1456,12 +1656,19 @@ const PatientIntake = {
   },
 
   async finishIntake() {
-    if (this._isFinishingIntake || this._intakeCompleted) {
+    if (this._isFinishing || this._isFinishingIntake || this.currentStep >= 8 || this._intakeCompleted) {
       console.log("Intake already finishing or completed, ignoring duplicate call.");
       return;
     }
+    this._isFinishing = true;
     this._isFinishingIntake = true;
     this._intakeCompleted = true;
+
+    try {
+      if (typeof SpeechManager !== "undefined" && SpeechManager.stopAllAudio) {
+        SpeechManager.stopAllAudio();
+      }
+    } catch (e) {}
 
     const modal = document.getElementById("ai-synthesis-modal");
     const fill = document.getElementById("synthesis-progress-fill");
@@ -1469,9 +1676,10 @@ const PatientIntake = {
     const item2 = document.getElementById("synthesis-step-2");
     const item3 = document.getElementById("synthesis-step-3");
 
-    if (modal && fill) {
+    if (modal) {
+      modal.style.display = "flex";
       modal.classList.add("active");
-      fill.style.width = "0%";
+      if (fill) fill.style.width = "0%";
       if (item1) item1.classList.remove("done");
       if (item2) item2.classList.remove("done");
       if (item3) item3.classList.remove("done");
@@ -1488,40 +1696,54 @@ const PatientIntake = {
       console.warn("Summary completion notice:", err.message);
     }
 
-    // Wait for single smooth clinical synthesis visualization
-    await new Promise(resolve => setTimeout(resolve, 1300));
+    await new Promise(resolve => setTimeout(resolve, 1200));
 
     if (modal) {
       modal.classList.remove("active");
+      modal.style.display = "none";
     }
 
-    this.goToStep(8);
+    try {
+      this.goToStep(8);
 
-    const ticketNum = res?.ticket_number || `MK-${Math.floor(10000000 + Math.random() * 90000000)}`;
-    const numEl = document.getElementById("ticket-number-display");
-    if (numEl) numEl.innerText = ticketNum;
+      const ticketNum = res?.ticket_number || `MK-${Math.floor(10000000 + Math.random() * 90000000)}`;
+      const numEl = document.getElementById("ticket-number-display");
+      if (numEl) numEl.innerText = ticketNum;
 
-    const rf = res?.red_flag || { overall_severity: "MEDIUM" };
-    const routing = res?.routing || { recommended_department: this.department || "general_medicine", reasoning: "Comprehensive clinical intake recorded." };
+      const rf = res?.red_flag || { overall_severity: "MEDIUM" };
+      const routing = res?.routing || { recommended_department: this.department || "general_medicine", reasoning: "Comprehensive clinical intake recorded." };
 
-    const badgeContainer = document.getElementById("ticket-triage-badge");
-    if (badgeContainer) {
-      let badgeClass = "lang-badge-ready";
-      if (rf.overall_severity === "CRITICAL") badgeClass = "lang-badge-connected' style='background:#fee2e2; color:#991b1b;";
-      else if (rf.overall_severity === "HIGH") badgeClass = "lang-badge-connected' style='background:#ffedd5; color:#9a3412;";
-      else if (rf.overall_severity === "MEDIUM") badgeClass = "lang-badge-connected' style='background:#fef3c7; color:#92400e;";
+      const badgeContainer = document.getElementById("ticket-triage-badge");
+      if (badgeContainer) {
+        let badgeClass = "lang-badge-ready";
+        let badgeStyle = "";
+        if (rf.overall_severity === "CRITICAL") {
+          badgeClass = "lang-badge-connected";
+          badgeStyle = "background:#fee2e2; color:#991b1b;";
+        } else if (rf.overall_severity === "HIGH") {
+          badgeClass = "lang-badge-connected";
+          badgeStyle = "background:#ffedd5; color:#9a3412;";
+        } else if (rf.overall_severity === "MEDIUM") {
+          badgeClass = "lang-badge-connected";
+          badgeStyle = "background:#fef3c7; color:#92400e;";
+        }
 
-      badgeContainer.innerHTML = `<span class="lang-tile-badge ${badgeClass}">${rf.overall_severity} PRIORITY</span>`;
+        badgeContainer.innerHTML = `<span class="lang-tile-badge ${badgeClass}" style="${badgeStyle}">${rf.overall_severity} PRIORITY</span>`;
+      }
+
+      this.renderTicketDetails({
+        patient_name: this.registeredData?.name || 'Registered Patient',
+        department: routing.recommended_department || this.department || 'General Medicine',
+        chief_complaint: res?.draft_summary?.chief_complaint || this.chiefComplaint || 'Recorded during intake',
+        reasoning: routing.reasoning || 'Patient triaged and ready for consultation.'
+      });
+
+      this.triggerConfettiBurst();
+
+      SpeechManager.speakText(`Intake completed. Consultation Ticket number is ${ticketNum}. Please proceed to the ${routing.recommended_department || 'assigned'} department.`, this.language);
+    } catch (renderErr) {
+      console.error("Ticket rendering error:", renderErr);
     }
-
-    this.renderTicketDetails({
-      patient_name: this.registeredData?.name || 'Registered Patient',
-      department: routing.recommended_department || this.department || 'General Medicine',
-      chief_complaint: res?.draft_summary?.chief_complaint || this.chiefComplaint || 'Recorded during intake',
-      reasoning: routing.reasoning || 'Patient triaged and ready for consultation.'
-    });
-
-    SpeechManager.speakText(`Intake completed. Consultation Ticket number is ${ticketNum}. Please proceed to the ${routing.recommended_department || 'assigned'} department.`, this.language);
   },
 
   triggerConfettiBurst() {

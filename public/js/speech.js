@@ -152,9 +152,9 @@ const SpeechManager = {
     if (statusEl) {
       if (isPostSpeech || (this.hasReceivedSpeechInSession && this.lastTranscript)) {
         const preview = this.lastTranscript ? `"${this.lastTranscript.slice(-25)}"` : 'Voice captured';
-        statusEl.innerHTML = `🎙️ ${preview} <span class="mic-countdown-pill" style="font-size:0.75rem; background:rgba(220,38,38,0.18); color:#991b1b; padding:2px 8px; border-radius:12px; font-weight:700; border:1px solid rgba(220,38,38,0.35); margin-left:6px;">closing in ${seconds}s</span>`;
+        statusEl.innerHTML = `${preview} <span class="mic-countdown-pill" style="font-size:0.75rem; background:rgba(220,38,38,0.18); color:#991b1b; padding:2px 8px; border-radius:12px; font-weight:700; border:1px solid rgba(220,38,38,0.35); margin-left:6px;">closing in ${seconds}s</span>`;
       } else {
-        statusEl.innerHTML = `🎙️ Listening... <span class="mic-countdown-pill" style="font-size:0.75rem; background:rgba(220,38,38,0.18); color:#991b1b; padding:2px 8px; border-radius:12px; font-weight:700; border:1px solid rgba(220,38,38,0.35); margin-left:6px;">${seconds}s</span>`;
+        statusEl.innerHTML = `Listening... <span class="mic-countdown-pill" style="font-size:0.75rem; background:rgba(220,38,38,0.18); color:#991b1b; padding:2px 8px; border-radius:12px; font-weight:700; border:1px solid rgba(220,38,38,0.35); margin-left:6px;">${seconds}s</span>`;
       }
     }
   },
@@ -245,9 +245,9 @@ const SpeechManager = {
 
     if (statusEl) {
       if (hasText) {
-        statusEl.innerHTML = `✓ Voice captured. Review or submit below.`;
+        statusEl.innerHTML = `Voice captured. Review or submit below.`;
       } else {
-        statusEl.innerText = (typeof I18n !== 'undefined' && I18n.t) ? I18n.t('mic_speak_btn') : "🎤 Speak Answer";
+        statusEl.innerText = (typeof I18n !== 'undefined' && I18n.t) ? I18n.t('mic_speak_btn') : "Speak Answer";
       }
     }
     this.state = hasText ? SpeechState.SUCCESS : SpeechState.IDLE;
@@ -269,22 +269,22 @@ const SpeechManager = {
           break;
         case SpeechState.PROCESSING:
         case SpeechState.TRANSCRIBING:
-          statusEl.innerText = detail || "⏳ Processing audio & transcribing...";
+          statusEl.innerText = detail || "Processing audio & transcribing...";
           if (waveEl) waveEl.style.display = 'none';
           break;
         case SpeechState.SUCCESS:
-          statusEl.innerText = detail || "✓ Voice captured. Review or submit below.";
+          statusEl.innerText = detail || "Voice captured. Review or submit below.";
           if (micBtn) micBtn.classList.remove('recording');
           if (waveEl) waveEl.style.display = 'none';
           break;
         case SpeechState.ERROR:
-          statusEl.innerText = detail || "⚠️ Speech not recognized. Please retry or type.";
+          statusEl.innerText = detail || "Speech not recognized. Please retry or type.";
           if (micBtn) micBtn.classList.remove('recording');
           if (waveEl) waveEl.style.display = 'none';
           break;
         case SpeechState.IDLE:
         default:
-          statusEl.innerText = detail || ((typeof I18n !== 'undefined' && I18n.t) ? I18n.t('mic_speak_btn') : "🎤 Speak Answer");
+          statusEl.innerText = detail || ((typeof I18n !== 'undefined' && I18n.t) ? I18n.t('mic_speak_btn') : "Speak Answer");
           if (micBtn) micBtn.classList.remove('recording');
           if (waveEl) waveEl.style.display = 'none';
           break;
@@ -446,7 +446,7 @@ const SpeechManager = {
     } else {
       const answerInput = document.getElementById('patient-answer-input');
       if (answerInput && answerInput.value.trim().length > 0) {
-        this.setState(SpeechState.SUCCESS, "✓ Voice captured. Review or submit below.");
+        this.setState(SpeechState.SUCCESS, "Voice captured. Review or submit below.");
       } else {
         this.setState(SpeechState.IDLE);
       }
@@ -788,6 +788,11 @@ const SpeechManager = {
     }
   },
 
+  toggleMute() {
+    this.toggleGlobalMute();
+    return !this.isMuted;
+  },
+
   currentAudio: null,
 
   toggleSpeak(text = null, lang = null) {
@@ -813,6 +818,10 @@ const SpeechManager = {
 
   stopAllAudio() {
     this.clearAllTimers();
+    if (this._speechWatchdog) {
+      clearInterval(this._speechWatchdog);
+      this._speechWatchdog = null;
+    }
     if (this.synth) {
       try { this.synth.cancel(); } catch(e) {}
     }
@@ -867,10 +876,16 @@ const SpeechManager = {
         utterance.pitch = 1.0;
         utterance.voice = assignedVoice;
 
+<<<<<<< HEAD
         let audioStarted = false;
 
         utterance.onstart = () => {
           audioStarted = true;
+=======
+        let speechStarted = false;
+        utterance.onstart = () => {
+          speechStarted = true;
+>>>>>>> uiux
           this.isSpeaking = true;
           this.updateButtonStates('playing');
         };
@@ -906,18 +921,31 @@ const SpeechManager = {
         this.updateButtonStates('playing');
         this.synth.speak(utterance);
 
-        if (this._speechWatchdog) clearInterval(this._speechWatchdog);
+        // Chrome watchdog to prevent audio suspension mid-speech
+        if (this._speechWatchdog) {
+          clearInterval(this._speechWatchdog);
+          this._speechWatchdog = null;
+        }
         let watchdogTicks = 0;
         this._speechWatchdog = setInterval(() => {
           watchdogTicks++;
-          if (this.synth && this.synth.speaking) {
+          // Keep browser speech active if paused
+          if (this.synth && (this.synth.speaking || this.synth.pending)) {
             try { this.synth.resume(); } catch(e) {}
-          } else if (watchdogTicks <= 1 && !audioStarted) {
+            if (speechStarted || watchdogTicks >= 4) {
+              clearInterval(this._speechWatchdog);
+              this._speechWatchdog = null;
+            }
+          } else if (watchdogTicks >= 3 && !speechStarted) {
+            // Truly stalled after 2.4s without starting speech
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
-            console.warn("Browser voice produced no audio for", targetLang, "- falling back to server TTS");
+            if (this.synth) {
+              try { this.synth.cancel(); } catch(e) {}
+            }
+            console.warn("Browser voice stalled for", targetLang, "- falling back to server TTS");
             this._playServerAudioStream(text, targetLang, onEndCallback);
-          } else {
+          } else if (speechStarted) {
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
           }
@@ -934,7 +962,24 @@ const SpeechManager = {
   },
 
   _playServerAudioStream(text, targetLang, onEndCallback) {
+    if (this.isMuted) {
+      if (typeof onEndCallback === 'function') onEndCallback();
+      return;
+    }
+    
     try {
+      // Strictly cancel browser speech synthesis before server audio starts
+      if (this.synth) {
+        try { this.synth.cancel(); } catch(e) {}
+      }
+      if (this.currentAudio) {
+        try {
+          this.currentAudio.pause();
+          this.currentAudio.currentTime = 0;
+        } catch(e) {}
+        this.currentAudio = null;
+      }
+
       this.updateButtonStates('playing');
       this.isSpeaking = true;
 

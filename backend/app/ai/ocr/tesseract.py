@@ -19,6 +19,10 @@ class TesseractOCREngine(BaseOCREngine):
         self._is_configured = False
         self.available_languages: List[str] = []
         self.active_lang_string: str = "eng"
+        try:
+            self._ensure_configured()
+        except Exception as e:
+            logger.warning("Eager Tesseract configuration deferred: %s", str(e))
 
     def _ensure_configured(self):
         if self._is_configured:

@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 from app.schemas.physician import (
     ClinicalDraftSummary, PhysicianConfirmPayload, PhysicianDecisionPayload,
-    AskPatientQuestionPayload, QueueStatus
+    AskPatientQuestionPayload, QueueStatus, PriorityQueueItem
 )
 from app.schemas.routing import RecommendationStatus, DepartmentId
 from app.schemas.redflag import RedFlagSeverity
@@ -15,6 +15,7 @@ from app.core.security import SourceType, log_audit_event, UserRole
 from app.db.repositories.intake_repository import IntakeRepository
 from app.db.repositories.queue_repository import QueueRepository
 from app.db.repositories.timeline_repository import TimelineRepository
+from app.db.repositories.patient_repository import PatientRepository
 from app.ai.gemma.client import GemmaClient
 from app.modules.physician.clinical_analyzer import ClinicalAnalysisEngine, ClinicalAnalysisResult
 from rag.ayurparam_adapter import ayurparam_adapter
@@ -27,11 +28,13 @@ class PhysicianReviewService:
         intake_repo: Optional[IntakeRepository] = None,
         queue_repo: Optional[QueueRepository] = None,
         timeline_repo: Optional[TimelineRepository] = None,
+        patient_repo: Optional[PatientRepository] = None,
         gemma_client: Optional[GemmaClient] = None
     ):
         self.intake_repo = intake_repo or IntakeRepository()
         self.queue_repo = queue_repo or QueueRepository()
         self.timeline_repo = timeline_repo or TimelineRepository()
+        self.patient_repo = patient_repo or PatientRepository()
         self.gemma = gemma_client or GemmaClient()
 
     async def generate_draft_summary(
@@ -420,6 +423,14 @@ STRICT RULES:
 
         question_text = payload.custom_question if payload.custom_question else category_prompts.get(payload.category, category_prompts["other"])
         existing_questions = self.intake_repo.get_questions_by_session(session_id)
+
+        # Idempotency: Avoid creating identical duplicate questions if clicked multiple times
+        norm_text = question_text.strip().lower()
+        for eq in existing_questions:
+            if eq.question and eq.question.strip().lower() == norm_text:
+                logger.info(f"Targeted question '{question_text}' already exists for session {session_id}, reusing existing item {eq.question_id}")
+                return eq
+
         next_seq = len(existing_questions) + 1
 
         question = QuestionItem(
