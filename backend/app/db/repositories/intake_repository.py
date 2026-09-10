@@ -19,14 +19,23 @@ class IntakeRepository(BaseRepository):
             session_q = [q for q in all_q if q.get("session_id") == session_id]
 
         seen = {}
+        seen_texts = set()
         for q in session_q:
             qid = q.get("question_id")
+            qtext = (q.get("question") or "").strip().lower()
+            # If an identical question was already recorded for this session, skip duplicate entries
+            if qtext and qtext in seen_texts:
+                continue
             if qid:
                 seen[qid] = q
             else:
                 seen[str(len(seen))] = q
+            if qtext:
+                seen_texts.add(qtext)
         deduped = list(seen.values())
-        deduped.sort(key=lambda x: x.get("sequence", 0))
+        # Re-number sequence neatly if duplicates were pruned
+        for idx, item in enumerate(sorted(deduped, key=lambda x: x.get("sequence", 0)), 1):
+            item["sequence"] = idx
         return [QuestionItem.model_validate(q) for q in deduped]
 
     def save_answer(self, answer: AnswerItem) -> AnswerItem:

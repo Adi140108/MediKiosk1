@@ -733,7 +733,19 @@ const PhysicianDashboard = {
     if (qaList) {
       if (questions && questions.length > 0) {
         const sessId = data.session_id || (data.queue_item && data.queue_item.session_id) || (this.currentPatientData && this.currentPatientData.session_id) || "";
-        qaList.innerHTML = questions.map((q, idx) => {
+        // Clean presentation: Deduplicate identical questions (e.g. repeated targeted inquiries)
+        const seenQuestionTexts = new Set();
+        const displayQuestions = [];
+        for (const q of questions) {
+          const normQ = (q.question || "").trim().toLowerCase();
+          if (normQ && !seenQuestionTexts.has(normQ)) {
+            seenQuestionTexts.add(normQ);
+            displayQuestions.push(q);
+          } else if (!normQ) {
+            displayQuestions.push(q);
+          }
+        }
+        qaList.innerHTML = displayQuestions.map((q, idx) => {
           const ans = answers.find(a => a.question_id === q.question_id || a.sequence === q.sequence);
           const ansVal = ans ? (ans.answer || ans.normalized_answer || ans.original_answer || ans.answer_text) : null;
           const isAttendant = ans && ans.source_type === "ATTENDANT";
@@ -881,7 +893,7 @@ const PhysicianDashboard = {
             <div class="ocr-item-card">
               <div class="ocr-item-header">
                 <span class="ocr-item-title">
-                  <svg class="btn-icon-svg" style="color:#0D9488;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                  <svg class="btn-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#0D9488; width:16px; height:16px; min-width:16px; min-height:16px; display:inline-block; vertical-align:middle; fill:none; stroke:currentColor; flex-shrink:0;"><path fill="none" stroke="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline fill="none" stroke="currentColor" points="14 2 14 8 20 8"></polyline></svg>
                   <strong>${filename}</strong>
                 </span>
                 <span style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
@@ -927,8 +939,8 @@ const PhysicianDashboard = {
             <div style="font-size:1.8rem; margin-bottom:0.4rem;"></div>
             <h5 style="margin:0; font-size:0.92rem; font-weight:700; color:#334155;">No Prior Physical Documents Uploaded</h5>
             <p style="margin:0.25rem 0 0.85rem 0; font-size:0.8rem; color:#64748B;">Patient completed intake verbally or without physical prescription papers.</p>
-            <button type="button" class="btn-card-action btn-card-action-secondary" style="font-size:0.78rem;" onclick="PhysicianDashboard.loadDemoEvidenceReport()">
-              <svg class="btn-icon-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+            <button type="button" class="btn-card-action btn-card-action-secondary" style="font-size:0.78rem; display:inline-flex; align-items:center; gap:0.5rem;" onclick="PhysicianDashboard.loadDemoEvidenceReport()">
+              <svg class="btn-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px; height:16px; min-width:16px; min-height:16px; display:inline-block; vertical-align:middle; fill:none; stroke:currentColor; flex-shrink:0;"><path fill="none" stroke="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline fill="none" stroke="currentColor" points="14 2 14 8 20 8"></polyline><line fill="none" stroke="currentColor" x1="12" y1="18" x2="12" y2="12"></line><line fill="none" stroke="currentColor" x1="9" y1="15" x2="15" y2="15"></line></svg>
               <span>Inspect Sample Digitized Lab Report</span>
             </button>
           </div>
@@ -1141,7 +1153,14 @@ const PhysicianDashboard = {
     if (modal) modal.style.display = "none";
   },
 
-  async submitTargetedQuestion() {
+  async submitTargetedQuestion(btn) {
+    const sendBtn = btn || document.querySelector("#ask-patient-modal button.btn-primary-action");
+    const originalText = sendBtn ? sendBtn.innerHTML : "Send to Kiosk ↗";
+    if (sendBtn) {
+      sendBtn.disabled = true;
+      sendBtn.innerHTML = `<span class="loading-spinner-inline" style="display:inline-block; width:14px; height:14px; border:2px solid #ffffff; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; vertical-align:middle; margin-right:6px;"></span> Sending...`;
+    }
+
     const category = document.getElementById("ask-category-select").value;
     const custom = document.getElementById("ask-custom-input").value.trim();
 
@@ -1156,15 +1175,22 @@ const PhysicianDashboard = {
       this.inspectPatientCase(this.currentSessionId);
     } catch (err) {
       alert("Failed to send question: " + err.message);
+    } finally {
+      if (sendBtn) {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = originalText;
+      }
     }
   },
 
   async handleConfirmCase(e) {
     if (e && e.preventDefault) e.preventDefault();
     const btn = document.getElementById("btn-confirm-record") || (e?.target?.querySelector ? e.target.querySelector("button[type='submit']") : null);
+    const originalBtnHtml = `<svg class="btn-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:16px; height:16px; min-width:16px; min-height:16px; max-width:16px; max-height:16px; fill:none; stroke:currentColor; flex-shrink:0; display:inline-block; vertical-align:middle;"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="22 4 12 14.01 9 11.01"></polyline></svg><span>Confirm &amp; Sign Record</span>`;
+
     if (btn) {
       btn.disabled = true;
-      btn.innerText = "Confirming & Signing...";
+      btn.innerHTML = `<span class="loading-spinner-inline" style="display:inline-block; width:14px; height:14px; border:2px solid #ffffff; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; vertical-align:middle; margin-right:6px;"></span><span>Confirming & Signing...</span>`;
     }
 
     try {
@@ -1187,7 +1213,7 @@ const PhysicianDashboard = {
         alert("Override rationale is required when altering the AI recommended department or priority.");
         if (btn) {
           btn.disabled = false;
-          btn.innerText = "Confirm & Sign Record";
+          btn.innerHTML = originalBtnHtml;
         }
         return;
       }
@@ -1217,7 +1243,7 @@ const PhysicianDashboard = {
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.innerText = "Confirm & Sign Record";
+        btn.innerHTML = originalBtnHtml;
       }
     }
   },

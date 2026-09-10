@@ -7,10 +7,82 @@
   <meta name="description" content="MediKiosk Physician Command Center — Clinical Decision Support, Socratic Intake Review, and Deterministic Triage Queue Management.">
   <title>MediKiosk — Physician Command Center & Clinical Portal</title>
   <link rel="icon" type="image/svg+xml" href="/logo.svg">
-  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/styles.css?v=3.5">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Robust Fallback Normalization for Action Buttons and SVG Icons */
+    .btn-icon-svg,
+    button .btn-icon-svg,
+    .btn-card-action svg,
+    .btn-primary-action svg,
+    .btn-secondary-action svg {
+      width: 16px !important;
+      height: 16px !important;
+      min-width: 16px !important;
+      min-height: 16px !important;
+      max-width: 16px !important;
+      max-height: 16px !important;
+      fill: none !important;
+      stroke: currentColor !important;
+      stroke-width: 2.2 !important;
+      stroke-linecap: round !important;
+      stroke-linejoin: round !important;
+      display: inline-block !important;
+      vertical-align: middle !important;
+      flex-shrink: 0 !important;
+    }
+    .btn-icon-svg *,
+    .btn-card-action svg * {
+      fill: none !important;
+      stroke: currentColor !important;
+    }
+    .btn-card-action {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.5rem !important;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
+      font-size: 0.875rem !important;
+      font-weight: 600 !important;
+      line-height: 1.25 !important;
+      padding: 0.625rem 1.125rem !important;
+      border-radius: 0.625rem !important;
+      border: 1px solid transparent !important;
+      cursor: pointer !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+      user-select: none !important;
+      text-decoration: none !important;
+      white-space: nowrap !important;
+    }
+    .btn-card-action-primary {
+      background: linear-gradient(135deg, #0D9488 0%, #0F766E 100%) !important;
+      color: #FFFFFF !important;
+      border-color: #0D9488 !important;
+    }
+    .btn-card-action-danger {
+      background: #FEF2F2 !important;
+      color: #DC2626 !important;
+      border: 1.5px solid #FCA5A5 !important;
+    }
+    .btn-card-action-danger:hover:not(:disabled) {
+      background: #DC2626 !important;
+      color: #FFFFFF !important;
+      border-color: #DC2626 !important;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.28) !important;
+    }
+    .btn-card-action-secondary {
+      background: #F8FAFC !important;
+      color: #334155 !important;
+      border: 1.5px solid #CBD5E1 !important;
+    }
+    .btn-card-action-secondary:hover:not(:disabled) {
+      background: #EEF2F6 !important;
+      color: #0F172A !important;
+      border-color: #94A3B8 !important;
+    }
+  </style>
 </head>
 <body style="background-color: var(--bg-main);">
 
@@ -471,17 +543,17 @@
 
                   <div style="display:flex; flex-direction:column; gap:0.75rem;">
                     <div style="display:flex; gap:0.75rem;">
-                      <button type="submit" id="btn-confirm-record" class="btn-card-action btn-card-action-primary" style="flex:1; justify-content:center; min-height:46px;">
-                        <svg class="btn-icon-svg" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                        <span>Confirm & Sign Record</span>
+                      <button type="submit" id="btn-confirm-record" class="btn-card-action btn-card-action-primary" style="flex:1; justify-content:center; min-height:46px; background:linear-gradient(135deg, #0D9488 0%, #0F766E 100%); color:#ffffff; border:1px solid #0D9488; border-radius:0.625rem; display:inline-flex; align-items:center; gap:0.5rem; font-weight:600; font-size:0.875rem; cursor:pointer; padding:0.625rem 1.125rem; box-shadow:0 1px 3px rgba(0,0,0,0.08); text-decoration:none; white-space:nowrap;">
+                        <svg class="btn-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:16px; height:16px; min-width:16px; min-height:16px; max-width:16px; max-height:16px; fill:none; stroke:currentColor; flex-shrink:0; display:inline-block; vertical-align:middle;"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        <span>Confirm &amp; Sign Record</span>
                       </button>
-                      <button type="button" class="btn-card-action btn-card-action-danger" style="min-height:46px;" onclick="PhysicianDashboard.escalateToEmergency()">
-                        <svg class="btn-icon-svg" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                      <button type="button" class="btn-card-action btn-card-action-danger" style="min-height:46px; background:#FEF2F2; color:#DC2626; border:1.5px solid #FCA5A5; border-radius:0.625rem; display:inline-flex; align-items:center; justify-content:center; gap:0.5rem; font-weight:600; font-size:0.875rem; cursor:pointer; padding:0.625rem 1.125rem; box-shadow:0 1px 3px rgba(0,0,0,0.08); text-decoration:none; white-space:nowrap;" onclick="PhysicianDashboard.escalateToEmergency()">
+                        <svg class="btn-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:16px; height:16px; min-width:16px; min-height:16px; max-width:16px; max-height:16px; fill:none; stroke:currentColor; flex-shrink:0; display:inline-block; vertical-align:middle;"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" x1="12" y1="9" x2="12" y2="13"></line><line fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                         <span>Escalate</span>
                       </button>
                     </div>
-                    <button type="button" class="btn-card-action btn-card-action-secondary" style="width:100%; justify-content:center; min-height:44px;" onclick="PhysicianDashboard.handleDirectReassign()">
-                      <svg class="btn-icon-svg" viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line></svg>
+                    <button type="button" class="btn-card-action btn-card-action-secondary" style="width:100%; justify-content:center; min-height:44px; background:#F8FAFC; color:#334155; border:1.5px solid #CBD5E1; border-radius:0.625rem; display:inline-flex; align-items:center; gap:0.5rem; font-weight:600; font-size:0.875rem; cursor:pointer; padding:0.625rem 1.125rem; box-shadow:0 1px 3px rgba(0,0,0,0.08); text-decoration:none; white-space:nowrap;" onclick="PhysicianDashboard.handleDirectReassign()">
+                      <svg class="btn-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:16px; height:16px; min-width:16px; min-height:16px; max-width:16px; max-height:16px; fill:none; stroke:currentColor; flex-shrink:0; display:inline-block; vertical-align:middle;"><polyline fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="16 3 21 3 21 8"></polyline><line fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" x1="4" y1="20" x2="21" y2="3"></line><polyline fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="21 16 21 21 16 21"></polyline><line fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" x1="15" y1="15" x2="21" y2="21"></line></svg>
                       <span>Transfer / Reassign Department</span>
                     </button>
                   </div>

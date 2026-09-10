@@ -386,6 +386,14 @@ INSTRUCTIONS:
 
         question_text = payload.custom_question if payload.custom_question else category_prompts.get(payload.category, category_prompts["other"])
         existing_questions = self.intake_repo.get_questions_by_session(session_id)
+
+        # Idempotency: Avoid creating identical duplicate questions if clicked multiple times
+        norm_text = question_text.strip().lower()
+        for eq in existing_questions:
+            if eq.question and eq.question.strip().lower() == norm_text:
+                logger.info(f"Targeted question '{question_text}' already exists for session {session_id}, reusing existing item {eq.question_id}")
+                return eq
+
         next_seq = len(existing_questions) + 1
 
         question = QuestionItem(

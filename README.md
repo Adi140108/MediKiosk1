@@ -62,7 +62,19 @@ pip install -r requirements.txt
 ```
 
 ### Run Locally
+Step 1: Open Terminal in the Project Directory
+powershell
+cd c:\Users\adity\MediKiosk1
+Step 2: Activate the Virtual Environment
+powershell
+.venv\Scripts\Activate.ps1
+(If you are on Command Prompt cmd: .venv\Scripts\activate.bat)
 
+Step 3: Start the FastAPI Server
+powershell
+python -m uvicorn backend.app.main:app --port 8000 --reload
+Step 4: Open in Browser
+Open http://localhost:8000/ in your browser.
 ```bash
 # Start FastAPI server
 python -m uvicorn backend.app.main:app --reload --port 8000

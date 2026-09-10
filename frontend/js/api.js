@@ -154,7 +154,7 @@ const api = {
         attendant_id: attendantId,
         language: language
       })
-    }, 5000);
+    }, 15000);
     if (!res.ok) throw new Error("Failed to submit answer");
     return res.json();
   },
@@ -167,7 +167,7 @@ const api = {
         session_id: sessionId,
         patient_id: patientId
       })
-    }, 6000);
+    }, 25000);
     if (!res.ok) throw new Error("Failed to complete intake");
     return res.json();
   },

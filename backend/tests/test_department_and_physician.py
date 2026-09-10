@@ -216,3 +216,26 @@ def test_patient_status_transitions():
     # Transition to COMPLETED
     completed = queue_service.update_patient_status("q_status_test", QueueStatus.COMPLETED)
     assert completed.status == QueueStatus.COMPLETED
+
+def test_targeted_question_deduplication():
+    review_service = PhysicianReviewService()
+    from app.schemas.physician import AskPatientQuestionPayload
+    
+    session_id = "sess_dedup_test"
+    payload = AskPatientQuestionPayload(
+        physician_id="dr_sharma",
+        category="allergy"
+    )
+
+    # First dispatch
+    q1 = review_service.ask_patient_targeted_question(session_id, payload)
+    assert "allergies" in q1.question.lower()
+
+    # Second dispatch with same category / text
+    q2 = review_service.ask_patient_targeted_question(session_id, payload)
+    assert q2.question_id == q1.question_id
+
+    # Repository query should return exactly 1 unique question
+    questions = review_service.intake_repo.get_questions_by_session(session_id)
+    assert len(questions) == 1
+    assert questions[0].question == q1.question

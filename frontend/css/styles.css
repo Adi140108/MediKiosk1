@@ -2939,3 +2939,278 @@ img {
   color: var(--slider-thumb-color, #F97316) !important;
   font-weight: 700;
 }
+
+/* ── Live Camera Document Scanner Styles ─────────────────────── */
+.camera-scanner-viewfinder {
+  position: relative;
+  width: 100%;
+  height: 290px;
+  max-height: min(290px, 44vh);
+  background: #000000;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.85);
+}
+
+.camera-guide-box {
+  position: absolute;
+  inset: 16px;
+  border: 1.5px dashed rgba(45, 212, 191, 0.65);
+  border-radius: 12px;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.camera-guide-corner-tl,
+.camera-guide-corner-tr,
+.camera-guide-corner-bl,
+.camera-guide-corner-br {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-color: #2DD4BF;
+  border-style: solid;
+}
+
+.camera-guide-corner-tl {
+  top: -2px;
+  left: -2px;
+  border-width: 3.5px 0 0 3.5px;
+  border-top-left-radius: 6px;
+}
+
+.camera-guide-corner-tr {
+  top: -2px;
+  right: -2px;
+  border-width: 3.5px 3.5px 0 0;
+  border-top-right-radius: 6px;
+}
+
+.camera-guide-corner-bl {
+  bottom: -2px;
+  left: -2px;
+  border-width: 0 0 3.5px 3.5px;
+  border-bottom-left-radius: 6px;
+}
+
+.camera-guide-corner-br {
+  bottom: -2px;
+  right: -2px;
+  border-width: 0 3.5px 3.5px 0;
+  border-bottom-right-radius: 6px;
+}
+
+.camera-laser-scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background: linear-gradient(90deg, transparent, #2DD4BF, #5EEAD4, #2DD4BF, transparent);
+  box-shadow: 0 0 12px #2DD4BF, 0 0 24px rgba(45, 212, 191, 0.6);
+  animation: cameraLaserSweep 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes cameraLaserSweep {
+  0% {
+    top: 5%;
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    top: 92%;
+    opacity: 0.8;
+  }
+}
+
+.camera-preview-captured {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000000;
+}
+
+.camera-shutter-btn {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 4px solid #0D9488;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(13, 148, 136, 0.4), 0 0 0 3px rgba(13, 148, 136, 0.18);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.camera-shutter-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 24px rgba(13, 148, 136, 0.55), 0 0 0 5px rgba(13, 148, 136, 0.25);
+}
+
+.camera-shutter-btn:active {
+  transform: scale(0.92);
+}
+
+.camera-shutter-inner {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0D9488 0%, #059669 100%);
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.camera-shutter-btn:hover .camera-shutter-inner {
+  background: linear-gradient(135deg, #14B8A6 0%, #0D9488 100%);
+}
+
+.camera-shutter-btn:active .camera-shutter-inner {
+  transform: scale(0.88);
+  background: #0F766E;
+}
+
+.camera-flip-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid #CBD5E1;
+  background: #F8FAFC;
+  color: #1E293B;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  padding: 0;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.camera-flip-btn:hover {
+  background: #0D9488;
+  border-color: #0D9488;
+  color: #FFFFFF;
+  transform: rotate(180deg) scale(1.08);
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+}
+
+.camera-flip-btn:active {
+  transform: rotate(180deg) scale(0.94);
+}
+
+/* ==========================================================================
+   Physician Portal Action Buttons & SVG Icon Normalization
+   ========================================================================== */
+.btn-icon-svg {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2.2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  flex-shrink: 0 !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+}
+
+.btn-card-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  padding: 0.625rem 1.125rem;
+  border-radius: 0.625rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  user-select: none;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-card-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn-card-action-primary {
+  background: linear-gradient(135deg, #0D9488 0%, #0F766E 100%);
+  color: #FFFFFF !important;
+  border-color: #0D9488;
+}
+
+.btn-card-action-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #14B8A6 0%, #0D9488 100%);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-card-action-primary:active:not(:disabled) {
+  transform: translateY(0);
+  background: #0F766E;
+  box-shadow: 0 1px 2px rgba(13, 148, 136, 0.2);
+}
+
+.btn-card-action-danger {
+  background: #FEF2F2;
+  color: #DC2626 !important;
+  border: 1.5px solid #FCA5A5;
+}
+
+.btn-card-action-danger:hover:not(:disabled) {
+  background: #DC2626;
+  color: #FFFFFF !important;
+  border-color: #DC2626;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.28);
+  transform: translateY(-1px);
+}
+
+.btn-card-action-danger:active:not(:disabled) {
+  transform: translateY(0);
+  background: #B91C1C;
+  border-color: #B91C1C;
+}
+
+.btn-card-action-secondary {
+  background: #F8FAFC;
+  color: #334155 !important;
+  border: 1.5px solid #CBD5E1;
+}
+
+.btn-card-action-secondary:hover:not(:disabled) {
+  background: #EEF2F6;
+  color: #0F172A !important;
+  border-color: #94A3B8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.btn-card-action-secondary:active:not(:disabled) {
+  transform: translateY(0);
+  background: #E2E8F0;
+}
+
+

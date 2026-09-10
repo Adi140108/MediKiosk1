@@ -239,6 +239,11 @@ const PatientIntake = {
     const isForward = stepNum >= prevStep;
     this.currentStep = stepNum;
 
+    if (stepNum < 8) {
+      this._isFinishing = false;
+      this._isSubmittingAnswer = false;
+    }
+
     // Show milestone notification when advancing after completing a step
     if (isForward && prevStep !== stepNum) {
       this.showStepMilestoneToast(prevStep, stepNum);
@@ -765,6 +770,7 @@ const PatientIntake = {
 
   cameraStream: null,
   capturedCameraFile: null,
+  _cameraFacingMode: "environment",
 
   triggerCameraCapture() {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
@@ -778,29 +784,83 @@ const PatientIntake = {
     this.openCameraModal();
   },
 
+  // Alias used in HTML (Live Camera button)
+  openCameraScanner() {
+    this.openCameraModal();
+  },
+
   async openCameraModal() {
     const modal = document.getElementById("camera-capture-modal");
-    const video = document.getElementById("camera-video-feed");
-    if (!modal || !video) return;
+    if (!modal) return;
+
+    // Reset to live-view state
+    const liveControls = document.getElementById("camera-live-controls");
+    const confirmControls = document.getElementById("camera-confirm-controls");
+    const viewfinder = document.getElementById("camera-viewfinder-container");
+    const snapshot = document.getElementById("camera-snapshot-preview");
+    const permNotice = document.getElementById("camera-permission-notice");
+    if (liveControls) liveControls.style.display = "flex";
+    if (confirmControls) confirmControls.style.display = "none";
+    if (viewfinder) viewfinder.style.display = "block";
+    if (snapshot) snapshot.style.display = "none";
+    if (permNotice) permNotice.style.display = "none";
 
     modal.style.display = "flex";
 
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }
-        });
-        this.cameraStream = stream;
-        video.srcObject = stream;
-      } else {
-        const camInput = document.getElementById("doc-camera-input");
-        if (camInput) camInput.click();
+    await this._startCameraStream();
+  },
+
+  async _startCameraStream() {
+    const video = document.getElementById("camera-video-feed");
+    const permNotice = document.getElementById("camera-permission-notice");
+    const liveControls = document.getElementById("camera-live-controls");
+    if (!video) return;
+
+    if (this.cameraStream) {
+      try {
+        this.cameraStream.getTracks().forEach(t => t.stop());
+      } catch (e) {}
+      this.cameraStream = null;
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (permNotice) permNotice.style.display = "block";
+      if (liveControls) liveControls.style.display = "flex";
+      return;
+    }
+
+    const mode = this._cameraFacingMode || "environment";
+    const constraintsList = [
+      { video: { facingMode: { ideal: mode }, width: { ideal: 1280 }, height: { ideal: 720 } } },
+      { video: { facingMode: { ideal: mode } } },
+      { video: true }
+    ];
+
+    let stream = null;
+    for (const constraints of constraintsList) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        if (stream) break;
+      } catch (err) {
+        console.warn("Camera constraint attempt failed:", constraints, err.message);
       }
-    } catch (err) {
-      console.warn("Camera access error:", err);
-      this.closeCameraModal();
-      const camInput = document.getElementById("doc-camera-input");
-      if (camInput) camInput.click();
+    }
+
+    if (stream) {
+      this.cameraStream = stream;
+      video.srcObject = stream;
+      if (mode === "user") {
+        video.style.transform = "scaleX(-1)";
+      } else {
+        video.style.transform = "none";
+      }
+      await video.play().catch(() => {});
+      if (permNotice) permNotice.style.display = "none";
+      if (liveControls) liveControls.style.display = "flex";
+    } else {
+      console.warn("Could not acquire video stream with any constraints.");
+      if (permNotice) permNotice.style.display = "block";
+      if (liveControls) liveControls.style.display = "flex";
     }
   },
 
@@ -815,10 +875,25 @@ const PatientIntake = {
     if (modal) modal.style.display = "none";
   },
 
+  async switchCamera() {
+    this._cameraFacingMode = (this._cameraFacingMode === "environment") ? "user" : "environment";
+    await this._startCameraStream();
+  },
+
   capturePhotoFromWebcam() {
     const video = document.getElementById("camera-video-feed");
     const canvas = document.getElementById("camera-canvas");
     if (!video || !canvas) return;
+
+    // Graceful fallback if video stream has no active frames
+    if (!video.videoWidth || !this.cameraStream) {
+      const camInput = document.getElementById("doc-camera-input") || document.getElementById("doc-file-input");
+      if (camInput) {
+        camInput.click();
+        this.closeCameraModal();
+      }
+      return;
+    }
 
     const width = video.videoWidth || 640;
     const height = video.videoHeight || 480;
@@ -829,21 +904,56 @@ const PatientIntake = {
     const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0, width, height);
 
+    // Show snapshot preview and confirm controls
     canvas.toBlob((blob) => {
       if (!blob) return;
-      const file = new File([blob], `camera_scan_${Date.now()}.jpg`, { type: "image/jpeg" });
-      this.capturedCameraFile = file;
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
 
-      try {
-        const container = new DataTransfer();
-        container.items.add(file);
-        const fileInput = document.getElementById("doc-file-input");
-        if (fileInput) fileInput.files = container.files;
-      } catch (e) {}
+      const previewImg = document.getElementById("camera-preview-img");
+      const snapshot = document.getElementById("camera-snapshot-preview");
+      const viewfinder = document.getElementById("camera-viewfinder-container");
+      const liveControls = document.getElementById("camera-live-controls");
+      const confirmControls = document.getElementById("camera-confirm-controls");
 
-      this.handleFileSelect({ target: { files: [file] } });
-      this.closeCameraModal();
+      if (previewImg) previewImg.src = dataUrl;
+      if (snapshot) snapshot.style.display = "block";
+      if (viewfinder) viewfinder.style.display = "none";
+      if (liveControls) liveControls.style.display = "none";
+      if (confirmControls) confirmControls.style.display = "flex";
+
+      // Store blob for later confirmation
+      this._pendingCameraBlob = blob;
     }, "image/jpeg", 0.92);
+  },
+
+  retakeCameraPhoto() {
+    this._pendingCameraBlob = null;
+    const snapshot = document.getElementById("camera-snapshot-preview");
+    const viewfinder = document.getElementById("camera-viewfinder-container");
+    const liveControls = document.getElementById("camera-live-controls");
+    const confirmControls = document.getElementById("camera-confirm-controls");
+    if (snapshot) snapshot.style.display = "none";
+    if (viewfinder) viewfinder.style.display = "block";
+    if (liveControls) liveControls.style.display = "flex";
+    if (confirmControls) confirmControls.style.display = "none";
+  },
+
+  confirmCameraPhoto() {
+    const blob = this._pendingCameraBlob;
+    if (!blob) return;
+    this._pendingCameraBlob = null;
+    const file = new File([blob], `camera_scan_${Date.now()}.jpg`, { type: "image/jpeg" });
+    this.capturedCameraFile = file;
+
+    try {
+      const container = new DataTransfer();
+      container.items.add(file);
+      const fileInput = document.getElementById("doc-file-input");
+      if (fileInput) fileInput.files = container.files;
+    } catch (e) {}
+
+    this.handleFileSelect({ target: { files: [file] } });
+    this.closeCameraModal();
   },
 
   async handleDocUpload(e) {
@@ -1130,11 +1240,17 @@ const PatientIntake = {
   },
 
   selectOption(val, label, weights) {
+    if (this._isSubmittingAnswer || this._isFinishing || this.currentStep >= 8) return;
     const input = document.getElementById("patient-answer-input");
     if (input) {
       input.value = label || val;
     }
     this.selectedOptionMeta = { value: val, label: label, weights: weights };
+
+    // Disable option buttons to prevent multiple clicks
+    const allPills = document.querySelectorAll(".btn-option-pill");
+    allPills.forEach(p => { p.disabled = true; p.style.opacity = "0.7"; });
+
     this.handleAnswerSubmit();
   },
 
@@ -1148,11 +1264,21 @@ const PatientIntake = {
     }
   },
 
+  _isSubmittingAnswer: false,
+  _isFinishing: false,
+
   async handleAnswerSubmit() {
-    SpeechManager.stopListening();
+    if (this._isSubmittingAnswer || this._isFinishing || this.currentStep >= 8) return;
     const input = document.getElementById("patient-answer-input");
     const answer = input ? input.value.trim() : "";
     if (!answer) return;
+
+    this._isSubmittingAnswer = true;
+    try {
+      if (typeof SpeechManager !== "undefined" && SpeechManager.stopListening) {
+        SpeechManager.stopListening();
+      }
+    } catch (e) {}
 
     if (!this.currentSessionId) {
       this.currentSessionId = `sess_${this.currentPatientId || 'pat'}_${Date.now()}`;
@@ -1193,26 +1319,33 @@ const PatientIntake = {
       }
     } catch (err) {
       console.warn("Answer submission notice:", err.message);
-      // Auto-retry once in case of serverless wake-up
-      try {
-        const retryRes = await api.submitAnswer(
-          this.currentSessionId,
-          this.currentQuestionId,
-          answer,
-          this.isAttendant ? "ATTENDANT" : "PATIENT",
-          this.attendantId,
-          this.language
-        );
-        if (retryRes && (retryRes.is_finished || !retryRes.next_question)) {
-          await this.finishIntake();
-        } else if (retryRes && retryRes.next_question) {
-          this.renderQuestion(retryRes.next_question);
+      if (!this._isFinishing && this.currentStep === 7) {
+        try {
+          const retryRes = await api.submitAnswer(
+            this.currentSessionId,
+            this.currentQuestionId,
+            answer,
+            this.isAttendant ? "ATTENDANT" : "PATIENT",
+            this.attendantId,
+            this.language
+          );
+          if (retryRes && (retryRes.is_finished || !retryRes.next_question)) {
+            await this.finishIntake();
+          } else if (retryRes && retryRes.next_question) {
+            this.renderQuestion(retryRes.next_question);
+          } else {
+            await this.finishIntake();
+          }
+        } catch (retryErr) {
+          console.warn("Retry submission failed, finalizing registration cleanly:", retryErr.message);
+          if (!this._isFinishing && this.currentStep === 7) {
+            await this.finishIntake();
+          }
         }
-      } catch (retryErr) {
-        alert("Please tap Submit Answer once more to proceed.");
       }
     } finally {
-      if (btn) {
+      this._isSubmittingAnswer = false;
+      if (btn && this.currentStep < 8 && !this._isFinishing) {
         btn.disabled = false;
         btn.innerHTML = originalText;
       }
@@ -1222,7 +1355,8 @@ const PatientIntake = {
   renderTicketDetails(data = {}) {
     const bodyEl = document.getElementById("ticket-details-body");
     if (bodyEl) {
-      const rawDept = (data.department || this.department || 'General Medicine').toLowerCase();
+      const patientName = (data && data.patient_name) || this.registeredData?.name || 'Registered Patient';
+      const rawDept = ((data && data.department) || this.department || 'General Medicine').toLowerCase();
       const deptDisplayMap = {
         "kayachikitsa": "KAYACHIKITSA (INTERNAL MEDICINE)",
         "panchakarma": "PANCHAKARMA (DETOX & PURIFICATION)",
@@ -1246,8 +1380,8 @@ const PatientIntake = {
         "emergency": "EMERGENCY / TRAUMA"
       };
       const dept = deptDisplayMap[rawDept] || rawDept.toUpperCase().replace(/-/g, ' ');
-      const complaint = data.chief_complaint || this.chiefComplaint || 'Clinical intake recorded successfully.';
-      const reasoning = data.reasoning || 'Patient triaged and queued for attending physician consultation.';
+      const complaint = (data && data.chief_complaint) || this.chiefComplaint || 'Clinical intake recorded successfully.';
+      const reasoning = (data && data.reasoning) || 'Patient triaged and queued for attending physician consultation.';
 
       bodyEl.innerHTML = `
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.25rem; margin-bottom:1.25rem;">
@@ -1272,15 +1406,27 @@ const PatientIntake = {
   },
 
   async finishIntake() {
+    // Strictly guard against duplicate invocation
+    if (this._isFinishing || this.currentStep >= 8) return;
+    this._isFinishing = true;
+
+    // Immediately stop speech audio & recognition to prevent overlapping events
+    try {
+      if (typeof SpeechManager !== "undefined" && SpeechManager.stopAllAudio) {
+        SpeechManager.stopAllAudio();
+      }
+    } catch (e) {}
+
     const modal = document.getElementById("ai-synthesis-modal");
     const fill = document.getElementById("synthesis-progress-fill");
     const item1 = document.getElementById("synthesis-step-1");
     const item2 = document.getElementById("synthesis-step-2");
     const item3 = document.getElementById("synthesis-step-3");
 
-    if (modal && fill) {
+    if (modal) {
+      modal.style.display = "flex";
       modal.classList.add("active");
-      fill.style.width = "0%";
+      if (fill) fill.style.width = "0%";
       if (item1) item1.classList.remove("done");
       if (item2) item2.classList.remove("done");
       if (item3) item3.classList.remove("done");
@@ -1297,49 +1443,55 @@ const PatientIntake = {
       console.warn("Summary completion notice:", err.message);
     }
 
-    // Wait at least 1400ms for smooth clinical synthesis visualization
-    await new Promise(resolve => setTimeout(resolve, 1400));
+    // Minimum animation duration so progress visually reaches 100% smoothly
+    await new Promise(resolve => setTimeout(resolve, 1200));
 
     if (modal) {
       modal.classList.remove("active");
+      modal.style.display = "none";
     }
 
-    this.goToStep(8);
-    this.renderTicketDetails();
+    try {
+      this.goToStep(8);
 
-    const ticketNum = res?.ticket_number || `MK-${Math.floor(10000000 + Math.random() * 90000000)}`;
-    const numEl = document.getElementById("ticket-number-display");
-    if (numEl) numEl.innerText = ticketNum;
+      const ticketNum = res?.ticket_number || `MK-${Math.floor(10000000 + Math.random() * 90000000)}`;
+      const numEl = document.getElementById("ticket-number-display");
+      if (numEl) numEl.innerText = ticketNum;
 
-    const rf = res?.red_flag || { overall_severity: "MEDIUM" };
-    const routing = res?.routing || { recommended_department: this.department || "general_medicine", reasoning: "Comprehensive clinical intake recorded." };
+      const rf = res?.red_flag || { overall_severity: "MEDIUM" };
+      const routing = res?.routing || { recommended_department: this.department || "general_medicine", reasoning: "Comprehensive clinical intake recorded." };
 
-    const badgeContainer = document.getElementById("ticket-triage-badge");
-    if (badgeContainer) {
-      let badgeClass = "lang-badge-ready";
-      let badgeStyle = "";
-      if (rf.overall_severity === "CRITICAL") {
-        badgeClass = "lang-badge-connected";
-        badgeStyle = "background:#fee2e2; color:#991b1b;";
-      } else if (rf.overall_severity === "HIGH") {
-        badgeClass = "lang-badge-connected";
-        badgeStyle = "background:#ffedd5; color:#9a3412;";
-      } else if (rf.overall_severity === "MEDIUM") {
-        badgeClass = "lang-badge-connected";
-        badgeStyle = "background:#fef3c7; color:#92400e;";
+      const badgeContainer = document.getElementById("ticket-triage-badge");
+      if (badgeContainer) {
+        let badgeClass = "lang-badge-ready";
+        let badgeStyle = "";
+        if (rf.overall_severity === "CRITICAL") {
+          badgeClass = "lang-badge-connected";
+          badgeStyle = "background:#fee2e2; color:#991b1b;";
+        } else if (rf.overall_severity === "HIGH") {
+          badgeClass = "lang-badge-connected";
+          badgeStyle = "background:#ffedd5; color:#9a3412;";
+        } else if (rf.overall_severity === "MEDIUM") {
+          badgeClass = "lang-badge-connected";
+          badgeStyle = "background:#fef3c7; color:#92400e;";
+        }
+
+        badgeContainer.innerHTML = `<span class="lang-tile-badge ${badgeClass}" style="${badgeStyle}">${rf.overall_severity} PRIORITY</span>`;
       }
 
-      badgeContainer.innerHTML = `<span class="lang-tile-badge ${badgeClass}" style="${badgeStyle}">${rf.overall_severity} PRIORITY</span>`;
+      this.renderTicketDetails({
+        patient_name: this.registeredData?.name || 'Registered Patient',
+        department: routing.recommended_department || this.department || 'General Medicine',
+        chief_complaint: res?.draft_summary?.chief_complaint || this.chiefComplaint || 'Recorded during intake',
+        reasoning: routing.reasoning || 'Patient triaged and ready for consultation.'
+      });
+
+      this.triggerConfettiBurst();
+
+      SpeechManager.speakText(`Intake completed. Consultation Ticket number is ${ticketNum}. Please proceed to the ${routing.recommended_department || 'assigned'} department.`, this.language);
+    } catch (renderErr) {
+      console.error("Ticket rendering error:", renderErr);
     }
-
-    this.renderTicketDetails({
-      patient_name: this.registeredData?.name || 'Registered Patient',
-      department: routing.recommended_department || this.department || 'General Medicine',
-      chief_complaint: res?.draft_summary?.chief_complaint || this.chiefComplaint || 'Recorded during intake',
-      reasoning: routing.reasoning || 'Patient triaged and ready for consultation.'
-    });
-
-    SpeechManager.speakText(`Intake completed. Consultation Ticket number is ${ticketNum}. Please proceed to the ${routing.recommended_department || 'assigned'} department.`, this.language);
   },
 
   triggerConfettiBurst() {

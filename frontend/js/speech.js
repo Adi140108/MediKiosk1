@@ -810,7 +810,9 @@ const SpeechManager = {
         utterance.pitch = 1.0;
         utterance.voice = assignedVoice;
 
+        let speechStarted = false;
         utterance.onstart = () => {
+          speechStarted = true;
           this.isSpeaking = true;
           this.updateButtonStates('playing');
         };
@@ -857,11 +859,11 @@ const SpeechManager = {
           // Keep browser speech active if paused
           if (this.synth && (this.synth.speaking || this.synth.pending)) {
             try { this.synth.resume(); } catch(e) {}
-            if (audioStarted || watchdogTicks >= 4) {
+            if (speechStarted || watchdogTicks >= 4) {
               clearInterval(this._speechWatchdog);
               this._speechWatchdog = null;
             }
-          } else if (watchdogTicks >= 3 && !audioStarted) {
+          } else if (watchdogTicks >= 3 && !speechStarted) {
             // Truly stalled after 2.4s without starting speech
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
@@ -870,7 +872,7 @@ const SpeechManager = {
             }
             console.warn("Browser voice stalled for", targetLang, "- falling back to server TTS");
             this._playServerAudioStream(text, targetLang, onEndCallback);
-          } else if (audioStarted) {
+          } else if (speechStarted) {
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
           }
