@@ -77,11 +77,15 @@ const PatientIntake = {
     // Single delayed trigger after DOM is settled
     setTimeout(triggerWelcomeSpeech, 250);
 
-    // Fallback: If autoplay policy blocked initial speech, trigger once on first user click/touch
-    const onFirstUserGesture = () => {
+    // Fallback: If autoplay policy blocked initial speech, trigger once on first user click/touch (excluding action button clicks)
+    const onFirstUserGesture = (evt) => {
       window.removeEventListener('click', onFirstUserGesture, true);
       window.removeEventListener('touchstart', onFirstUserGesture, true);
       window.removeEventListener('keydown', onFirstUserGesture, true);
+      if (this.currentStep !== 1) return;
+      if (evt && evt.target && evt.target.closest && evt.target.closest('button, .hero-cta-btn, .btn, [onclick]')) {
+        return;
+      }
       triggerWelcomeSpeech();
     };
     window.addEventListener('click', onFirstUserGesture, true);
@@ -296,6 +300,11 @@ const PatientIntake = {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {}
 
+    if (this.stepSpeechTimer) {
+      clearTimeout(this.stepSpeechTimer);
+      this.stepSpeechTimer = null;
+    }
+
     // Step 2: Refresh language grid UI and continue button
     if (stepNum === 2) {
       try {
@@ -304,7 +313,7 @@ const PatientIntake = {
       } catch (e) {
         console.warn("Step 2 UI update notice:", e);
       }
-      setTimeout(() => {
+      this.stepSpeechTimer = setTimeout(() => {
         try {
           if (typeof SpeechManager !== "undefined" && SpeechManager.resumeAudioAndSpeak) {
             SpeechManager.resumeAudioAndSpeak(2, this.language);
@@ -314,7 +323,7 @@ const PatientIntake = {
       return;
     }
 
-    // Step 7: Socratic Intake Interview
+    // Step 7 & Step 8: Socratic Interview & Ticket Display handle their own custom voice guidance
     if (stepNum === 7) {
       if (!this.currentSessionId) {
         this.currentSessionId = `sess_${this.currentPatientId || 'pat'}_${Date.now()}`;
@@ -324,8 +333,12 @@ const PatientIntake = {
       if (qTextEl && !this.currentQuestionText) {
         qTextEl.innerText = "Preparing clinical inquiry...";
       }
+      return;
+    } else if (stepNum === 8) {
+      // Custom ticket summary is spoken exclusively by finishIntake()
+      return;
     } else {
-      setTimeout(() => {
+      this.stepSpeechTimer = setTimeout(() => {
         try {
           if (typeof SpeechManager !== "undefined" && SpeechManager.resumeAudioAndSpeak) {
             SpeechManager.resumeAudioAndSpeak(stepNum, this.language);
@@ -495,6 +508,10 @@ const PatientIntake = {
     if (this.autoAdvanceTimer) {
       clearTimeout(this.autoAdvanceTimer);
       this.autoAdvanceTimer = null;
+    }
+    if (this.stepSpeechTimer) {
+      clearTimeout(this.stepSpeechTimer);
+      this.stepSpeechTimer = null;
     }
 
     SpeechManager.stopAllAudio();
@@ -1275,43 +1292,6 @@ const PatientIntake = {
             </div>
           ` : ''}
         </div>
-          console.warn("OCR polling notice:", e.message);
-        }
-        return false;
-      };
-
-      // Speak native confirmation
-      const nativeDocSuccess = {
-        en: "Medical report uploaded and stored successfully. Proceeding to consultation.",
-        hi: "मेडिकल रिपोर्ट सफलतापूर्वक अपलोड और सुरक्षित कर दी गई है।",
-        kn: "ವೈದ್ಯಕೀಯ ವರದಿ ಯಶಸ್ವಿಯಾಗಿ ಅಪ್‌ಲೋಡ್ ಆಗಿದೆ.",
-        ta: "மருத்துவ அறிக்கை வெற்றிகரமாக பதிவேற்றப்பட்டது.",
-        te: "వైద్య నివేదిక విజయవంతంగా అప్‌లోడ్ చేయబడింది.",
-        ml: "മെഡിക്കൽ റിപ്പോർട്ട് വിജയകരമായി അപ്‌ಲೋഡ് ചെയ്തു.",
-        mr: "वैद्यकीय अहवाल यशस्वीरित्या अपलोड झाला आहे.",
-        bn: "মেডিকেল রিপোর্ট সফলভাবে আপলোড হয়েছে।",
-        gu: "મેડિકલ રિપોર્ટ સફળતાપૂર્વક અપલોડ થઈ ગયો છે.",
-        pa: "ਮੈਡੀਕਲ ਰਿਪੋਰਟ ਸਫਲਤਾਪੂਰਵਕ ਅੱਪਲੋਡ ਹੋ ਗਈ ਹੈ।"
-      };
-      const docMsg = nativeDocSuccess[this.language] || nativeDocSuccess["en"];
-      SpeechManager.speakText(docMsg, this.language);
-
-      // Background poll in parallel — do NOT auto-advance, wait for Proceed button
-      const pollInterval = setInterval(async () => {
-        const done = await pollOcr();
-        if (done || attempts >= 8) {
-          clearInterval(pollInterval);
-        }
-      }, 800);
-
-      // Show Proceed button inside the OCR result area (NO auto-advance)
-      btn.style.display = "none";
-      const proceedDiv = document.createElement('div');
-      proceedDiv.style.cssText = 'margin-top:1rem; text-align:center;';
-      proceedDiv.innerHTML = `
-        <button type="button" id="btn-proceed-after-ocr" class="btn-primary-action" style="padding:0.75rem 2rem; font-size:1rem; font-weight:700;" onclick="PatientIntake.handleStep6Continue()">
-          Proceed to AI Clinical Interview →
-        </button>
       `;
     }).join("");
 
@@ -1416,6 +1396,12 @@ const PatientIntake = {
 
   renderQuestion(question) {
     if (!question) return;
+    try {
+      if (typeof SpeechManager !== "undefined" && SpeechManager.stopAllAudio) {
+        SpeechManager.stopAllAudio();
+      }
+    } catch (e) {}
+
     this.currentQuestionId = question.question_id || this.currentQuestionId || `q_${this.currentSessionId || 'sess'}_1`;
     this.currentQuestionText = question.question || this.currentQuestionText;
 
@@ -1497,6 +1483,7 @@ const PatientIntake = {
   _isSubmittingAnswer: false,
   _isFinishing: false,
 
+  async handleAnswerSubmit() {
     try {
       if (typeof SpeechManager !== "undefined" && SpeechManager.stopListening) {
         SpeechManager.stopListening();
@@ -1571,8 +1558,6 @@ const PatientIntake = {
             await this.finishIntake();
           }
         }
-      } catch (retryErr) {
-        console.warn("Retry submit answer failed:", retryErr.message);
       }
     } finally {
       this._isSubmittingAnswer = false;

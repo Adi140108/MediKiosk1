@@ -3,28 +3,28 @@ from app.schemas.routing import DepartmentId
 
 # General OPD keyword rules (No AYUSH keywords!)
 GENERAL_DEPARTMENT_KEYWORD_RULES: Dict[DepartmentId, List[str]] = {
-    DepartmentId.CARDIOLOGY: ["chest pain", "chest tightness", "angina", "palpitation", "arrhythmia", "shortness of breath", "shortness of breath on exertion", "chest pressure", "sweating with chest discomfort", "radiating chest pain"],
-    DepartmentId.NEUROLOGY: ["migraine", "dizziness", "vertigo", "seizure", "numbness", "stroke", "tremor", "loss of balance", "facial droop", "slurred speech", "paralysis"],
-    DepartmentId.ORTHOPEDICS: ["joint pain", "knee pain", "bone fracture", "severe back pain", "arthritis", "sprain", "shoulder pain", "swelling in joint", "morning stiffness", "dislocation"],
-    DepartmentId.GASTROENTEROLOGY: ["severe stomach pain", "acid reflux", "bloating", "vomiting blood", "chronic diarrhea", "jaundice", "abdominal cramps", "gastric burning", "black stools"],
-    DepartmentId.DERMATOLOGY: ["skin rash", "severe itching", "eczema", "psoriasis", "acne", "hair fall", "skin lesion", "hives", "red spots", "dermatitis"],
-    DepartmentId.ENT: ["severe ear pain", "hearing loss", "tonsillitis", "sinusitis", "nasal blockage", "tinnitus", "ear discharge", "foreign body in ear"],
-    DepartmentId.OPHTHALMOLOGY: ["eye pain", "blurred vision", "cataract", "red eye", "double vision", "visual disturbance", "eye discharge", "corneal injury"],
-    DepartmentId.PSYCHIATRY: ["anxiety", "severe depression", "panic attacks", "insomnia", "hallucinations", "extreme stress", "bipolar", "suicidal ideation"],
+    DepartmentId.CARDIOLOGY: ["chest pain", "chest tightness", "angina", "palpitation", "arrhythmia", "shortness of breath", "shortness of breath on exertion", "chest pressure", "sweating with chest discomfort", "radiating chest pain", "heart pain", "cardiac"],
+    DepartmentId.NEUROLOGY: ["migraine", "severe headache", "thunderclap headache", "head pain", "dizziness", "vertigo", "seizure", "numbness", "stroke", "tremor", "loss of balance", "facial droop", "slurred speech", "paralysis"],
+    DepartmentId.ORTHOPEDICS: ["joint pain", "knee pain", "leg pain", "back pain", "bone fracture", "severe back pain", "arthritis", "sprain", "shoulder pain", "swelling in joint", "morning stiffness", "dislocation"],
+    DepartmentId.GASTROENTEROLOGY: ["stomach pain", "severe stomach pain", "abdominal pain", "belly ache", "acid reflux", "bloating", "vomiting blood", "chronic diarrhea", "jaundice", "abdominal cramps", "gastric burning", "black stools"],
+    DepartmentId.DERMATOLOGY: ["skin rash", "severe itching", "itching", "allergy", "eczema", "psoriasis", "acne", "hair fall", "skin lesion", "hives", "red spots", "dermatitis"],
+    DepartmentId.ENT: ["ear pain", "severe ear pain", "hearing loss", "tonsillitis", "sinusitis", "nasal blockage", "tinnitus", "ear discharge", "foreign body in ear", "sore throat"],
+    DepartmentId.OPHTHALMOLOGY: ["eye pain", "blurred vision", "cataract", "red eye", "double vision", "visual disturbance", "eye discharge", "corneal injury", "vision loss"],
+    DepartmentId.PSYCHIATRY: ["anxiety", "severe depression", "depression", "panic attacks", "insomnia", "hallucinations", "extreme stress", "bipolar", "suicidal ideation"],
     DepartmentId.PEDIATRICS: ["child fever", "infant vomiting", "pediatric rash", "growth concerns", "childhood cough", "infant distress"],
-    DepartmentId.GENERAL_MEDICINE: ["fever", "fatigue", "body ache", "malaise", "cough", "cold", "unexplained weight loss", "chills", "weakness", "mild headache", "general checkup", "viral fever", "routine consultation", "normal symptoms"]
+    DepartmentId.GENERAL_MEDICINE: ["headache", "mild headache", "fever", "fatigue", "body ache", "malaise", "cough", "cold", "unexplained weight loss", "chills", "weakness", "general checkup", "viral fever", "routine consultation", "normal symptoms"]
 }
 
 # AYUSH OPD keyword rules
 AYUSH_DEPARTMENT_KEYWORD_RULES: Dict[DepartmentId, List[str]] = {
-    DepartmentId.KAYACHIKITSA: ["indigestion", "agni", "digestive fire", "metabolic", "dhatu", "ama", "fever", "jwara", "gastro", "constipation", "stomach pain", "acid reflux", "chest tightness", "shortness of breath"],
+    DepartmentId.KAYACHIKITSA: ["indigestion", "agni", "digestive fire", "metabolic", "dhatu", "ama", "fever", "jwara", "gastro", "constipation", "stomach pain", "acid reflux", "chest tightness", "shortness of breath", "fatigue"],
     DepartmentId.PANCHAKARMA: ["detox", "shodhana", "panchakarma", "purification", "vamana", "virechana", "basti", "nasya", "chronic toxin", "saama"],
-    DepartmentId.SHALYA: ["joint pain", "musculoskeletal", "spine", "fracture", "structural", "shalya", "back pain", "knee pain"],
-    DepartmentId.SHALAKYA: ["headache", "migraine", "ear pain", "eye pain", "throat", "sinusitis", "shalakya", "nasal"],
+    DepartmentId.SHALYA: ["joint pain", "musculoskeletal", "spine", "fracture", "structural", "shalya", "back pain", "knee pain", "bone pain"],
+    DepartmentId.SHALAKYA: ["headache", "migraine", "ear pain", "eye pain", "throat", "sinusitis", "shalakya", "nasal", "head pain", "shirah shoola"],
     DepartmentId.PRASUTI_STRI: ["maternal", "gynecological", "menstrual", "pregnancy", "stree roga", "prasuti"],
     DepartmentId.KAUMARABHRITYA: ["child", "pediatric", "infant", "balaroga", "kaumarabhritya"],
-    DepartmentId.SWASTHAVRITTA: ["preventive", "yoga", "lifestyle", "dinacharya", "ritucharya", "swasthavritta", "wellness"],
-    DepartmentId.AGADATANTRA: ["allergy", "toxicity", "skin rash", "insect bite", "agada", "poisoning"]
+    DepartmentId.SWASTHAVRITTA: ["preventive", "yoga", "lifestyle", "dinacharya", "ritucharya", "swasthavritta", "wellness", "stress"],
+    DepartmentId.AGADATANTRA: ["allergy", "toxicity", "skin rash", "insect bite", "agada", "poisoning", "itching"]
 }
 
 def analyze_symptoms_for_department(

@@ -34,10 +34,9 @@ const SpeechManager = {
   },
 
   init() {
+    this.isMuted = false;
     try {
-      if (localStorage.getItem('medikiosk_muted') === 'true') {
-        this.isMuted = true;
-      }
+      localStorage.setItem('medikiosk_muted', 'false');
     } catch(e) {}
     this.setupRecognition();
     if (this.synth) {
@@ -48,7 +47,13 @@ const SpeechManager = {
         };
       }
     }
-    this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
+    this.updateButtonStates('idle');
+  },
+
+  setLanguage(lang) {
+    if (lang) {
+      this.currentLanguage = lang.toLowerCase().trim();
+    }
   },
 
 
@@ -849,29 +854,21 @@ const SpeechManager = {
       return;
     }
 
-    // Stop any ongoing speech or audio
-    if (this.synth) {
-      try { this.synth.cancel(); } catch(e) {}
-    }
-    if (this.currentAudio) {
-      try {
-        this.currentAudio.pause();
-        this.currentAudio.currentTime = 0;
-      } catch(e) {}
-      this.currentAudio = null;
-    }
+    // Strictly terminate any active browser speech or HTML5 audio streams to guarantee SINGLE voice playback
+    this.stopAllAudio();
 
     this.lastSpokenText = text;
     const targetLang = (lang || this.currentLanguage || 'en').toLowerCase().trim();
     const assignedVoice = this.getIndianFemaleVoice(targetLang);
 
-    // Primary: Browser SpeechSynthesis ONLY if browser actually has a matching voice for targetLang
+    // Primary: Browser SpeechSynthesis ONLY if assignedVoice is present for this language
     if (this.synth && assignedVoice) {
       try {
         this.synth.cancel();
         this.synth.resume();
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = this.langLocaleMap[targetLang] || `${targetLang}-IN`;
+        const locale = this.langLocaleMap[targetLang] || `${targetLang}-IN`;
+        utterance.lang = locale;
         utterance.rate = 0.92;
         utterance.pitch = 1.0;
         utterance.voice = assignedVoice;
@@ -888,11 +885,6 @@ const SpeechManager = {
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
           }
-          if (!audioStarted) {
-            console.warn("Browser voice ended instantly without starting audio for", targetLang, "- playing server audio stream");
-            this._playServerAudioStream(text, targetLang, onEndCallback);
-            return;
-          }
           this.isSpeaking = false;
           this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
           if (typeof onEndCallback === 'function') {
@@ -901,20 +893,26 @@ const SpeechManager = {
         };
 
         utterance.onerror = (e) => {
-          console.warn("Browser SpeechSynthesis failed for", targetLang, "- falling back to server TTS:", e);
-          this.isSpeaking = false;
+          console.warn("Browser SpeechSynthesis notice for", targetLang, ":", e);
           if (this._speechWatchdog) {
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
           }
-          this._playServerAudioStream(text, targetLang, onEndCallback);
+          // Only fallback if browser speech NEVER started
+          if (!speechStarted) {
+            this._playServerAudioStream(text, targetLang, onEndCallback);
+          } else {
+            this.isSpeaking = false;
+            this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
+            if (typeof onEndCallback === 'function') onEndCallback();
+          }
         };
 
         this.isSpeaking = true;
         this.updateButtonStates('playing');
         this.synth.speak(utterance);
 
-        // Chrome watchdog to prevent audio suspension mid-speech
+        // Chrome watchdog to prevent audio suspension mid-speech or stall fallback
         if (this._speechWatchdog) {
           clearInterval(this._speechWatchdog);
           this._speechWatchdog = null;
@@ -922,7 +920,6 @@ const SpeechManager = {
         let watchdogTicks = 0;
         this._speechWatchdog = setInterval(() => {
           watchdogTicks++;
-          // Keep browser speech active if paused
           if (this.synth && (this.synth.speaking || this.synth.pending)) {
             try { this.synth.resume(); } catch(e) {}
             if (speechStarted || watchdogTicks >= 4) {
@@ -930,13 +927,13 @@ const SpeechManager = {
               this._speechWatchdog = null;
             }
           } else if (watchdogTicks >= 3 && !speechStarted) {
-            // Truly stalled after 2.4s without starting speech
+            // Stalled after 2.4s without starting speech -> Fallback to Server Stream
+            console.warn("Browser speech stalled for", targetLang, "— falling back to Server Audio Stream.");
             clearInterval(this._speechWatchdog);
             this._speechWatchdog = null;
             if (this.synth) {
               try { this.synth.cancel(); } catch(e) {}
             }
-            console.warn("Browser voice stalled for", targetLang, "- falling back to server TTS");
             this._playServerAudioStream(text, targetLang, onEndCallback);
           } else if (speechStarted) {
             clearInterval(this._speechWatchdog);
@@ -946,11 +943,11 @@ const SpeechManager = {
 
         return;
       } catch (err) {
-        console.warn("Browser speech error:", err);
+        console.warn("Browser speech error, falling back to server stream:", err);
       }
     }
 
-    // Fallback: Server Indic Neural TTS stream for all languages without a matching browser voice
+    // Server Indic Neural TTS stream for all languages without a browser voice (kn, ta, te, ml, mr, bn, gu, pa)
     this._playServerAudioStream(text, targetLang, onEndCallback);
   },
 

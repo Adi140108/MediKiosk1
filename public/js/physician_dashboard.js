@@ -1,29 +1,29 @@
 const GENERAL_DEPARTMENTS = [
-  { id: "general-medicine", display_name: "General Medicine", icon: "", description: "Primary care, acute viral illnesses, non-specific fevers and multisystem initial evaluations." },
-  { id: "cardiology", display_name: "Cardiology", icon: "", description: "Chest pain, palpitations, hypertension, ischemic workup and cardiovascular risk assessments." },
-  { id: "pulmonology", display_name: "Pulmonology", icon: "", description: "Respiratory distress, persistent cough, dyspnea, asthma and chronic airway disorders." },
-  { id: "neurology", display_name: "Neurology", icon: "", description: "Headaches, dizziness, focal neurological deficits, seizures and stroke triage evaluations." },
-  { id: "gastroenterology", display_name: "Gastroenterology", icon: "️", description: "Abdominal pain, acute gastrointestinal bleed, jaundice, peptic and hepatic conditions." },
-  { id: "orthopedics", display_name: "Orthopedics", icon: "", description: "Trauma, fractures, severe joint swellings, musculoskeletal injuries and spinal pain." },
-  { id: "pediatrics", display_name: "Pediatrics", icon: "", description: "Infant and pediatric clinical reviews, childhood infections and pediatric triage." },
-  { id: "emergency", display_name: "Emergency / Trauma", icon: "", description: "Immediate life-threatening triage, critical red flags, and emergency resuscitation." },
-  { id: "dermatology", display_name: "Dermatology", icon: "", description: "Acute dermatological reactions, lesions, severe urticaria and cutaneous eruptions." },
-  { id: "ent", display_name: "ENT", icon: "", description: "Ear discharge, hearing changes, vertigo, acute epistaxis and throat infections." },
-  { id: "ophthalmology", display_name: "Ophthalmology", icon: "", description: "Visual disturbances, acute eye trauma, red eye and ocular pressure emergencies." },
-  { id: "psychiatry", display_name: "Psychiatry", icon: "", description: "Acute distress, behavioral emergencies, psychiatric triage and mood disorders." },
-  { id: "unspecified", display_name: "Triage & Float Queue", icon: "", description: "Ambiguous symptoms, multi-system red flags, and float cases awaiting department routing." }
+  { id: "general-medicine", display_name: "General Medicine", icon: "🩺", description: "Primary care, acute viral illnesses, non-specific fevers and multisystem initial evaluations." },
+  { id: "cardiology", display_name: "Cardiology", icon: "🫀", description: "Chest pain, palpitations, hypertension, ischemic workup and cardiovascular risk assessments." },
+  { id: "pulmonology", display_name: "Pulmonology", icon: "🫁", description: "Respiratory distress, persistent cough, dyspnea, asthma and chronic airway disorders." },
+  { id: "neurology", display_name: "Neurology", icon: "🧠", description: "Headaches, dizziness, focal neurological deficits, seizures and stroke triage evaluations." },
+  { id: "gastroenterology", display_name: "Gastroenterology", icon: "🥗", description: "Abdominal pain, acute gastrointestinal bleed, jaundice, peptic and hepatic conditions." },
+  { id: "orthopedics", display_name: "Orthopedics", icon: "🦴", description: "Trauma, fractures, severe joint swellings, musculoskeletal injuries and spinal pain." },
+  { id: "pediatrics", display_name: "Pediatrics", icon: "👶", description: "Infant and pediatric clinical reviews, childhood infections and pediatric triage." },
+  { id: "emergency", display_name: "Emergency / Trauma", icon: "🚨", description: "Immediate life-threatening triage, critical red flags, and emergency resuscitation." },
+  { id: "dermatology", display_name: "Dermatology", icon: "🧴", description: "Acute dermatological reactions, lesions, severe urticaria and cutaneous eruptions." },
+  { id: "ent", display_name: "ENT", icon: "👂", description: "Ear discharge, hearing changes, vertigo, acute epistaxis and throat infections." },
+  { id: "ophthalmology", display_name: "Ophthalmology", icon: "👁️", description: "Visual disturbances, acute eye trauma, red eye and ocular pressure emergencies." },
+  { id: "psychiatry", display_name: "Psychiatry", icon: "💭", description: "Acute distress, behavioral emergencies, psychiatric triage and mood disorders." },
+  { id: "unspecified", display_name: "Triage & Float Queue", icon: "🏥", description: "Ambiguous symptoms, multi-system red flags, and float cases awaiting department routing." }
 ];
 
 const AYUSH_DEPARTMENTS = [
-  { id: "ayush", display_name: "AYUSH / Ayurveda Main OPD", icon: "", description: "Ayurvedic general outpatient care, Prakriti constitution assessment and holistic triage." },
-  { id: "kayachikitsa", display_name: "Kayachikitsa (Internal Medicine)", icon: "", description: "Agni, Dhatu, Ama, systemic illnesses, digestive and metabolic disorders." },
-  { id: "panchakarma", display_name: "Panchakarma (Detox & Purification)", icon: "", description: "Shodhana therapy, Vamana, Virechana, Basti, Nasya and bio-cleansing evaluations." },
-  { id: "shalya", display_name: "Shalya Tantra (General & Structural Care)", icon: "️", description: "Musculoskeletal, joint pain, spinal care, and structural Ayurvedic management." },
-  { id: "shalakya", display_name: "Shalakya Tantra (ENT & Eye / Urdhvanga)", icon: "️", description: "Head, ear, nose, throat, and ocular disorders in Ayurveda." },
-  { id: "prasuti-stri", display_name: "Prasuti Tantra & Stree Roga", icon: "", description: "Ayurvedic women's health, maternal wellness, and gynecological care." },
-  { id: "kaumarabhritya", display_name: "Kaumarabhritya (Pediatrics)", icon: "", description: "Balaroga, infant care, pediatric growth and immune health in Ayurveda." },
-  { id: "swasthavritta", display_name: "Swasthavritta & Yoga (Preventive Care)", icon: "", description: "Dinacharya, Ritucharya, Ahara, Vihara, preventive health and lifestyle medicine." },
-  { id: "agadatantra", display_name: "Agada Tantra (Toxicology & Allergies)", icon: "", description: "Environmental allergies, toxicities, skin hypersensitivities and insect bites." }
+  { id: "ayush", display_name: "AYUSH / Ayurveda Main OPD", icon: "🪷", description: "Ayurvedic general outpatient care, Prakriti constitution assessment and holistic triage." },
+  { id: "kayachikitsa", display_name: "Kayachikitsa (Internal Medicine)", icon: "🍵", description: "Agni, Dhatu, Ama, systemic illnesses, digestive and metabolic disorders." },
+  { id: "panchakarma", display_name: "Panchakarma (Detox & Purification)", icon: "🪔", description: "Shodhana therapy, Vamana, Virechana, Basti, Nasya and bio-cleansing evaluations." },
+  { id: "shalya", display_name: "Shalya Tantra (General & Structural Care)", icon: "⚔️", description: "Musculoskeletal, joint pain, spinal care, and structural Ayurvedic management." },
+  { id: "shalakya", display_name: "Shalakya Tantra (ENT & Eye / Urdhvanga)", icon: "👁️‍🗨️", description: "Head, ear, nose, throat, and ocular disorders in Ayurveda." },
+  { id: "prasuti-stri", display_name: "Prasuti Tantra & Stree Roga", icon: "🤰", description: "Ayurvedic women's health, maternal wellness, and gynecological care." },
+  { id: "kaumarabhritya", display_name: "Kaumarabhritya (Pediatrics)", icon: "🍼", description: "Balaroga, infant care, pediatric growth and immune health in Ayurveda." },
+  { id: "swasthavritta", display_name: "Swasthavritta & Yoga (Preventive Care)", icon: "🧘‍♀️", description: "Dinacharya, Ritucharya, Ahara, Vihara, preventive health and lifestyle medicine." },
+  { id: "agadatantra", display_name: "Agada Tantra (Toxicology & Allergies)", icon: "🛡️", description: "Environmental allergies, toxicities, skin hypersensitivities and insect bites." }
 ];
 
 const DEFAULT_DEPARTMENTS = GENERAL_DEPARTMENTS;
@@ -40,31 +40,35 @@ const PhysicianDashboard = {
   originalRecommendedPriority: null,
 
   getDeptIcon(deptId) {
+    const id = (deptId || "").toLowerCase().trim();
     const icons = {
-      "general-medicine": "",
-      "cardiology": "",
-      "pulmonology": "",
-      "neurology": "",
-      "gastroenterology": "️",
-      "orthopedics": "",
-      "pediatrics": "",
-      "emergency": "",
-      "dermatology": "",
-      "ent": "",
-      "ophthalmology": "",
-      "psychiatry": "",
-      "ayush": "",
-      "kayachikitsa": "",
-      "panchakarma": "",
-      "shalya": "️",
-      "shalakya": "️",
-      "prasuti-stri": "",
-      "kaumarabhritya": "",
-      "swasthavritta": "",
-      "agadatantra": "",
-      "unspecified": ""
+      "general-medicine": "🩺",
+      "general_medicine": "🩺",
+      "cardiology": "🫀",
+      "pulmonology": "🫁",
+      "neurology": "🧠",
+      "gastroenterology": "🥗",
+      "orthopedics": "🦴",
+      "pediatrics": "👶",
+      "emergency": "🚨",
+      "dermatology": "🧴",
+      "ent": "👂",
+      "ophthalmology": "👁️",
+      "psychiatry": "💭",
+      "ayush": "🪷",
+      "kayachikitsa": "🍵",
+      "panchakarma": "🪔",
+      "shalya": "⚔️",
+      "shalakya": "👁️‍🗨️",
+      "prasuti-stri": "🤰",
+      "kaumarabhritya": "🍼",
+      "swasthavritta": "🧘‍♀️",
+      "agadatantra": "🛡️",
+      "unspecified": "🏥",
+      "ayush-unspecified": "📋",
+      "general-unspecified": "🏥"
     };
-    return "";
+    return icons[id] || "🩺";
   },
 
   init() {
@@ -116,7 +120,9 @@ const PhysicianDashboard = {
         selectEl.innerHTML = deptList.map(d => {
           const deptMeta = (typeof I18n !== "undefined" && I18n.getDepartmentInfo) ? I18n.getDepartmentInfo(d.id) : null;
           const name = deptMeta?.name || d.display_name;
-          return `<option value="${d.id}">${d.icon || this.getDeptIcon(d.id)} ${name}</option>`;
+          const rawIcon = (d.icon || "").replace(/[\uFE00-\uFE0F]/g, '').trim();
+          const iconToUse = rawIcon || this.getDeptIcon(d.id);
+          return `<option value="${d.id}">${iconToUse} ${name}</option>`;
         }).join("");
         if (deptList.some(d => d.id === currentVal)) {
           selectEl.value = currentVal;
@@ -208,13 +214,16 @@ const PhysicianDashboard = {
       const accessQueueLabel = (typeof I18n !== "undefined" && I18n.t) ? I18n.t("access_queue") : "ACCESS QUEUE →";
       const badgeLabel = dept.id === "unspecified" ? (accessQueueLabel.replace("ACCESS", "TRIAGE")) : accessQueueLabel;
 
+      const rawIcon = (dept.icon || "").replace(/[\uFE00-\uFE0F]/g, '').trim();
+      const iconToUse = rawIcon || this.getDeptIcon(dept.id);
+
       card.innerHTML = `
-        <div style="font-size:2rem; margin-bottom:0.5rem;">${dept.icon || this.getDeptIcon(dept.id)}</div>
+        <div style="font-size:2rem; margin-bottom:0.5rem;">${iconToUse}</div>
         <span class="lang-tile-native" style="font-size:1.2rem;">${displayName}</span>
         <p style="font-size:0.825rem; color:var(--text-muted); margin-top:0.25rem; line-height:1.4;">${displayDesc}</p>
         <span class="lang-tile-badge ${badgeClass}" style="margin-top:1rem;">${badgeLabel}</span>
       `;
-      card.addEventListener("click", () => this.selectDepartment(dept.id, displayName, dept.icon || this.getDeptIcon(dept.id)));
+      card.addEventListener("click", () => this.selectDepartment(dept.id, displayName, iconToUse));
       grid.appendChild(card);
     });
   },
@@ -330,7 +339,6 @@ const PhysicianDashboard = {
 
         let sevBadge = `<span class="lang-tile-badge lang-badge-connected">${(typeof I18n !== "undefined" && I18n.t && I18n.t("stable_only")) || "NORMAL"}</span>`;
         if (item.overall_severity === "CRITICAL") {
-        if (item.overall_severity === "CRITICAL") {
           const sevText = (typeof I18n !== "undefined" && I18n.t && I18n.t("critical_only")) || "CRITICAL";
           sevBadge = `<span class="lang-tile-badge" style="background:#fee2e2; color:#991b1b; border:1px solid #ef4444;">${sevText}</span>`;
         } else if (item.overall_severity === "HIGH") {
@@ -368,7 +376,6 @@ const PhysicianDashboard = {
               ${item.chief_complaint_summary || "Clinical check-in completed"}
             </div>
             ${item.has_documents ? `<span style="font-size:0.7rem; color:#0369a1; font-weight:600;">${(typeof I18n !== "undefined" && I18n.t && I18n.t("records_attached")) || "Records Attached"}</span>` : ''}
-          </td>
           </td>
           <td>
             <span style="font-size:0.85rem; font-weight:600;">${waitDisplay}</span>
@@ -940,6 +947,7 @@ const PhysicianDashboard = {
             `;
           }
 
+          return `
             <div class="ocr-item-card">
               <div class="ocr-item-header">
                 <span class="ocr-item-title">
@@ -1361,6 +1369,36 @@ const PhysicianDashboard = {
     el.style.display = isHidden ? "block" : "none";
   },
 
+  openScanLink(url, filename = "Medical Document") {
+    if (!url) return;
+    if (url.startsWith('data:')) {
+      try {
+        const parts = url.split(',');
+        const mimeMatch = parts[0].match(/:(.*?);/);
+        const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+        const bstr = atob(parts[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const blob = new Blob([u8arr], { type: mime });
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank');
+        return;
+      } catch (e) {
+        console.warn("Blob conversion failed, opening in popup window:", e);
+        const win = window.open("", "_blank");
+        if (win) {
+          win.document.write(`<!DOCTYPE html><html><head><title>${filename}</title></head><body style="margin:0; background:#0f172a; display:flex; justify-content:center; align-items:center; min-height:100vh;"><img src="${url}" style="max-width:100%; max-height:100vh; object-fit:contain;" /></body></html>`);
+          win.document.close();
+        }
+        return;
+      }
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  },
+
   openDocumentScanModal(url, filename = "Medical Document") {
     const modal = document.getElementById("doc-scan-modal");
     const title = document.getElementById("scan-modal-title");
@@ -1373,10 +1411,10 @@ const PhysicianDashboard = {
     if (title) title.innerText = `${filename}`;
     if (meta) meta.innerText = "Verified Medical Record Scan";
     if (extBtn) {
-      extBtn.href = url;
+      extBtn.href = "#";
       extBtn.onclick = (e) => {
         e.preventDefault();
-        window.open(url, '_blank', 'noopener,noreferrer');
+        this.openScanLink(url, filename);
       };
     }
 
@@ -1394,11 +1432,23 @@ const PhysicianDashboard = {
     }
 
     modal.style.display = "flex";
+
+    // Bind ESC key to close modal
+    this._escHandler = (e) => {
+      if (e.key === "Escape") {
+        this.closeDocumentScanModal();
+      }
+    };
+    window.addEventListener("keydown", this._escHandler);
   },
 
   closeDocumentScanModal() {
     const modal = document.getElementById("doc-scan-modal");
     if (modal) modal.style.display = "none";
+    if (this._escHandler) {
+      window.removeEventListener("keydown", this._escHandler);
+      this._escHandler = null;
+    }
   },
 
   loadDemoEvidenceReport() {
