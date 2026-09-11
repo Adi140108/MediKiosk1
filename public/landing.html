@@ -56,6 +56,11 @@
       background-size: 28px 28px;
       background-position: 0 0, 14px 14px, 7px 21px;
     }
+    #landing-audio-toggle.is-muted {
+      background-color: #FEF2F2 !important;
+      border-color: #F87171 !important;
+      color: #DC2626 !important;
+    }
   </style>
 </head>
 
@@ -344,7 +349,8 @@
     </div>
   </div>
 
-  <!-- ─── VANILLA JAVASCRIPT LOGIC ─── -->
+  <!-- ─── JAVASCRIPT DEPENDENCIES & LOGIC ─── -->
+  <script src="/js/speech.js"></script>
   <script>
     // 1. Dynamic Live Clock Update
     function updateClock() {
@@ -363,7 +369,9 @@
 
     // 2. Begin Check-in Action
     function handleBeginCheckin() {
-      if (window.goToStep && typeof window.goToStep === 'function') {
+      if (window.PatientIntake && typeof window.PatientIntake.goToStep === 'function') {
+        window.PatientIntake.goToStep(2);
+      } else if (window.goToStep && typeof window.goToStep === 'function') {
         window.goToStep(2);
       } else {
         window.location.href = '/?step=2';
@@ -521,6 +529,12 @@
         <line x1="${cx}" y1="${Math.round(cy + r)}" x2="${cx}" y2="${Math.round(cy + r + 12)}" stroke="#1A3A2B" stroke-width="1.8" />
       `;
     }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.SpeechManager && typeof window.SpeechManager.init === 'function') {
+        window.SpeechManager.init();
+      }
+    });
 
     window.addEventListener('load', () => {
       setTimeout(updateLandingCardConnections, 100);

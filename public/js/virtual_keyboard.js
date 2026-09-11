@@ -47,9 +47,42 @@
 
     init() {
       this.ensureDrawerDOM();
+      this.ensureFabButton();
       this.bindGlobalInputListeners();
       this.bindFabButton();
       this.renderKeys();
+    },
+
+    ensureFabButton() {
+      let fab = document.getElementById('keyboard-fab');
+      if (!fab) {
+        fab = document.createElement('button');
+        fab.id = 'keyboard-fab';
+        fab.className = 'keyboard-fab';
+        fab.type = 'button';
+        fab.title = 'Open On-Screen Keyboard';
+        fab.setAttribute('aria-label', 'Open On-Screen Keyboard');
+        fab.innerHTML = `
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
+            <line x1="6" y1="8" x2="6" y2="8"></line>
+            <line x1="10" y1="8" x2="10" y2="8"></line>
+            <line x1="14" y1="8" x2="14" y2="8"></line>
+            <line x1="18" y1="8" x2="18" y2="8"></line>
+            <line x1="6" y1="12" x2="6" y2="12"></line>
+            <line x1="10" y1="12" x2="10" y2="12"></line>
+            <line x1="14" y1="12" x2="14" y2="12"></line>
+            <line x1="18" y1="12" x2="18" y2="12"></line>
+            <line x1="7" y1="16" x2="17" y2="16"></line>
+          </svg>
+        `;
+        const step1 = document.getElementById('kiosk-step-1');
+        if (step1 && (step1.style.display !== 'none' && window.getComputedStyle(step1).display !== 'none')) {
+          fab.style.display = 'none';
+        }
+        document.body.appendChild(fab);
+      }
     },
 
     ensureDrawerDOM() {
@@ -131,16 +164,19 @@
       }
     },
 
+    isEligibleInput(target) {
+      if (!target) return false;
+      const tagName = target.tagName ? target.tagName.toLowerCase() : '';
+      const isEditable = (tagName === 'input' && !['checkbox', 'radio', 'file', 'submit', 'button', 'range', 'color', 'hidden', 'image', 'reset'].includes(target.type)) ||
+                         tagName === 'textarea';
+      return isEditable && !target.readOnly && !target.disabled && target.offsetParent !== null;
+    },
+
     bindGlobalInputListeners() {
       // Track currently focused input and synchronize cursor position
       const syncInputState = (e) => {
         const target = e.target;
-        if (!target) return;
-        const tagName = target.tagName ? target.tagName.toLowerCase() : '';
-        const isEditable = (tagName === 'input' && !['checkbox', 'radio', 'file', 'submit', 'button', 'range', 'color', 'hidden'].includes(target.type)) ||
-                           tagName === 'textarea';
-
-        if (isEditable && !target.readOnly && !target.disabled) {
+        if (this.isEligibleInput(target)) {
           this.setActiveInput(target);
           if (target.type !== 'number' && typeof target.selectionStart === 'number') {
             this.cursorPos = target.selectionStart;
@@ -242,7 +278,13 @@
     },
 
     open() {
-      if (!this.activeInput || this.activeInput.offsetParent === null) {
+      // Prioritize currently focused editable field if available
+      const activeEl = document.activeElement;
+      if (this.isEligibleInput(activeEl)) {
+        this.setActiveInput(activeEl);
+      }
+
+      if (!this.activeInput || this.activeInput.offsetParent === null || this.activeInput.disabled || this.activeInput.readOnly) {
         const candidate = this.findDefaultInputForCurrentStep();
         if (candidate) {
           this.setActiveInput(candidate);

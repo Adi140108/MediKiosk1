@@ -4528,9 +4528,8 @@ img {
   gap: clamp(0.75rem, 1.5vw, 1.25rem);
 }
 
-/* Global Standard Audio Mute Nav Pill (Consistent Across All Pages) */
-.audio-mute-nav-pill,
-.ref-audio-pill {
+/* Circular Audio Nav Pill for Step 2+ and Physician Topbar */
+.audio-mute-nav-pill {
   width: 40px;
   height: 40px;
   display: inline-flex;
@@ -4549,17 +4548,58 @@ img {
   position: relative;
 }
 
+/* Landing Page Audio Pill with Icon + Text Label */
+.ref-audio-pill {
+  width: auto;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.38rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  color: #1E3B2F;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+  position: relative;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: inherit;
+  user-select: none;
+}
+
+.ref-audio-pill-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ref-audio-pill-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  line-height: 1;
+}
+
 .audio-mute-nav-pill:hover,
 .ref-audio-pill:hover {
   background: #FFFFFF;
   border-color: rgba(0, 0, 0, 0.15);
-  transform: scale(1.08);
+  transform: scale(1.05);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
 .audio-mute-nav-pill:active,
 .ref-audio-pill:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
 .audio-mute-nav-pill.is-muted,
@@ -4772,6 +4812,7 @@ img {
   align-items: flex-start;
 }
 
+/* Cards */
 /* Cards (Pure Hover Effect — No Redirection) */
 .ref-card {
   background: #FFFDFB;
@@ -4964,59 +5005,227 @@ img {
     background: linear-gradient(180deg, #F4EFEA 0%, #EFE8E1 50%, #F4EFEA 100%) !important;
   }
   .ref-bg-art {
-    position: absolute !important;
+    position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 100% !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
   }
   .ref-arch-left-terracotta {
-    height: 100% !important;
     top: 0 !important;
     bottom: 0 !important;
-    opacity: 0.85;
+    height: 100% !important;
+    width: clamp(75px, 16vw, 140px) !important;
+    opacity: 0.85 !important;
   }
   .ref-arch-right-green {
-    height: 100% !important;
     top: 0 !important;
     bottom: 0 !important;
-    opacity: 0.85;
+    height: 100% !important;
+    width: clamp(75px, 16vw, 140px) !important;
+    opacity: 0.85 !important;
   }
-  .ref-arch-left-outline {
-    height: 90% !important;
+  .ref-botanical-left,
+  .ref-botanical-right {
+    width: clamp(80px, 18vw, 130px) !important;
+    opacity: 0.85 !important;
   }
-  .ref-arch-right-terrazzo {
-    bottom: 0 !important;
-  }
+  .ref-arch-left-outline,
+  .ref-arch-right-rust,
+  .ref-center-mound-left,
+  .ref-center-mound-right,
+  .ref-center-slice-line,
   .ref-side-text-left,
   .ref-side-text-right {
-    display: none;
+    display: none !important;
+  }
+  .ref-arch-right-terrazzo {
+    width: clamp(80px, 18vw, 140px) !important;
+    height: clamp(160px, 24vh, 240px) !important;
+    opacity: 1 !important;
+    bottom: 0 !important;
+    right: 0 !important;
+  }
+  .ref-header {
+    padding: 0.75rem 1rem !important;
+    align-items: center !important;
+    z-index: 40 !important;
+  }
+  .ref-logo-block {
+    gap: 0.65rem !important;
+  }
+  .ref-logo-svg,
+  .ref-logo-img {
+    height: 38px !important;
+  }
+  .ref-brand-name {
+    font-size: 1.25rem !important;
+  }
+  .ref-brand-tagline {
+    font-size: 0.5rem !important;
+    letter-spacing: 0.1em !important;
+    margin-top: 0.15rem !important;
+  }
+  .ref-header-right {
+    gap: 0.55rem !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+  }
+  .ref-audio-pill {
+    padding: 0.32rem 0.7rem !important;
+    font-size: 0.72rem !important;
+    gap: 0.35rem !important;
+    min-height: 34px !important;
+  }
+  .ref-audio-pill-label {
+    font-size: 0.72rem !important;
+    white-space: nowrap !important;
+  }
+  .ref-datetime-block {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1.5px solid rgba(0, 0, 0, 0.08) !important;
+    padding: 0.28rem 0.65rem !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+    z-index: 45 !important;
+  }
+  .ref-date {
+    font-size: 0.68rem !important;
+    font-weight: 600 !important;
+    color: #43554A !important;
+    white-space: nowrap !important;
+    line-height: 1.2 !important;
+  }
+  .ref-time {
+    font-size: 1.05rem !important;
+    font-weight: 800 !important;
+    line-height: 1.1 !important;
+    color: #1E3B2F !important;
+    white-space: nowrap !important;
+  }
+  .ref-hub-wrapper {
+    padding: 0 1.25rem !important;
+    margin-top: 0 !important;
+    z-index: 20 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .ref-title-section {
+    margin-bottom: 1rem !important;
+  }
+  .ref-welcome-pre {
+    font-size: 0.7rem !important;
+    letter-spacing: 0.25em !important;
+  }
+  .ref-welcome-main {
+    font-size: clamp(2rem, 7vw, 2.8rem) !important;
+  }
+  .ref-welcome-post {
+    font-size: 0.62rem !important;
+    letter-spacing: 0.15em !important;
+  }
+  .ref-welcome-line {
+    margin: 0.45rem auto !important;
+  }
+  .ref-welcome-sub {
+    font-size: 0.85rem !important;
+    line-height: 1.35 !important;
+    padding: 0 0.5rem !important;
   }
   .ref-diagram-grid {
-    flex-direction: column;
-    gap: 1.25rem;
-    padding: 0.5rem 0;
+    flex-direction: column !important;
+    gap: 0.85rem !important;
+    padding: 0.25rem 0 !important;
+    width: 100% !important;
+    max-width: 380px !important;
+    margin: 0 auto !important;
   }
   .ref-diagram-lines {
-    display: none;
+    display: none !important;
   }
   .ref-col {
-    width: 100%;
-    max-width: 320px;
-    align-items: center;
+    width: 100% !important;
+    max-width: 380px !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+  }
+  .ref-col-left,
+  .ref-col-right {
+    align-items: center !important;
+  }
+  .ref-card {
+    padding: 0.85rem 1rem !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 16px rgba(30, 59, 47, 0.08) !important;
+    width: 100% !important;
   }
   .ref-center-col {
-    order: -1;
-    margin-bottom: 0.5rem;
+    order: -1 !important;
+    margin-bottom: 0.5rem !important;
+  }
+  .ref-circle-btn {
+    width: clamp(150px, 42vw, 185px) !important;
+    height: clamp(150px, 42vw, 185px) !important;
   }
   .ref-footer {
-    flex-direction: column;
-    align-items: center;
-    gap: 1.25rem;
-    text-align: center;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    text-align: center !important;
+    padding: 1rem 0 1.5rem 0 !important;
+    z-index: 25 !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .ref-header {
+    padding: 0.6rem 0.75rem !important;
+  }
+  .ref-logo-block {
+    gap: 0.5rem !important;
+  }
+  .ref-logo-svg,
+  .ref-logo-img {
+    height: 34px !important;
+  }
+  .ref-brand-name {
+    font-size: 1.15rem !important;
+  }
+  .ref-brand-tagline {
+    display: none !important;
+  }
+  .ref-header-right {
+    gap: 0.45rem !important;
+  }
+  .ref-audio-pill {
+    padding: 0.28rem 0.55rem !important;
+    font-size: 0.68rem !important;
+    gap: 0.3rem !important;
+    min-height: 32px !important;
+  }
+  .ref-audio-pill-label {
+    font-size: 0.68rem !important;
+  }
+  .ref-datetime-block {
+    padding: 0.22rem 0.5rem !important;
+    border-radius: 10px !important;
+  }
+  .ref-date {
+    font-size: 0.62rem !important;
+  }
+  .ref-time {
+    font-size: 0.95rem !important;
   }
 }
 

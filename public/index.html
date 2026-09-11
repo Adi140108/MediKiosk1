@@ -52,6 +52,10 @@
       if (safetyBanner) safetyBanner.style.display = (num === 1) ? 'none' : 'flex';
       if (kb) kb.style.display = (num === 1) ? 'none' : 'flex';
 
+      if (window.VirtualKeyboard && typeof window.VirtualKeyboard.close === 'function') {
+        try { window.VirtualKeyboard.close(); } catch(e) {}
+      }
+
       if (num === 1 && typeof updateCardConnections === 'function') {
         setTimeout(updateCardConnections, 50);
       }
@@ -64,8 +68,12 @@
       function checkStepParam() {
         if (window.location.search.includes('step=2') || window.location.hash === '#step-2') {
           setTimeout(function() {
-            goToStep(2);
-          }, 100);
+            if (window.PatientIntake && typeof window.PatientIntake.goToStep === 'function') {
+              window.PatientIntake.goToStep(2);
+            } else {
+              goToStep(2);
+            }
+          }, 50);
         }
       }
       if (document.readyState === 'loading') {
@@ -260,6 +268,7 @@
           <div class="ref-center-mound-right"></div>
           <div class="ref-center-slice-line" id="ref-center-slice-line"></div>
         </div>
+        </div>
 
         <!-- Top Header (Edge-to-Edge: Logo on far left, Clock on far right) -->
         <header class="ref-header">
@@ -273,11 +282,12 @@
           </div>
 
           <div class="ref-header-right">
-            <!-- Global Audio Mute / Sound Toggle Pill on Landing Header (Standard across all pages) -->
-            <div class="audio-mute-nav-pill" id="ref-landing-audio-toggle" onclick="SpeechManager.toggleGlobalMute()" title="Sound ON — Tap to Mute Audio">
-              <span class="audio-pill-icon" id="ref-landing-audio-icon">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+            <!-- Global Audio Mute / Sound Toggle Pill on Landing Header -->
+            <div class="ref-audio-pill" id="ref-landing-audio-toggle" onclick="SpeechManager.toggleGlobalMute()" title="Sound ON — Tap to Mute Audio">
+              <span class="ref-audio-pill-icon" id="ref-landing-audio-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
               </span>
+              <span class="ref-audio-pill-label" id="ref-landing-audio-label">SOUND ON</span>
             </div>
 
             <div class="ref-datetime-block">
@@ -1407,7 +1417,8 @@
       if (timeEl) timeEl.textContent = now.toLocaleTimeString('en-US', timeOptions);
     }
     updateLandingClock();
-    setInterval(updateLandingClock, 10000);
+    document.addEventListener('DOMContentLoaded', updateLandingClock);
+    setInterval(updateLandingClock, 1000);
 
     // Language Dropdown Menu Toggle
     function toggleLandingLangMenu(e) {
@@ -1565,6 +1576,8 @@
         <circle cx="${cx}" cy="${Math.round(cy + r + 12)}" r="3.5" fill="#1A3A2B" />
         <line x1="${cx}" y1="${Math.round(cy + r)}" x2="${cx}" y2="${Math.round(cy + r + 12)}" stroke="#1A3A2B" stroke-width="1.8" />
       `;
+    }
+
     window.addEventListener('load', () => {
       setTimeout(updateCardConnections, 100);
       setTimeout(updateCardConnections, 500);

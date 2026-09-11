@@ -52,6 +52,10 @@
       if (safetyBanner) safetyBanner.style.display = (num === 1) ? 'none' : 'flex';
       if (kb) kb.style.display = (num === 1) ? 'none' : 'flex';
 
+      if (window.VirtualKeyboard && typeof window.VirtualKeyboard.close === 'function') {
+        try { window.VirtualKeyboard.close(); } catch(e) {}
+      }
+
       if (num === 1 && typeof updateCardConnections === 'function') {
         setTimeout(updateCardConnections, 50);
       }
@@ -64,8 +68,12 @@
       function checkStepParam() {
         if (window.location.search.includes('step=2') || window.location.hash === '#step-2') {
           setTimeout(function() {
-            goToStep(2);
-          }, 100);
+            if (window.PatientIntake && typeof window.PatientIntake.goToStep === 'function') {
+              window.PatientIntake.goToStep(2);
+            } else {
+              goToStep(2);
+            }
+          }, 50);
         }
       }
       if (document.readyState === 'loading') {
@@ -259,6 +267,7 @@
           <div class="ref-center-mound-left"></div>
           <div class="ref-center-mound-right"></div>
           <div class="ref-center-slice-line" id="ref-center-slice-line"></div>
+        </div>
         </div>
 
         <!-- Top Header (Edge-to-Edge: Logo on far left, Clock on far right) -->
@@ -1408,7 +1417,8 @@
       if (timeEl) timeEl.textContent = now.toLocaleTimeString('en-US', timeOptions);
     }
     updateLandingClock();
-    setInterval(updateLandingClock, 10000);
+    document.addEventListener('DOMContentLoaded', updateLandingClock);
+    setInterval(updateLandingClock, 1000);
 
     // Language Dropdown Menu Toggle
     function toggleLandingLangMenu(e) {
@@ -1566,6 +1576,8 @@
         <circle cx="${cx}" cy="${Math.round(cy + r + 12)}" r="3.5" fill="#1A3A2B" />
         <line x1="${cx}" y1="${Math.round(cy + r)}" x2="${cx}" y2="${Math.round(cy + r + 12)}" stroke="#1A3A2B" stroke-width="1.8" />
       `;
+    }
+
     window.addEventListener('load', () => {
       setTimeout(updateCardConnections, 100);
       setTimeout(updateCardConnections, 500);

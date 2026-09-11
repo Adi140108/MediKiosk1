@@ -34,10 +34,11 @@ const SpeechManager = {
   },
 
   init() {
-    this.isMuted = false;
     try {
-      localStorage.setItem('medikiosk_muted', 'false');
-    } catch(e) {}
+      this.isMuted = localStorage.getItem('medikiosk_muted') === 'true';
+    } catch(e) {
+      this.isMuted = false;
+    }
     this.setupRecognition();
     if (this.synth) {
       try { this.synth.resume(); } catch(e) {}
@@ -47,7 +48,7 @@ const SpeechManager = {
         };
       }
     }
-    this.updateButtonStates('idle');
+    this.updateButtonStates(this.isMuted ? 'muted' : 'idle');
   },
 
   setLanguage(lang) {
@@ -725,12 +726,16 @@ const SpeechManager = {
       }
     });
 
-    // 2. Update Top Navbar Global Audio Toggle Pill (#navbar-audio-toggle & #ref-landing-audio-toggle)
-    const navPills = [document.getElementById('navbar-audio-toggle'), document.getElementById('ref-landing-audio-toggle')];
+    // 2. Update Top Navbar Global Audio Toggle Pill (#navbar-audio-toggle & #ref-landing-audio-toggle & #landing-audio-toggle)
+    const navPills = [
+      document.getElementById('navbar-audio-toggle'),
+      document.getElementById('ref-landing-audio-toggle'),
+      document.getElementById('landing-audio-toggle')
+    ];
     navPills.forEach(navPill => {
       if (!navPill) return;
-      const navIcon = navPill.querySelector('#navbar-audio-icon, #ref-landing-audio-icon, .audio-pill-icon, .ref-audio-pill-icon');
-      const navLabel = navPill.querySelector('#navbar-audio-label, #ref-landing-audio-label, .ref-audio-pill-label');
+      const navIcon = navPill.querySelector('#navbar-audio-icon, #ref-landing-audio-icon, #landing-audio-icon, .audio-pill-icon, .ref-audio-pill-icon');
+      const navLabel = navPill.querySelector('#navbar-audio-label, #ref-landing-audio-label, #landing-audio-label, .ref-audio-pill-label');
       const navDot = navPill.querySelector('#audio-pill-dot');
 
       if (isMutedNow) {
