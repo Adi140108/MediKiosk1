@@ -50,6 +50,15 @@ const PatientIntake = {
     try { this.updateStepIndicator(1); } catch (e) {}
     try { this.updateLanguageGridUI(this.language); } catch (e) {}
 
+    // Auto-advance if navigated with ?step=2 or #step-2 (e.g. from landing page)
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('step') === '2' || window.location.hash === '#step-2') {
+        this.goToStep(2);
+        return;
+      }
+    } catch (e) {}
+
     // 2. SINGLE WELCOMING AUTO-SPEECH (Guarded against duplicate execution)
     let welcomeTriggered = false;
     const triggerWelcomeSpeech = () => {
@@ -250,6 +259,12 @@ const PatientIntake = {
     } catch (e) {
       console.warn("Speech stop notice:", e);
     }
+
+    try {
+      if (typeof VirtualKeyboard !== "undefined" && VirtualKeyboard.isOpen) {
+        VirtualKeyboard.close();
+      }
+    } catch (e) {}
 
     // Ensure section-patient container is active and visible
     const patientSec = document.getElementById("section-patient");
