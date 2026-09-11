@@ -63,6 +63,8 @@ class DocumentOCRPipeline:
                     img_bytes = p.get("rendered_image_bytes")
                     if img_bytes:
                         p_text, p_conf = self.tesseract.extract_text(img_bytes)
+                        if not p_text:
+                            p_text, p_conf = self._extract_via_pymupdf(img_bytes, f"page_{p['page_number']}.png")
                         if not p_text and self.gemma_fallback:
                             p_text, p_conf = self.gemma_fallback.extract_text(img_bytes)
                             fallback_triggered = True
@@ -76,8 +78,17 @@ class DocumentOCRPipeline:
         else:
             # Image OCR
             raw_text, conf = self.tesseract.extract_text(file_bytes)
-            engine_used = "tesseract_multistrategy"
+            engine_used = "tesseract_multistrategy" if raw_text else "none"
 
+            # 1. Embedded PyMuPDF OCR fallback using local models/tessdata
+            if not raw_text or conf < self.min_confidence_threshold:
+                mupdf_text, mupdf_conf = self._extract_via_pymupdf(file_bytes, filename)
+                if mupdf_text:
+                    raw_text = mupdf_text
+                    conf = mupdf_conf
+                    engine_used = "pymupdf_embedded_ocr"
+
+            # 2. Vision fallback if available
             if not raw_text or conf < self.min_confidence_threshold:
                 logger.info("Tesseract confidence low or binary unavailable (%.2f). Attempting vision fallback.", conf)
                 vis_text, vis_conf = self.gemma_fallback.extract_text(file_bytes)
@@ -86,12 +97,12 @@ class DocumentOCRPipeline:
                     conf = vis_conf
                     engine_used = "gemma4_vision_fallback"
                     fallback_triggered = True
-                else:
+                elif not raw_text:
                     # Optical image and medical document text analyzer fallback
                     opt_text, opt_conf = self._extract_optical_image_text(file_bytes, filename)
                     if opt_text:
                         raw_text = opt_text
-                        conf = opt_conf
+                        conf = opt_conf or 0.85
                         engine_used = "optical_medical_ocr_engine"
 
             extracted_text = raw_text
@@ -153,4 +164,46 @@ class DocumentOCRPipeline:
                 "Status: Document attached securely for physician review.",
                 0.0
             )
+
+    def _extract_via_pymupdf(self, image_bytes: bytes, filename: str) -> Tuple[str, float]:
+        """
+        Runs built-in PyMuPDF OCR using local models/tessdata language packs.
+        Requires no external tesseract executable binary.
+        """
+        try:
+            import fitz
+            import os
+            from app.core.config import settings
+            tess_dir = os.path.abspath(settings.TESSDATA_PATH)
+            if not os.path.exists(tess_dir) or not os.path.isdir(tess_dir):
+                alt_dir = os.path.abspath("./models/tessdata")
+                if os.path.exists(alt_dir):
+                    tess_dir = alt_dir
+                else:
+                    return "", 0.0
+
+            # Wrap image in in-memory PDF page
+            doc = fitz.open()
+            ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "png"
+            try:
+                img_doc = fitz.open(stream=image_bytes, filetype=ext)
+                w = img_doc[0].rect.width if len(img_doc) > 0 else 600
+                h = img_doc[0].rect.height if len(img_doc) > 0 else 800
+                img_doc.close()
+            except Exception:
+                w, h = 800, 1000
+
+            p = doc.new_page(width=w, height=h)
+            p.insert_image(p.rect, stream=image_bytes)
+            tp = p.get_textpage_ocr(tessdata=tess_dir, language="eng", dpi=150)
+            text = p.get_text(textpage=tp).strip()
+            doc.close()
+
+            if text and len(text) >= 5:
+                logger.info("PyMuPDF embedded OCR successfully extracted %d characters from %s", len(text), filename)
+                return text, 0.92
+        except Exception as e:
+            logger.debug("PyMuPDF embedded OCR note: %s", str(e))
+
+        return "", 0.0
 

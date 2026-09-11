@@ -73,6 +73,7 @@ def get_department_queue(
     return [i.model_dump() for i in items]
 
 @router.get("/patient/{session_id}")
+@router.get("/cases/{session_id}")
 @router.get("/cases/{session_id}/workspace")
 @router.get("/sessions/{session_id}/workspace")
 async def get_patient_case_workspace(session_id: str):
@@ -146,11 +147,16 @@ async def get_patient_case_workspace(session_id: str):
     documents_with_urls = []
     for doc in raw_docs:
         doc_copy = dict(doc)
+        doc_id = doc.get("document_id")
+        file_endpoint = f"/api/v1/documents/{doc_id}/file" if doc_id else ""
         try:
-            url, _ = storage_service.get_document_access_url(doc.get("document_id"))
-            doc_copy["access_url"] = url
+            url, _ = storage_service.get_document_access_url(doc_id)
+            if url and (url.startswith("http://") or url.startswith("https://")):
+                doc_copy["access_url"] = url
+            else:
+                doc_copy["access_url"] = file_endpoint or url
         except Exception:
-            doc_copy["access_url"] = doc.get("provider_metadata", {}).get("secure_url") or doc.get("storage_key")
+            doc_copy["access_url"] = file_endpoint or doc.get("provider_metadata", {}).get("secure_url") or doc.get("storage_key")
         documents_with_urls.append(doc_copy)
 
     if queue_item and queue_item.status == QueueStatus.WAITING:
@@ -425,11 +431,16 @@ def get_case_documents(session_id: str):
     docs = []
     for doc in raw_docs:
         doc_copy = dict(doc)
+        doc_id = doc.get("document_id")
+        file_endpoint = f"/api/v1/documents/{doc_id}/file" if doc_id else ""
         try:
-            url, _ = storage_service.get_document_access_url(doc.get("document_id"))
-            doc_copy["access_url"] = url
+            url, _ = storage_service.get_document_access_url(doc_id)
+            if url and (url.startswith("http://") or url.startswith("https://")):
+                doc_copy["access_url"] = url
+            else:
+                doc_copy["access_url"] = file_endpoint or url
         except Exception:
-            doc_copy["access_url"] = doc.get("provider_metadata", {}).get("secure_url") or doc.get("storage_key")
+            doc_copy["access_url"] = file_endpoint or doc.get("provider_metadata", {}).get("secure_url") or doc.get("storage_key")
         docs.append(doc_copy)
     return docs
 

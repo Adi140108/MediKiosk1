@@ -293,21 +293,45 @@ class MedicalDocumentExtractor:
                     confidence=0.92
                 ))
 
-        # Rx / Medication patterns: Tab X 500mg, Cap Y 20mg
-        for rx_match in re.finditer(r'\b(?:Tab|Tablet|Cap|Capsule|Syp|Syrup|Injection|Inj)\.?\s+([A-Za-z0-9\-]+)\s+([0-9]+(?:\.[0-9]+)?\s*(?:mg|mcg|ml|g)?)\s*(OD|BD|TDS|QID|SOS|HS|once\s*daily|twice\s*daily)?\b', raw_text, re.IGNORECASE):
+        # Rx / Medication patterns: Tab X 500mg, Cap Y 20mg, Rx: Metformin 500mg BD
+        matched_med_names = set()
+        for rx_match in re.finditer(r'\b(?:Tab|Tablet|Cap|Capsule|Syp|Syrup|Injection|Inj|Rx:?)\.?\s+([A-Za-z0-9\-]+)\s+([0-9]+(?:\.[0-9]+)?\s*(?:mg|mcg|ml|g)?)\s*(OD|BD|TDS|QID|SOS|HS|once\s*daily|twice\s*daily|after\s*food|before\s*food)?\b', raw_text, re.IGNORECASE):
             drug_name = rx_match.group(1)
             dosage = rx_match.group(2) or ""
             freq = rx_match.group(3) or ""
-            meds.append({"name": drug_name, "dosage": dosage, "frequency": freq})
-            facts.append(ExtractedClinicalFact(
-                fact=f"Medication: {drug_name}",
-                value=f"{dosage} {freq}".strip() or "Prescribed",
-                category="medication",
-                source_document=filename,
-                page=page,
-                source_text=rx_match.group(0),
-                confidence=0.90
-            ))
+            if drug_name.lower() not in matched_med_names:
+                matched_med_names.add(drug_name.lower())
+                meds.append({"name": drug_name, "dosage": dosage, "frequency": freq})
+                facts.append(ExtractedClinicalFact(
+                    fact=f"Medication: {drug_name}",
+                    value=f"{dosage} {freq}".strip() or "Prescribed",
+                    category="medication",
+                    source_document=filename,
+                    page=page,
+                    source_text=rx_match.group(0),
+                    confidence=0.90
+                ))
+
+        # Also check common essential medications if not already matched
+        common_drugs = ["metformin", "paracetamol", "amoxicillin", "atorvastatin", "pantoprazole", "cetirizine", "telmisartan", "amlodipine", "ibuprofen", "azithromycin", "omeprazole", "losartan", "aspirin"]
+        for drug in common_drugs:
+            if drug not in matched_med_names:
+                m = re.search(rf'\b({drug})\s+([0-9]+(?:\.[0-9]+)?\s*(?:mg|mcg|ml|g)?)\s*(OD|BD|TDS|QID|SOS|HS|once\s*daily|twice\s*daily)?\b', raw_text, re.IGNORECASE)
+                if m:
+                    d_name = m.group(1).capitalize()
+                    d_dose = m.group(2) or ""
+                    d_freq = m.group(3) or ""
+                    matched_med_names.add(drug)
+                    meds.append({"name": d_name, "dosage": d_dose, "frequency": d_freq})
+                    facts.append(ExtractedClinicalFact(
+                        fact=f"Medication: {d_name}",
+                        value=f"{d_dose} {d_freq}".strip() or "Prescribed",
+                        category="medication",
+                        source_document=filename,
+                        page=page,
+                        source_text=m.group(0),
+                        confidence=0.90
+                    ))
 
         # Diagnoses & Conditions: Diagnosis: X, Impression: Y
         diag_patterns = [

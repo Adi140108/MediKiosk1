@@ -86,14 +86,19 @@ const api = {
   },
 
   async uploadDocument(formData) {
-    // Immediate return with status=PROCESSING
     const res = await fetchWithTimeout(`${API_BASE}/documents/upload`, {
       method: "POST",
       body: formData
-    }, 8000);
+    }, 30000);
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || "Document upload failed");
+      let errMsg = "Document upload failed";
+      try {
+        const err = await res.json();
+        errMsg = err.detail || errMsg;
+      } catch (e) {
+        errMsg = (await res.text().catch(() => '')) || `Upload failed with status ${res.status}`;
+      }
+      throw new Error(errMsg);
     }
     return res.json();
   },
