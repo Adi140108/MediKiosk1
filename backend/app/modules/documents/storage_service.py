@@ -13,10 +13,11 @@ logger = logging.getLogger(__name__)
 
 # Allowed MIME types and image extensions
 IMAGE_MIME_TYPES = {
-    "image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp", "image/tiff"
+    "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/bmp", "image/tiff",
+    "image/pjpeg", "image/x-png", "image/heic", "image/heif"
 }
 IMAGE_EXTENSIONS = {
-    "jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff"
+    "jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "heic", "heif"
 }
 
 DOCUMENT_MIME_TYPES = {
@@ -53,8 +54,23 @@ class StorageService:
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
         content_type_clean = content_type.lower().split(";")[0].strip()
 
-        is_image = content_type_clean in IMAGE_MIME_TYPES or ext in IMAGE_EXTENSIONS
-        is_document = content_type_clean in DOCUMENT_MIME_TYPES or ext in DOCUMENT_EXTENSIONS
+        # Resilient format detection via MIME type, extension, or file magic bytes
+        is_image = (
+            content_type_clean in IMAGE_MIME_TYPES
+            or content_type_clean.startswith("image/")
+            or ext in IMAGE_EXTENSIONS
+            or file_bytes.startswith(b"\xff\xd8\xff")  # JPEG
+            or file_bytes.startswith(b"\x89PNG")       # PNG
+            or (file_bytes.startswith(b"RIFF") and file_bytes[8:12] == b"WEBP")  # WEBP
+            or file_bytes.startswith(b"GIF8")          # GIF
+            or file_bytes.startswith(b"BM")            # BMP
+        )
+
+        is_document = (
+            content_type_clean in DOCUMENT_MIME_TYPES
+            or ext in DOCUMENT_EXTENSIONS
+            or file_bytes.startswith(b"%PDF")
+        )
 
         if not is_image and not is_document:
             raise ValueError(f"Unsupported file type: content-type='{content_type}', extension='{ext}'")
@@ -178,11 +194,18 @@ class StorageService:
         storage_key = metadata.get("storage_key")
 
         if provider == "backblaze_b2":
-            url = self.backblaze.generate_signed_url(storage_key, expires_in_seconds=expires_in_seconds)
+            stored_secure = metadata.get("provider_metadata", {}).get("secure_url")
+            if stored_secure and (not storage_key or storage_key.startswith("/uploads/")):
+                url = stored_secure
+            else:
+                try:
+                    url = self.backblaze.generate_signed_url(storage_key, expires_in_seconds=expires_in_seconds)
+                except Exception:
+                    url = stored_secure or ""
         elif provider == "cloudinary":
             url = metadata.get("provider_metadata", {}).get("secure_url") or self.cloudinary.generate_signed_url(storage_key)
         else:
-            raise ValueError(f"Unknown storage provider '{provider}'")
+            url = metadata.get("provider_metadata", {}).get("secure_url") or ""
 
         return url, metadata
 

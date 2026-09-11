@@ -443,6 +443,7 @@ const PhysicianDashboard = {
     const red_flag = data.red_flag || data.red_flags || {};
     const routing = data.routing || {};
     const documents = data.documents || [];
+    this.currentDocuments = documents;
     const medical_history = data.medical_history || {};
     const ayurvedic_assessment = data.ayurvedic_assessment || {};
     const questions = data.questions || [];
@@ -947,6 +948,31 @@ const PhysicianDashboard = {
             `;
           }
 
+          const isPdf = (scanUrl || '').toLowerCase().includes('.pdf');
+          let thumbnailHtml = "";
+          if (scanUrl) {
+            if (isPdf) {
+              thumbnailHtml = `
+                <div style="margin-top:0.65rem; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:0.6rem 0.85rem; display:flex; align-items:center; justify-content:space-between; cursor:pointer;" onclick="PhysicianDashboard.viewDocumentByIndex(${idx})" title="Click to view PDF document">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:1.3rem;">📑</span>
+                    <div>
+                      <p style="margin:0; font-weight:700; color:#991b1b; font-size:0.85rem;">PDF Document Attached</p>
+                      <p style="margin:2px 0 0 0; color:#b91c1c; font-size:0.75rem;">Click Preview Scan to inspect all pages in viewer</p>
+                    </div>
+                  </div>
+                  <span style="font-size:0.75rem; background:#fee2e2; color:#991b1b; padding:2px 8px; border-radius:4px; font-weight:700;">View PDF</span>
+                </div>
+              `;
+            } else {
+              thumbnailHtml = `
+                <div style="margin-top:0.65rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:0.4rem; text-align:center; max-height:160px; overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="PhysicianDashboard.viewDocumentByIndex(${idx})" title="Click to view full document preview">
+                  <img src="${scanUrl}" alt="${filename}" style="max-height:150px; max-width:100%; object-fit:contain; border-radius:4px;" />
+                </div>
+              `;
+            }
+          }
+
           return `
             <div class="ocr-item-card">
               <div class="ocr-item-header">
@@ -961,6 +987,7 @@ const PhysicianDashboard = {
                 </span>
               </div>
               <div class="ocr-item-content">
+                ${thumbnailHtml}
                 ${labsHtml}
                 ${medsHtml}
                 ${condsHtml}
@@ -968,11 +995,11 @@ const PhysicianDashboard = {
 
                 <div style="display:flex; gap:0.5rem; margin-top:0.85rem; align-items:center; flex-wrap:wrap;">
                   ${scanUrl ? `
-                    <button type="button" class="btn-card-action btn-card-action-primary" onclick="PhysicianDashboard.openDocumentScanModal('${scanUrl}', '${filename.replace(/'/g, "\\'")}')">
+                    <button type="button" class="btn-card-action btn-card-action-primary" onclick="PhysicianDashboard.viewDocumentByIndex(${idx})">
                       <svg class="btn-icon-svg" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                       <span>Preview Scan</span>
                     </button>
-                    <button type="button" class="btn-card-action btn-card-action-secondary" onclick="PhysicianDashboard.openScanLink('${scanUrl}')">
+                    <button type="button" class="btn-card-action btn-card-action-secondary" onclick="PhysicianDashboard.openScanExternalByIndex(${idx})">
                       <svg class="btn-icon-svg" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                       <span>Full Scan</span>
                     </button>
@@ -1369,6 +1396,22 @@ const PhysicianDashboard = {
     el.style.display = isHidden ? "block" : "none";
   },
 
+  viewDocumentByIndex(idx) {
+    if (!this.currentDocuments || !this.currentDocuments[idx]) return;
+    const d = this.currentDocuments[idx];
+    const url = d.access_url || (d.document_id ? `/api/v1/documents/${d.document_id}/file` : '') || d.storage_key || '';
+    const filename = d.original_filename || d.filename || `Medical Report ${idx + 1}`;
+    this.openDocumentScanModal(url, filename);
+  },
+
+  openScanExternalByIndex(idx) {
+    if (!this.currentDocuments || !this.currentDocuments[idx]) return;
+    const d = this.currentDocuments[idx];
+    const url = d.access_url || (d.document_id ? `/api/v1/documents/${d.document_id}/file` : '') || d.storage_key || '';
+    const filename = d.original_filename || d.filename || `Medical Report ${idx + 1}`;
+    this.openScanLink(url, filename);
+  },
+
   openScanLink(url, filename = "Medical Document") {
     if (!url) return;
     if (url.startsWith('data:')) {
@@ -1640,10 +1683,6 @@ const PhysicianDashboard = {
     }
   },
 
-  openScanLink(url) {
-    if (!url) return;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  },
 
   openWhyModal() {
     const modal = document.getElementById("ayush-why-modal");
