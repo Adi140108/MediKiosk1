@@ -948,26 +948,32 @@ const PhysicianDashboard = {
             `;
           }
 
-          const isPdf = (scanUrl || '').toLowerCase().includes('.pdf');
+          const fLower = (filename || '').toLowerCase();
+          const uLower = (scanUrl || '').toLowerCase();
+          const cLower = (d.content_type || d.mime_type || '').toLowerCase();
+          const isExplicitImage = fLower.endsWith('.png') || fLower.endsWith('.jpg') || fLower.endsWith('.jpeg') || fLower.endsWith('.webp') ||
+                                  uLower.endsWith('.png') || uLower.endsWith('.jpg') || uLower.endsWith('.jpeg') || uLower.endsWith('.webp') ||
+                                  cLower.startsWith('image/');
+          const isPdf = !isExplicitImage && (cLower.includes('pdf') || fLower.includes('.pdf') || uLower.includes('.pdf'));
           let thumbnailHtml = "";
           if (scanUrl) {
             if (isPdf) {
               thumbnailHtml = `
-                <div style="margin-top:0.65rem; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:0.6rem 0.85rem; display:flex; align-items:center; justify-content:space-between; cursor:pointer;" onclick="PhysicianDashboard.viewDocumentByIndex(${idx})" title="Click to view PDF document">
+                <div style="margin-top:0.65rem; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:0.55rem 0.85rem; display:flex; align-items:center; justify-content:space-between; cursor:pointer;" onclick="PhysicianDashboard.toggleInlinePreview(${idx})" title="Click to preview PDF document inline">
                   <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:1.3rem;">📑</span>
+                    <span style="font-size:1.3rem;">📄</span>
                     <div>
-                      <p style="margin:0; font-weight:700; color:#991b1b; font-size:0.85rem;">PDF Document Attached</p>
-                      <p style="margin:2px 0 0 0; color:#b91c1c; font-size:0.75rem;">Click Preview Scan to inspect all pages in viewer</p>
+                      <p style="margin:0; font-weight:700; color:#166534; font-size:0.85rem;">PDF Clinical Document</p>
+                      <p style="margin:2px 0 0 0; color:#15803d; font-size:0.75rem;">Click Preview Scan to inspect inline in dashboard</p>
                     </div>
                   </div>
-                  <span style="font-size:0.75rem; background:#fee2e2; color:#991b1b; padding:2px 8px; border-radius:4px; font-weight:700;">View PDF</span>
+                  <span style="font-size:0.75rem; background:#dcfce7; color:#166534; padding:2px 8px; border-radius:4px; font-weight:700; border:1px solid #86efac;">Preview PDF</span>
                 </div>
               `;
             } else {
               thumbnailHtml = `
-                <div style="margin-top:0.65rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:0.4rem; text-align:center; max-height:160px; overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="PhysicianDashboard.viewDocumentByIndex(${idx})" title="Click to view full document preview">
-                  <img src="${scanUrl}" alt="${filename}" style="max-height:150px; max-width:100%; object-fit:contain; border-radius:4px;" />
+                <div style="margin-top:0.65rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:0.4rem; text-align:center; max-height:150px; overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="PhysicianDashboard.toggleInlinePreview(${idx})" title="Click to preview document inline">
+                  <img src="${scanUrl}" alt="${filename}" style="max-height:140px; max-width:100%; object-fit:contain; border-radius:4px;" />
                 </div>
               `;
             }
@@ -995,9 +1001,9 @@ const PhysicianDashboard = {
 
                 <div style="display:flex; gap:0.5rem; margin-top:0.85rem; align-items:center; flex-wrap:wrap;">
                   ${scanUrl ? `
-                    <button type="button" class="btn-card-action btn-card-action-primary" onclick="PhysicianDashboard.viewDocumentByIndex(${idx})">
+                    <button type="button" id="btn-preview-doc-${idx}" class="btn-card-action btn-card-action-primary" onclick="PhysicianDashboard.toggleInlinePreview(${idx})">
                       <svg class="btn-icon-svg" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                      <span>Preview Scan</span>
+                      <span id="btn-preview-text-${idx}">Preview Scan</span>
                     </button>
                     <button type="button" class="btn-card-action btn-card-action-secondary" onclick="PhysicianDashboard.openScanExternalByIndex(${idx})">
                       <svg class="btn-icon-svg" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
@@ -1011,6 +1017,27 @@ const PhysicianDashboard = {
                     </button>
                   ` : ''}
                 </div>
+
+                ${scanUrl ? `
+                  <div id="inline-doc-preview-${idx}" class="inline-doc-preview-box" style="display:none; margin-top:0.75rem; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; background:#f8fafc; box-shadow:0 3px 10px rgba(0,0,0,0.06);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:0.45rem 0.8rem; background:#f1f5f9; border-bottom:1px solid #e2e8f0;">
+                      <div style="display:flex; align-items:center; gap:6px; font-size:0.78rem; font-weight:700; color:#334155;">
+                        <span>${isPdf ? '📄 PDF Document Preview' : '🖼️ Image Document Preview'}</span>
+                        <span style="font-weight:400; color:#64748b; font-size:0.72rem; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">(${filename})</span>
+                      </div>
+                      <button type="button" onclick="PhysicianDashboard.toggleInlinePreview(${idx})" style="background:#fee2e2; border:1px solid #fca5a5; color:#991b1b; cursor:pointer; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:4px; transition:all 0.15s ease;">
+                        ✕ Close Preview
+                      </button>
+                    </div>
+                    <div style="width:100%; height:340px; background:#fff; position:relative; overflow:hidden; display:flex; justify-content:center; align-items:center;">
+                      ${isPdf ? `
+                        <iframe src="${scanUrl}#toolbar=0&navpanes=0" style="width:100%; height:100%; border:none; background:#ffffff;" title="${filename}"></iframe>
+                      ` : `
+                        <img src="${scanUrl}" alt="${filename}" style="max-height:100%; max-width:100%; object-fit:contain;" />
+                      `}
+                    </div>
+                  </div>
+                ` : ''}
 
                 ${rawText ? `
                   <div id="raw-ocr-${idx}" class="ocr-raw-box" style="display:none; margin-top:0.65rem;">
@@ -1396,12 +1423,26 @@ const PhysicianDashboard = {
     el.style.display = isHidden ? "block" : "none";
   },
 
+  toggleInlinePreview(idx) {
+    const previewBox = document.getElementById(`inline-doc-preview-${idx}`);
+    const btnText = document.getElementById(`btn-preview-text-${idx}`);
+    if (!previewBox) return;
+    const isHidden = previewBox.style.display === "none";
+    if (isHidden) {
+      previewBox.style.display = "block";
+      if (btnText) btnText.innerText = "Hide Preview";
+      try {
+        previewBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      } catch (_) {}
+    } else {
+      previewBox.style.display = "none";
+      if (btnText) btnText.innerText = "Preview Scan";
+    }
+  },
+
   viewDocumentByIndex(idx) {
     if (!this.currentDocuments || !this.currentDocuments[idx]) return;
-    const d = this.currentDocuments[idx];
-    const url = d.access_url || (d.document_id ? `/api/v1/documents/${d.document_id}/file` : '') || d.storage_key || '';
-    const filename = d.original_filename || d.filename || `Medical Report ${idx + 1}`;
-    this.openDocumentScanModal(url, filename);
+    this.toggleInlinePreview(idx);
   },
 
   openScanExternalByIndex(idx) {
@@ -1461,7 +1502,11 @@ const PhysicianDashboard = {
       };
     }
 
-    const isPdf = (url || '').toLowerCase().includes('.pdf');
+    const fLower = (filename || '').toLowerCase();
+    const uLower = (url || '').toLowerCase();
+    const isExplicitImage = fLower.endsWith('.png') || fLower.endsWith('.jpg') || fLower.endsWith('.jpeg') || fLower.endsWith('.webp') ||
+                            uLower.endsWith('.png') || uLower.endsWith('.jpg') || uLower.endsWith('.jpeg') || uLower.endsWith('.webp');
+    const isPdf = !isExplicitImage && (fLower.includes('.pdf') || uLower.includes('.pdf'));
     if (isPdf) {
       body.innerHTML = `
         <iframe src="${url}" style="width:100%; height:75vh; border:none; background:white; border-radius:6px;"></iframe>
@@ -1524,7 +1569,7 @@ const PhysicianDashboard = {
 
     if (this.currentPatientData) {
       this.currentPatientData.documents = demoDocs;
-      this.renderCaseDetails(this.currentPatientData);
+      this.populateCaseInspector(this.currentPatientData);
     }
   },
 
@@ -1758,4 +1803,11 @@ const PhysicianDashboard = {
     if (modal) modal.style.display = "none";
   }
 };
+
+if (typeof window !== "undefined") {
+  window.PhysicianDashboard = PhysicianDashboard;
+}
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { PhysicianDashboard, GENERAL_DEPARTMENTS, AYUSH_DEPARTMENTS };
+}
 
