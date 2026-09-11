@@ -725,13 +725,14 @@ const SpeechManager = {
       }
     });
 
-    // 2. Update Top Navbar Global Audio Toggle Pill (#navbar-audio-toggle)
-    const navPill = document.getElementById('navbar-audio-toggle');
-    const navIcon = document.getElementById('navbar-audio-icon');
-    const navLabel = document.getElementById('navbar-audio-label');
-    const navDot = document.getElementById('audio-pill-dot');
+    // 2. Update Top Navbar Global Audio Toggle Pill (#navbar-audio-toggle & #ref-landing-audio-toggle)
+    const navPills = [document.getElementById('navbar-audio-toggle'), document.getElementById('ref-landing-audio-toggle')];
+    navPills.forEach(navPill => {
+      if (!navPill) return;
+      const navIcon = navPill.querySelector('#navbar-audio-icon, #ref-landing-audio-icon, .audio-pill-icon, .ref-audio-pill-icon');
+      const navLabel = navPill.querySelector('#navbar-audio-label, #ref-landing-audio-label, .ref-audio-pill-label');
+      const navDot = navPill.querySelector('#audio-pill-dot');
 
-    if (navPill) {
       if (isMutedNow) {
         navPill.classList.add('is-muted');
         navPill.classList.remove('is-playing');
@@ -754,7 +755,7 @@ const SpeechManager = {
         if (navLabel) navLabel.innerText = "SOUND ON";
         if (navDot) navDot.style.backgroundColor = "#10B981";
       }
-    }
+    });
 
     // 3. Update Step 1 Hero Audio Button (.btn-hero-audio)
     const heroAudioBtns = document.querySelectorAll('.btn-hero-audio');

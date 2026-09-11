@@ -4523,9 +4523,49 @@ img {
 
 .ref-header-right {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.65rem;
+  flex-direction: row;
+  align-items: center;
+  gap: clamp(0.75rem, 1.5vw, 1.25rem);
+}
+
+/* Global Audio Toggle Pill on Landing Header */
+.ref-audio-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 0.42rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1E3B2F;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  user-select: none;
+}
+
+.ref-audio-pill:hover {
+  background: #FFFFFF;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.ref-audio-pill.is-muted {
+  background: #FEF2F2 !important;
+  border-color: #EF4444 !important;
+  color: #DC2626 !important;
+}
+
+.ref-audio-pill.is-playing {
+  background: #ECFDF5 !important;
+  border-color: #10B981 !important;
+  color: #047857 !important;
+  animation: audioPlayingPulse 1.8s ease-in-out infinite;
 }
 
 .ref-datetime-block {
@@ -4908,6 +4948,36 @@ img {
     min-height: 100vh !important;
     overflow-y: auto !important;
     padding-bottom: 2rem !important;
+    position: relative !important;
+    background: linear-gradient(180deg, #F4EFEA 0%, #EFE8E1 50%, #F4EFEA 100%) !important;
+  }
+  .ref-bg-art {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+  }
+  .ref-arch-left-terracotta {
+    height: 100% !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    opacity: 0.85;
+  }
+  .ref-arch-right-green {
+    height: 100% !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    opacity: 0.85;
+  }
+  .ref-arch-left-outline {
+    height: 90% !important;
+  }
+  .ref-arch-right-terrazzo {
+    bottom: 0 !important;
   }
   .ref-side-text-left,
   .ref-side-text-right {
@@ -4915,7 +4985,8 @@ img {
   }
   .ref-diagram-grid {
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.25rem;
+    padding: 0.5rem 0;
   }
   .ref-diagram-lines {
     display: none;
@@ -4927,7 +4998,7 @@ img {
   }
   .ref-center-col {
     order: -1;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
   }
   .ref-footer {
     flex-direction: column;

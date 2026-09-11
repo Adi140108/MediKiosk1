@@ -68,7 +68,7 @@
     <div class="hidden lg:block absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[1px] bg-terracotta/20 z-0"></div>
 
     <!-- Left Visual Margin: Terracotta Organic Arch & Botanical Silhouettes -->
-    <div class="hidden lg:block absolute left-0 bottom-0 w-[14vw] max-w-[210px] min-w-[140px] h-[78vh] bg-terracotta rounded-tr-[140px] z-10 overflow-hidden shadow-sm">
+    <div class="hidden lg:block absolute left-0 top-0 bottom-0 w-[14vw] max-w-[210px] min-w-[140px] h-full bg-terracotta rounded-tr-[140px] z-10 overflow-hidden shadow-sm">
       <!-- Leaf pattern silhouette -->
       <svg class="absolute -left-6 -bottom-6 w-48 h-[420px] opacity-85" viewBox="0 0 160 400" fill="none">
         <path d="M 10,400 Q 30,280 50,180 Q 70,80 90,10" stroke="#1A3A2B" stroke-width="2.5" stroke-linecap="round" />
@@ -83,7 +83,7 @@
     </div>
 
     <!-- Left Delicate Outline Arch -->
-    <div class="hidden lg:block absolute left-[14vw] bottom-0 w-[4vw] max-w-[60px] h-[70vh] border-t-[1.5px] border-r-[1.5px] border-terracotta/35 rounded-tr-[50px] z-0"></div>
+    <div class="hidden lg:block absolute left-[14vw] top-0 bottom-0 w-[4vw] max-w-[60px] h-full border-t-[1.5px] border-r-[1.5px] border-terracotta/35 rounded-tr-[50px] z-0"></div>
 
     <!-- Left Vertical Typography Banner -->
     <aside aria-label="People care visual quote" class="hidden lg:flex flex-col gap-2 absolute left-7 top-[38%] -translate-y-1/2 text-cream-bg text-[0.65rem] font-semibold tracking-widest-banner leading-[2.1] z-20 select-none">
@@ -96,9 +96,9 @@
     </aside>
 
     <!-- Right Visual Margin: Forest Green Organic Frame -->
-    <div class="hidden lg:block absolute right-0 bottom-0 w-[15vw] max-w-[220px] min-w-[150px] h-[86vh] bg-forest-primary rounded-tl-[150px] z-10 overflow-hidden shadow-sm">
+    <div class="hidden lg:block absolute right-0 top-0 bottom-0 w-[15vw] max-w-[220px] min-w-[150px] h-full bg-forest-primary rounded-tl-[150px] z-10 overflow-hidden shadow-sm">
       <!-- Botanical Leaf Silhouettes -->
-      <svg class="absolute right-0 top-0 w-44 h-72 opacity-60" viewBox="0 0 160 300" fill="none">
+      <svg class="absolute -right-6 top-0 w-44 h-[300px] opacity-60" viewBox="0 0 160 300" fill="none">
         <path d="M 150,0 Q 110,100 80,220" stroke="#11271D" stroke-width="2" stroke-linecap="round" />
         <path d="M 135,30 C 105,35 90,20 95,5 C 115,0 135,15 135,30 Z" fill="#11271D" />
         <path d="M 120,80 C 90,85 75,70 80,55 C 100,50 120,65 120,80 Z" fill="#11271D" />
@@ -107,7 +107,7 @@
     </div>
 
     <!-- Right Vertical Typography Banner -->
-    <aside aria-label="Healthier people visual quote" class="hidden lg:flex flex-col gap-2 absolute right-7 top-[52%] -translate-y-1/2 text-emerald-100 text-[0.65rem] font-semibold tracking-widest-banner leading-[2.1] z-20 select-none">
+    <aside aria-label="Healthier people visual quote" class="hidden lg:flex flex-col gap-2 absolute right-7 top-[52%] -translate-y-1/2 text-emerald-100 text-[0.65rem] font-semibold tracking-widest-banner leading-[2.1] z-20 select-none items-start">
       <span>HEALTHIER</span>
       <span>PEOPLE</span>
       <span>BRIGHTER</span>
@@ -131,7 +131,7 @@
   <header class="relative z-30 w-full px-6 sm:px-10 lg:px-14 py-4 sm:py-6 flex flex-wrap sm:flex-nowrap items-center justify-between gap-4">
     
     <!-- Top-Left: Logo Block -->
-    <a href="#" class="flex items-center gap-3.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-primary rounded-xl p-1" aria-label="MediKiosk Home">
+    <a href="/" class="flex items-center gap-3.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-primary rounded-xl p-1" aria-label="MediKiosk Home">
       <img src="/logo.png?v=3" alt="MediKiosk Logo" class="h-10 sm:h-11 w-auto object-contain rounded-xl shadow-sm transition-transform duration-300 group-hover:scale-105"
         onerror="this.onerror=null; this.src='/logo.png';">
       <div class="flex flex-col">
@@ -140,8 +140,16 @@
       </div>
     </a>
 
-    <!-- Top-Right: Dynamic Clock -->
-    <div class="flex items-center gap-4 sm:gap-6 ml-auto">
+    <!-- Top-Right: Dynamic Clock & Speaker Button -->
+    <div class="flex items-center gap-3 sm:gap-5 ml-auto">
+      <!-- Global Audio Toggle Pill on Landing Header -->
+      <div id="landing-audio-toggle" onclick="toggleLandingAudio()" class="flex items-center gap-2 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-black/10 shadow-sm cursor-pointer hover:bg-white transition-all text-xs font-bold text-forest-primary select-none" title="Sound ON — Tap to Mute">
+        <span id="landing-audio-icon">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+        </span>
+        <span id="landing-audio-label">SOUND ON</span>
+      </div>
+
       <div class="flex flex-col items-end text-right">
         <span id="dynamic-date" class="text-xs sm:text-sm font-medium text-forest-primary/80">Thu, 11 Sep 2026</span>
         <span id="dynamic-time" class="text-base sm:text-lg font-bold text-forest-primary leading-none tracking-tight">07:25 PM</span>
@@ -166,7 +174,7 @@
     </div>
 
     <!-- Interactive Node Map / Responsive Grid Architecture -->
-    <section id="landing-diagram-grid" aria-label="Check-in Options and Features" class="relative w-full max-w-4xl flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8 my-auto">
+    <section id="landing-diagram-grid" aria-label="Check-in Options and Features" class="relative w-full max-w-4xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8 my-auto">
       
       <!-- DESKTOP CONNECTOR LINES SVG (Mimicking Node Network Map) -->
       <svg id="landing-diagram-svg" class="hidden lg:block absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 860 280" preserveAspectRatio="none" aria-hidden="true">
@@ -193,7 +201,7 @@
       <div class="w-full lg:w-56 flex flex-col sm:flex-row lg:flex-col gap-4 sm:gap-6 z-10 order-2 lg:order-1">
         
         <!-- Card 1: AI Symptom Check -->
-        <article id="landing-card-1" onclick="handleBeginCheckin()" class="flex-1 bg-card-bg rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-lg border border-black/5 hover:border-terracotta/40 transition-all duration-300 text-center flex flex-col items-center group cursor-pointer focus-within:ring-2 focus-within:ring-forest-primary">
+        <article id="landing-card-1" onclick="showLandingFeatureModal('symptom-check')" class="flex-1 bg-card-bg rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-lg border border-black/5 hover:border-terracotta/40 transition-all duration-300 text-center flex flex-col items-center group cursor-pointer focus-within:ring-2 focus-within:ring-forest-primary">
           <div class="w-11 h-11 rounded-full bg-[#EFE5DA] text-forest-primary flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform" aria-hidden="true">
             <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -208,7 +216,7 @@
         </article>
 
         <!-- Card 2: Your Language -->
-        <article id="landing-card-2" onclick="handleBeginCheckin()" class="flex-1 bg-card-bg rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-lg border border-black/5 hover:border-terracotta/40 transition-all duration-300 text-center flex flex-col items-center group cursor-pointer focus-within:ring-2 focus-within:ring-forest-primary">
+        <article id="landing-card-2" onclick="showLandingFeatureModal('language')" class="flex-1 bg-card-bg rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-lg border border-black/5 hover:border-terracotta/40 transition-all duration-300 text-center flex flex-col items-center group cursor-pointer focus-within:ring-2 focus-within:ring-forest-primary">
           <div class="w-11 h-11 rounded-full bg-[#EFE5DA] text-forest-primary flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform" aria-hidden="true">
             <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
@@ -241,7 +249,7 @@
       <div class="w-full lg:w-56 flex flex-col sm:flex-row lg:flex-col gap-4 sm:gap-6 z-10 order-3">
         
         <!-- Card 3: ABHA Integrated -->
-        <article id="landing-card-3" onclick="handleBeginCheckin()" class="flex-1 bg-card-bg rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-lg border border-black/5 hover:border-terracotta/40 transition-all duration-300 text-center flex flex-col items-center group cursor-pointer focus-within:ring-2 focus-within:ring-forest-primary">
+        <article id="landing-card-3" onclick="showLandingFeatureModal('abha')" class="flex-1 bg-card-bg rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-lg border border-black/5 hover:border-terracotta/40 transition-all duration-300 text-center flex flex-col items-center group cursor-pointer focus-within:ring-2 focus-within:ring-forest-primary">
           <div class="w-11 h-11 rounded-full bg-[#EFE5DA] text-forest-primary flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform" aria-hidden="true">
             <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
@@ -253,7 +261,7 @@
         </article>
 
         <!-- Card 4: Saves Time -->
-        <article id="landing-card-4" onclick="handleBeginCheckin()" class="flex-1 bg-card-bg rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-lg border border-black/5 hover:border-terracotta/40 transition-all duration-300 text-center flex flex-col items-center group cursor-pointer focus-within:ring-2 focus-within:ring-forest-primary">
+        <article id="landing-card-4" onclick="showLandingFeatureModal('saves-time')" class="flex-1 bg-card-bg rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-lg border border-black/5 hover:border-terracotta/40 transition-all duration-300 text-center flex flex-col items-center group cursor-pointer focus-within:ring-2 focus-within:ring-forest-primary">
           <div class="w-11 h-11 rounded-full bg-[#EFE5DA] text-forest-primary flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform" aria-hidden="true">
             <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
@@ -316,6 +324,26 @@
     </div>
   </div>
 
+  <!-- ─── FEATURE INFO MODAL DIALOG ─── -->
+  <div id="landing-feature-modal" role="dialog" aria-modal="true" aria-labelledby="landing-feature-title" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+    <div class="bg-card-bg rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border border-terracotta/20 text-center">
+      <div id="landing-feature-icon" class="w-14 h-14 rounded-full bg-[#EFE5DA] text-forest-primary flex items-center justify-center mx-auto mb-4">
+        <!-- Icon injected by JS -->
+      </div>
+      <h3 id="landing-feature-title" class="text-xl font-extrabold text-forest-primary mb-1">Feature Title</h3>
+      <p id="landing-feature-subtitle" class="text-xs font-bold text-terracotta mb-3">Feature Subtitle</p>
+      <p id="landing-feature-desc" class="text-xs sm:text-sm text-gray-600 leading-relaxed mb-6">Feature Description</p>
+      <div class="flex gap-3 justify-center">
+        <button type="button" onclick="closeLandingFeatureModal()" class="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-full font-bold text-xs hover:bg-gray-200 transition-all">
+          Close
+        </button>
+        <button type="button" onclick="closeLandingFeatureModal(); handleBeginCheckin();" class="px-5 py-2.5 bg-forest-primary text-white rounded-full font-bold text-xs hover:bg-forest-dark transition-all">
+          Begin Check-In &rarr;
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ─── VANILLA JAVASCRIPT LOGIC ─── -->
   <script>
     // 1. Dynamic Live Clock Update
@@ -335,7 +363,6 @@
 
     // 2. Begin Check-in Action
     function handleBeginCheckin() {
-      // Connect to MediKiosk Intake Wizard if present, or navigate
       if (window.goToStep && typeof window.goToStep === 'function') {
         window.goToStep(2);
       } else {
@@ -352,6 +379,59 @@
     function closeHelpModal() {
       const modal = document.getElementById('help-modal');
       if (modal) modal.classList.add('hidden');
+    }
+
+    // 4. Feature Info Modal Handlers
+    function showLandingFeatureModal(key) {
+      const data = {
+        'symptom-check': {
+          title: 'AI Symptom Check',
+          subtitle: 'Speak naturally in your language',
+          icon: `<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
+          description: 'Describe your symptoms in natural spoken words or text. Our Socratic AI assistant asks adaptive follow-up questions to understand your health concerns before you see the doctor.'
+        },
+        'language': {
+          title: 'Your Language',
+          subtitle: 'Multilingual support for 10+ Indian languages',
+          icon: `<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path></svg>`,
+          description: 'Full voice and text support in 10+ languages including English, Hindi, Tamil, Telugu, Kannada, Malayalam, Marathi, Bengali, Gujarati, Punjabi, and Hinglish.'
+        },
+        'abha': {
+          title: 'ABHA Integrated',
+          subtitle: 'Secure & Trusted Digital Health ID',
+          icon: `<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>`,
+          description: 'Seamless integration with Ayushman Bharat Health Account (ABHA). Safely link your health ID for instant registration and secure medical history retrieval.'
+        },
+        'saves-time': {
+          title: 'Saves Time',
+          subtitle: 'Better & Faster Consultations',
+          icon: `<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
+          description: 'Completing your self check-in while waiting in the OPD queue prepares a structured clinical summary for your doctor, eliminating repetitive questions and saving consultation time.'
+        }
+      };
+
+      const info = data[key];
+      if (!info) return;
+
+      const modal = document.getElementById('landing-feature-modal');
+      if (modal) {
+        document.getElementById('landing-feature-icon').innerHTML = info.icon;
+        document.getElementById('landing-feature-title').innerText = info.title;
+        document.getElementById('landing-feature-subtitle').innerText = info.subtitle;
+        document.getElementById('landing-feature-desc').innerText = info.description;
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function closeLandingFeatureModal() {
+      const modal = document.getElementById('landing-feature-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function toggleLandingAudio() {
+      if (window.SpeechManager) {
+        window.SpeechManager.toggleGlobalMute();
+      }
     }
 
     // 5. Dynamic Node Card Connections
