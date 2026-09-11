@@ -247,6 +247,8 @@ def get_document_file(document_id: str):
             (meta.get("original_filename") if isinstance(meta, dict) else getattr(meta, "original_filename", None))
             or "document"
         )
+        if filename.lower().endswith(".pdf") and (not content_type or content_type == "application/octet-stream"):
+            content_type = "application/pdf"
         prov_meta = (
             (meta.get("provider_metadata") if isinstance(meta, dict) else getattr(meta, "provider_metadata", None))
             or {}
