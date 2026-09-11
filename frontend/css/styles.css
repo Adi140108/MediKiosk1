@@ -4528,43 +4528,54 @@ img {
   gap: clamp(0.75rem, 1.5vw, 1.25rem);
 }
 
-/* Global Audio Toggle Pill on Landing Header */
+/* Global Standard Audio Mute Nav Pill (Consistent Across All Pages) */
+.audio-mute-nav-pill,
 .ref-audio-pill {
+  width: 40px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  justify-content: center;
+  border-radius: 50%;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  padding: 0.42rem 0.95rem;
-  border-radius: 999px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
-  font-size: 0.78rem;
-  font-weight: 700;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
   color: #1E3B2F;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: inherit;
-  user-select: none;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+  position: relative;
 }
 
+.audio-mute-nav-pill:hover,
 .ref-audio-pill:hover {
   background: #FFFFFF;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.15);
+  transform: scale(1.08);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
+.audio-mute-nav-pill:active,
+.ref-audio-pill:active {
+  transform: scale(0.95);
+}
+
+.audio-mute-nav-pill.is-muted,
 .ref-audio-pill.is-muted {
   background: #FEF2F2 !important;
-  border-color: #EF4444 !important;
+  border: 1.5px solid #EF4444 !important;
   color: #DC2626 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
 }
 
+.audio-mute-nav-pill.is-playing,
 .ref-audio-pill.is-playing {
-  background: #ECFDF5 !important;
-  border-color: #10B981 !important;
-  color: #047857 !important;
+  background: linear-gradient(135deg, #0D9488 0%, #059669 100%) !important;
+  border-color: #059669 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25) !important;
   animation: audioPlayingPulse 1.8s ease-in-out infinite;
 }
 
@@ -4762,6 +4773,7 @@ img {
 }
 
 /* Cards */
+/* Cards (Pure Hover Effect — No Redirection) */
 .ref-card {
   background: #FFFDFB;
   border-radius: 20px;
@@ -4775,7 +4787,8 @@ img {
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-sizing: border-box;
-  cursor: pointer;
+  cursor: default;
+  user-select: none;
 }
 
 .ref-card:hover {
