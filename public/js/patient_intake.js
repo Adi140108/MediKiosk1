@@ -175,6 +175,23 @@ const PatientIntake = {
         pill.style.background = "linear-gradient(135deg, #0d9488, #0f766e)";
       }
     }
+    this.initWelcomeClock();
+  },
+
+  initWelcomeClock() {
+    const updateClock = () => {
+      const now = new Date();
+      const dateEl = document.getElementById("welcome-date");
+      const timeEl = document.getElementById("welcome-time");
+      if (dateEl) {
+        dateEl.innerText = now.toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+      }
+      if (timeEl) {
+        timeEl.innerText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      }
+    };
+    updateClock();
+    setInterval(updateClock, 10000);
   },
 
   bindEvents() {
@@ -241,7 +258,30 @@ const PatientIntake = {
       patientSec.classList.add("active");
     }
 
+    const mainNavbar = document.querySelector(".navbar, .app-header");
+    const safetyBanner = document.querySelector(".safety-top-banner, .top-safety-banner");
+    const keyboardFab = document.getElementById("keyboard-fab");
+    if (mainNavbar) mainNavbar.style.display = stepNum === 1 ? "none" : "flex";
+    if (safetyBanner) safetyBanner.style.display = stepNum === 1 ? "none" : "flex";
+    if (keyboardFab) keyboardFab.style.display = stepNum === 1 ? "none" : "flex";
+
+    const stepIndicator = document.getElementById("kiosk-step-indicator");
+    if (stepIndicator) {
+      stepIndicator.style.display = stepNum === 1 ? "none" : "flex";
+    }
+
+    if (stepNum === 1 && typeof window.updateCardConnections === 'function') {
+      setTimeout(window.updateCardConnections, 50);
+    }
+
     const prevStep = this.currentStep;
+    const currentEl = document.getElementById(`kiosk-step-${prevStep}`);
+    const targetEl = document.getElementById(`kiosk-step-${stepNum}`);
+
+    if (stepNum === prevStep && targetEl && targetEl.style.display !== "none" && targetEl.style.display !== "") {
+      return;
+    }
+
     const isForward = stepNum >= prevStep;
     this.currentStep = stepNum;
 
@@ -255,16 +295,13 @@ const PatientIntake = {
       this.showStepMilestoneToast(prevStep, stepNum);
     }
 
-    const currentEl = document.getElementById(`kiosk-step-${prevStep}`);
-    const targetEl = document.getElementById(`kiosk-step-${stepNum}`);
-
     const switchStepContent = () => {
       for (let i = 1; i <= 8; i++) {
         const el = document.getElementById(`kiosk-step-${i}`);
         if (el) {
           el.classList.remove("step-exit-forward", "step-exit-backward", "step-enter-forward", "step-enter-backward");
           if (i === stepNum) {
-            el.style.display = "block";
+            el.style.display = (stepNum === 1 ? "flex" : "block");
             el.classList.add(isForward ? "step-enter-forward" : "step-enter-backward");
             setTimeout(() => {
               el.classList.remove("step-enter-forward", "step-enter-backward");

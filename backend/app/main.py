@@ -108,6 +108,12 @@ async def serve_patient_kiosk():
     content = get_html_content("index.html", INDEX_HTML)
     return HTMLResponse(content=content, status_code=200)
 
+@app.get("/landing", include_in_schema=False)
+@app.get("/landing.html", include_in_schema=False)
+async def serve_landing_page():
+    content = get_html_content("landing.html", INDEX_HTML)
+    return HTMLResponse(content=content, status_code=200)
+
 @app.get("/physician", include_in_schema=False)
 @app.get("/physician/", include_in_schema=False)
 @app.get("/physician/{full_path:path}", include_in_schema=False)

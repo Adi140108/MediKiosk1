@@ -33,7 +33,7 @@
         var el = document.getElementById('kiosk-step-' + i);
         if (el) {
           if (i === num) {
-            el.style.display = 'block';
+            el.style.display = (num === 1 ? 'flex' : 'block');
             el.style.animation = 'none';
             void el.offsetHeight;
             el.style.animation = '';
@@ -45,8 +45,35 @@
       var sec = document.getElementById('section-patient');
       if (sec) { sec.style.display = 'block'; sec.classList.add('active'); }
       
+      var mainNav = document.querySelector('.navbar, .app-header');
+      var safetyBanner = document.querySelector('.safety-top-banner, .top-safety-banner');
+      var kb = document.getElementById('keyboard-fab');
+      if (mainNav) mainNav.style.display = (num === 1) ? 'none' : 'flex';
+      if (safetyBanner) safetyBanner.style.display = (num === 1) ? 'none' : 'flex';
+      if (kb) kb.style.display = (num === 1) ? 'none' : 'flex';
+
+      if (num === 1 && typeof updateCardConnections === 'function') {
+        setTimeout(updateCardConnections, 50);
+      }
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+
+    // Auto-advance if navigated with ?step=2 or #step-2
+    (function() {
+      function checkStepParam() {
+        if (window.location.search.includes('step=2') || window.location.hash === '#step-2') {
+          setTimeout(function() {
+            goToStep(2);
+          }, 100);
+        }
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', checkStepParam);
+      } else {
+        checkStepParam();
+      }
+    })();
     window.goToStep = goToStep;
   </script>
 </head>
@@ -55,8 +82,8 @@
 
   <!-- Clean Clinical Canvas -->
 
-  <!-- Safety Top Notice Banner -->
-  <div class="safety-top-banner">
+  <!-- Safety Top Notice Banner (Hidden on Step 1) -->
+  <div class="safety-top-banner" style="display:none;">
     <div class="safety-notice-content">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -77,8 +104,8 @@
     </div>
   </div>
 
-  <!-- Navigation Bar -->
-  <nav class="navbar">
+  <!-- Navigation Bar (Hidden on Step 1) -->
+  <nav class="navbar" style="display:none;">
     <div class="brand-wrapper" onclick="window.location.reload()">
       <img src="/logo.png?v=3" alt="MediKiosk Logo" class="brand-logo-img"
         onerror="this.onerror=null; this.src='/logo.png';">
@@ -144,89 +171,261 @@
 
 
 
-      <!-- ─── Step 1: Welcome & Landing (World-Class Medical Kiosk) ─── -->
-      <div id="kiosk-step-1" class="hero-container">
-        <div class="hero-main-card">
-          <!-- Top Status Pill -->
-          <div class="hero-header-badge-row">
-            <div class="hero-hospital-pill">
-              <span class="live-dot-beacon"></span>
-              <span>OPD Smart Self Check-In • ABHA Integrated</span>
+      <!-- ─── Step 1: Welcome & Landing (Exact Match to Mockup) ─── -->
+      <div id="kiosk-step-1" class="ref-mockup-landing">
+        
+        <!-- Background Art & Geometric Architecture -->
+        <div class="ref-bg-art" aria-hidden="true">
+          <!-- Center thin vertical axis line -->
+          <div class="ref-center-axis"></div>
+
+          <!-- Left Terracotta Arch -->
+          <div class="ref-arch-left-terracotta">
+            <!-- Botanical Branch climbing up on left -->
+            <svg class="ref-botanical-left" viewBox="0 0 160 400" fill="none">
+              <!-- Central stem -->
+              <path d="M 10,400 Q 30,280 50,180 Q 70,80 90,10" stroke="#1E3B2F" stroke-width="2.5" stroke-linecap="round" />
+              <!-- Leaves on left & right -->
+              <path d="M 22,340 C 5,320 0,280 15,260 C 35,270 35,310 22,340 Z" fill="#1E3B2F" opacity="0.9" />
+              <path d="M 28,310 C 45,290 65,300 70,330 C 50,345 35,330 28,310 Z" fill="#244737" opacity="0.85" />
+              <path d="M 38,250 C 18,230 15,190 35,175 C 50,190 48,230 38,250 Z" fill="#1E3B2F" opacity="0.9" />
+              <path d="M 44,220 C 65,200 85,215 88,245 C 70,255 52,240 44,220 Z" fill="#244737" opacity="0.85" />
+              <path d="M 56,160 C 40,140 38,105 55,90 C 70,105 68,140 56,160 Z" fill="#1E3B2F" opacity="0.95" />
+              <path d="M 64,130 C 85,115 105,125 110,155 C 90,165 74,150 64,130 Z" fill="#244737" opacity="0.9" />
+              <path d="M 76,80 C 65,60 70,30 88,20 C 100,35 95,65 76,80 Z" fill="#1E3B2F" opacity="0.95" />
+              <path d="M 90,10 C 110,5 125,20 120,45 C 105,50 95,30 90,10 Z" fill="#244737" opacity="0.9" />
+            </svg>
+          </div>
+
+          <!-- Left Outline Arch -->
+          <div class="ref-arch-left-outline"></div>
+
+          <!-- Left Vertical Text -->
+          <div class="ref-side-text-left">
+            <div>P E O P L E</div>
+            <div>C A R E</div>
+            <div>B E T T E R</div>
+            <div>W I T H</div>
+            <div>U N D E R S T A N D I N G .</div>
+            <div class="ref-side-dash"></div>
+          </div>
+
+          <!-- Right Dark Green Arch -->
+          <div class="ref-arch-right-green">
+            <!-- Botanical leaves behind/inside right arch -->
+            <svg class="ref-botanical-right" viewBox="0 0 160 300" fill="none">
+              <path d="M 150,0 Q 110,100 80,220" stroke="#173126" stroke-width="2" stroke-linecap="round" />
+              <path d="M 135,30 C 105,35 90,20 95,5 C 115,0 135,15 135,30 Z" fill="#173126" opacity="0.6" />
+              <path d="M 120,80 C 90,85 75,70 80,55 C 100,50 120,65 120,80 Z" fill="#173126" opacity="0.6" />
+              <path d="M 105,130 C 75,135 60,120 65,105 C 85,100 105,115 105,130 Z" fill="#173126" opacity="0.6" />
+              <path d="M 90,180 C 60,185 45,170 50,155 C 70,150 90,165 90,180 Z" fill="#173126" opacity="0.6" />
+            </svg>
+          </div>
+
+          <!-- Right Vertical Text -->
+          <div class="ref-side-text-right">
+            <div>H E A L T H I E R</div>
+            <div>P E O P L E</div>
+            <div>B R I G H T E R</div>
+            <div>T O M O R R O W S .</div>
+            <div class="ref-side-dash"></div>
+          </div>
+
+          <!-- Right Small Terracotta Arch -->
+          <div class="ref-arch-right-rust"></div>
+
+          <!-- Right Bottom Terrazzo / Speckled Stone Wedge -->
+          <div class="ref-arch-right-terrazzo">
+            <svg width="100%" height="100%" viewBox="0 0 240 280" preserveAspectRatio="none">
+              <defs>
+                <pattern id="terrazzo-pattern" width="60" height="60" patternUnits="userSpaceOnUse">
+                  <rect width="60" height="60" fill="#D3B79C" />
+                  <!-- speckled stones of varied organic shapes and earthy colors -->
+                  <polygon points="12,8 16,5 18,10 14,14" fill="#3B2A1E" opacity="0.7" />
+                  <polygon points="42,15 48,12 46,20 38,18" fill="#6A4E39" opacity="0.6" />
+                  <circle cx="28" cy="22" r="2.5" fill="#FAF4ED" opacity="0.8" />
+                  <polygon points="8,35 15,32 12,42 5,38" fill="#A88B72" opacity="0.7" />
+                  <polygon points="32,40 38,36 40,44 34,48" fill="#3B2A1E" opacity="0.8" />
+                  <polygon points="52,38 56,35 55,42 50,44" fill="#8F6E56" opacity="0.6" />
+                  <circle cx="20" cy="50" r="2" fill="#FAF4ED" opacity="0.9" />
+                  <polygon points="46,52 50,48 53,55 48,58" fill="#4B3425" opacity="0.7" />
+                  <circle cx="5" cy="18" r="1.5" fill="#3B2A1E" opacity="0.6" />
+                  <polygon points="25,5 29,8 26,12 22,9" fill="#8F6E56" opacity="0.5" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#terrazzo-pattern)" />
+            </svg>
+          </div>
+
+          <!-- Bottom Center Symmetrical Leaf Shapes sliced by Center Line -->
+          <div class="ref-center-mound-left"></div>
+          <div class="ref-center-mound-right"></div>
+          <div class="ref-center-slice-line" id="ref-center-slice-line"></div>
+        </div>
+
+        <!-- Top Header (Edge-to-Edge: Logo on far left, Clock on far right) -->
+        <header class="ref-header">
+          <div class="ref-logo-block" onclick="goToStep(1)" title="MediKiosk Home">
+            <img src="/logo.png?v=3" alt="MediKiosk Logo" class="brand-logo-img ref-logo-img"
+              onerror="this.onerror=null; this.src='/logo.png';">
+            <div class="ref-logo-text">
+              <span class="ref-brand-name">MediKiosk</span>
+              <span class="ref-brand-tagline">TRADITIONAL WISDOM.<br>MODERN CARE.</span>
             </div>
           </div>
 
-          <!-- Main Title & Subtitle -->
-          <div class="hero-headline-group">
-            <h1 class="hero-brand-title">
-              Traditional Wisdom.<br>
-              <span class="hero-brand-gradient">Modern Clinical Care.</span>
-            </h1>
-            <p class="hero-subtitle" data-i18n="hero_sub">
-              Skip waiting room paperwork. Complete your pre-consultation details, speak your symptoms in your preferred
-              Indian language, scan previous reports, and receive your verified doctor consultation token in under 3.5
-              minutes.
-            </p>
+          <div class="ref-header-right">
+            <div class="ref-datetime-block">
+              <span id="kiosk-ref-date" class="ref-date">Thu, 11 Sep 2026</span>
+              <span id="kiosk-ref-time" class="ref-time">07:25 PM</span>
+            </div>
+          </div>
+        </header>
+
+        <!-- Center Interactive Hub -->
+        <main class="ref-hub-wrapper">
+          <!-- Title Section -->
+          <div class="ref-title-section">
+            <div class="ref-welcome-pre">W E L C O M E &nbsp; T O</div>
+            <h1 class="ref-welcome-main">Medi<span class="ref-rust-highlight">Kiosk</span></h1>
+            <div class="ref-welcome-post">TRADITIONAL WISDOM. MODERN CARE.</div>
+            <div class="ref-welcome-line"></div>
+            <div class="ref-welcome-sub">
+              A quick and private self check-in to help your<br>doctor understand you better.
+            </div>
           </div>
 
-          <!-- Hero Action Button -->
-          <div class="hero-cta-group">
-            <button id="btn-begin-checkin" class="btn-hero-primary" onclick="goToStep(2)">
-              <span data-i18n="begin_checkin">Start Patient Check-In</span>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-                <polyline points="12 5 19 12 12 19"></polyline>
-              </svg>
-            </button>
-            <button class="btn-hero-audio" onclick="SpeechManager.toggleSpeakForStep(1)" title="Voice Assistance Guidance">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-              <span>Listen in Audio (ध्वनि सहायता)</span>
-            </button>
-          </div>
-        </div>
+          <!-- Diagram Hub: 4 Cards Snapped Directly to Center Circle -->
+          <div class="ref-diagram-grid" id="ref-diagram-grid">
+            <!-- Connecting SVG Lines with dynamic snapping -->
+            <svg class="ref-diagram-lines" id="ref-snapped-svg" viewBox="0 0 860 280" preserveAspectRatio="none">
+              <!-- Default initial paths (automatically re-anchored by JS) -->
+              <path id="snap-path-1" d="M 230,65 L 320,65 L 360,140" fill="none" stroke="#A86543" stroke-width="1.8" />
+              <path id="snap-path-2" d="M 230,215 L 320,215 L 360,140" fill="none" stroke="#A86543" stroke-width="1.8" />
+              <circle id="snap-dot-1" cx="230" cy="65" r="3.5" fill="#A86543" />
+              <circle id="snap-dot-2" cx="230" cy="215" r="3.5" fill="#A86543" />
+              <circle id="snap-mid-1" cx="300" cy="140" r="4" fill="#A86543" />
 
-        <!-- 4 Modern Glassmorphic Capability Cards -->
-        <div class="hero-features-grid">
-          <div class="hero-feature-card">
-            <div class="feature-icon-box icon-box-teal">🗣️</div>
-            <h3 class="feature-card-title">Multilingual Voice Intake</h3>
-            <p class="feature-card-desc">Speak naturally in 10 Indian languages. Automatic speech recognition and female Indian TTS for effortless check-in.</p>
-          </div>
-          <div class="hero-feature-card">
-            <div class="feature-icon-box icon-box-blue">⚡</div>
-            <h3 class="feature-card-title">Adaptive Clinical Triage</h3>
-            <p class="feature-card-desc">Socratic conversational intake with deterministic red-flag safety protocols and dual Allopathy & AYUSH pathways.</p>
-          </div>
-          <div class="hero-feature-card">
-            <div class="feature-icon-box icon-box-amber">📷</div>
-            <h3 class="feature-card-title">Live Document Scanner</h3>
-            <p class="feature-card-desc">Snap photos of previous doctor prescriptions, discharge papers, or lab results for real-time OCR extraction.</p>
-          </div>
-          <div class="hero-feature-card">
-            <div class="feature-icon-box icon-box-emerald">👨‍⚕️</div>
-            <h3 class="feature-card-title">Physician Command Center</h3>
-            <p class="feature-card-desc">Complete intake summaries, pain index, and verified audit trails are ready for attending physicians before you walk in.</p>
-          </div>
-        </div>
+              <path id="snap-path-3" d="M 630,65 L 540,65 L 500,140" fill="none" stroke="#A86543" stroke-width="1.8" />
+              <path id="snap-path-4" d="M 630,215 L 540,215 L 500,140" fill="none" stroke="#A86543" stroke-width="1.8" />
+              <circle id="snap-dot-3" cx="630" cy="65" r="3.5" fill="#A86543" />
+              <circle id="snap-dot-4" cx="630" cy="215" r="3.5" fill="#A86543" />
+              <circle id="snap-mid-2" cx="560" cy="140" r="4" fill="#A86543" />
 
-        <!-- Hospital Trust & Compliance Bar -->
-        <div class="hero-trust-bar">
-          <div class="trust-item">
-            <span class="trust-item-icon">🔒</span>
-            <span>ABDM & Ayushman Bharat Aligned</span>
+              <!-- Top & Bottom Node Dots on Circle -->
+              <circle cx="430" cy="26" r="4" fill="#A86543" />
+              <path d="M 430,26 L 430,36" stroke="#A86543" stroke-width="1.8" />
+              <circle cx="430" cy="254" r="4" fill="#1A3A2B" />
+              <path d="M 430,244 L 430,254" stroke="#1A3A2B" stroke-width="1.8" />
+            </svg>
+
+            <!-- Left Cards Column -->
+            <div class="ref-col ref-col-left">
+              <!-- Top Left: AI Symptom Check -->
+              <div class="ref-card" id="ref-card-1" onclick="goToStep(2)">
+                <div class="ref-card-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                </div>
+                <div class="ref-card-text">
+                  <h3>AI Symptom Check</h3>
+                  <p>Speak naturally</p>
+                </div>
+              </div>
+
+              <!-- Bottom Left: Your Language -->
+              <div class="ref-card" id="ref-card-2" onclick="goToStep(2)">
+                <div class="ref-card-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path>
+                  </svg>
+                </div>
+                <div class="ref-card-text">
+                  <h3>Your Language</h3>
+                  <p>Hinglish + 10+</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Center Circle Button ("Begin Check-In") -->
+            <div class="ref-center-col">
+              <button type="button" id="btn-begin-checkin" class="ref-circle-btn" onclick="goToStep(2)" aria-label="Begin Check-In">
+                <span class="ref-btn-label">Begin Check-In</span>
+                <div class="ref-btn-arrow">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </div>
+              </button>
+            </div>
+
+            <!-- Right Cards Column -->
+            <div class="ref-col ref-col-right">
+              <!-- Top Right: ABHA Integrated -->
+              <div class="ref-card" id="ref-card-3" onclick="goToStep(2)">
+                <div class="ref-card-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    <polyline points="9 12 11 14 15 10"></polyline>
+                  </svg>
+                </div>
+                <div class="ref-card-text">
+                  <h3>ABHA Integrated</h3>
+                  <p>Secure &amp; Trusted</p>
+                </div>
+              </div>
+
+              <!-- Bottom Right: Saves Time -->
+              <div class="ref-card" id="ref-card-4" onclick="goToStep(2)">
+                <div class="ref-card-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                </div>
+                <div class="ref-card-text">
+                  <h3>Saves Time</h3>
+                  <p>Better Consultations</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="trust-item">
-            <span class="trust-item-icon">🛡️</span>
-            <span>Physician-in-the-Loop Safe Architecture</span>
+        </main>
+
+        <!-- Bottom Footer (High Contrast Privacy Badge on left, Need Help pill on right) -->
+        <footer class="ref-footer">
+          <div class="ref-privacy-badge">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="ref-privacy-lock-icon" aria-hidden="true">
+              <rect x="4" y="10" width="16" height="12" rx="3" fill="#1A3A2B" />
+              <path d="M7 10V7a5 5 0 0 1 10 0v3" fill="none" stroke="#1A3A2B" stroke-width="2.5" stroke-linecap="round" />
+              <circle cx="12" cy="15" r="1.5" fill="#FFFFFF" />
+              <path d="M12 16.5V18.5" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            <div class="ref-privacy-text-group">
+              <div class="ref-privacy-bold">Your privacy matters.</div>
+              <div class="ref-privacy-sub">No data is shared without consent.</div>
+            </div>
           </div>
-          <div class="trust-item">
-            <span class="trust-item-icon">⏱️</span>
-            <span>Average Registration: 2.5 Minutes</span>
-          </div>
-          <div class="trust-item">
-            <span class="trust-item-icon">🏥</span>
-            <span>Zero Data Leakage • Encrypted Transit</span>
-          </div>
-        </div>
+
+          <!-- Rounded Pill-Shaped "Need Help?" Button -->
+          <button id="ref-need-help-btn" class="ref-help-btn" type="button" onclick="handleKioskNeedHelp()" aria-label="Need Help?">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <span>Need Help?</span>
+          </button>
+        </footer>
+
       </div>
 
       <!-- ─── Step 2: Language Selection (Dedicated Page) ─── -->
@@ -1161,8 +1360,8 @@
   </div>
 
 
-  <!-- Virtual Keyboard FAB -->
-  <button id="keyboard-fab" class="keyboard-fab" title="Open On-Screen Keyboard" onclick="if(window.VirtualKeyboard){VirtualKeyboard.toggle();}">
+  <!-- Virtual Keyboard FAB (Hidden on Step 1) -->
+  <button id="keyboard-fab" class="keyboard-fab" style="display:none;" title="Open On-Screen Keyboard" onclick="if(window.VirtualKeyboard){VirtualKeyboard.toggle();}">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
       stroke-linecap="round" stroke-linejoin="round">
       <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
@@ -1186,6 +1385,187 @@
   <script src="/js/virtual_keyboard.js?v=15"></script>
   <script src="/js/patient_intake.js?v=15"></script>
   <script src="/js/app.js?v=14"></script>
+
+  <!-- Landing Edge-to-Edge Interactive Wiring & Snapping -->
+  <script>
+    // Live system date and time updates
+    function updateLandingClock() {
+      const dateEl = document.getElementById('kiosk-ref-date');
+      const timeEl = document.getElementById('kiosk-ref-time');
+      const now = new Date();
+      const dateOptions = { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' };
+      const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+      if (dateEl) dateEl.textContent = now.toLocaleDateString('en-US', dateOptions);
+      if (timeEl) timeEl.textContent = now.toLocaleTimeString('en-US', timeOptions);
+    }
+    updateLandingClock();
+    setInterval(updateLandingClock, 10000);
+
+    // Language Dropdown Menu Toggle
+    function toggleLandingLangMenu(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('ref-lang-menu');
+      const btn = document.getElementById('ref-lang-dropdown-btn');
+      const chevron = document.getElementById('ref-lang-chevron');
+      if (!menu) return;
+      const isOpen = menu.style.display === 'block';
+      menu.style.display = isOpen ? 'none' : 'block';
+      if (btn) btn.setAttribute('aria-expanded', !isOpen);
+      if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
+
+    function selectLandingLanguage(label, code) {
+      const textEl = document.getElementById('kiosk-current-lang-text');
+      if (textEl) textEl.textContent = label;
+      const menu = document.getElementById('ref-lang-menu');
+      if (menu) {
+        menu.style.display = 'none';
+        menu.querySelectorAll('.ref-lang-item').forEach(el => {
+          const isActive = el.getAttribute('data-lang') === code;
+          el.classList.toggle('active', isActive);
+          const chk = el.querySelector('.ref-check');
+          if (chk) chk.remove();
+          if (isActive) {
+            const span = document.createElement('span');
+            span.className = 'ref-check';
+            span.textContent = ' ✓';
+            el.appendChild(span);
+          }
+        });
+      }
+      const chevron = document.getElementById('ref-lang-chevron');
+      if (chevron) chevron.style.transform = 'rotate(0deg)';
+      if (window.i18n && typeof window.i18n.setLanguage === 'function') {
+        window.i18n.setLanguage(code);
+      }
+    }
+
+    document.addEventListener('click', function(e) {
+      const wrapper = document.querySelector('.ref-lang-dropdown-wrapper');
+      const menu = document.getElementById('ref-lang-menu');
+      const chevron = document.getElementById('ref-lang-chevron');
+      if (wrapper && !wrapper.contains(e.target) && menu && menu.style.display === 'block') {
+        menu.style.display = 'none';
+        if (chevron) chevron.style.transform = 'rotate(0deg)';
+      }
+    });
+
+    // Need Help pill click handler
+    function handleKioskNeedHelp() {
+      if (window.PatientIntake && typeof window.PatientIntake.openStaffModeModal === 'function') {
+        window.PatientIntake.openStaffModeModal();
+      } else {
+        alert("A healthcare attendant has been notified and will assist you shortly.");
+      }
+    }
+
+    // Dynamic Card Node Line Snapping - Guarantees lines snap directly to card borders & circle
+    function updateCardConnections() {
+      const step1 = document.getElementById('kiosk-step-1');
+      if (!step1 || step1.style.display === 'none') return;
+      if (window.innerWidth <= 900) return;
+
+      const grid = document.getElementById('ref-diagram-grid');
+      const svg = document.getElementById('ref-snapped-svg');
+      const c1 = document.getElementById('ref-card-1');
+      const c2 = document.getElementById('ref-card-2');
+      const c3 = document.getElementById('ref-card-3');
+      const c4 = document.getElementById('ref-card-4');
+      const btn = document.getElementById('btn-begin-checkin');
+      const centerSlice = document.getElementById('ref-center-slice-line');
+
+      if (!grid || !svg || !c1 || !c2 || !c3 || !c4 || !btn) return;
+
+      const gRect = grid.getBoundingClientRect();
+      const bRect = btn.getBoundingClientRect();
+      const c1Rect = c1.getBoundingClientRect();
+      const c2Rect = c2.getBoundingClientRect();
+      const c3Rect = c3.getBoundingClientRect();
+      const c4Rect = c4.getBoundingClientRect();
+
+      // Extend center vertical slice line directly down from bottom edge of circle
+      if (centerSlice) {
+        centerSlice.style.top = `${bRect.bottom}px`;
+      }
+
+      const cx = bRect.left + bRect.width / 2 - gRect.left;
+      const cy = bRect.top + bRect.height / 2 - gRect.top;
+      const r = bRect.width / 2;
+
+      // Card anchor coordinates (flushed right on left cards, flushed left on right cards)
+      const p1x = Math.round(c1Rect.right - gRect.left);
+      const p1y = Math.round(c1Rect.top + c1Rect.height / 2 - gRect.top);
+
+      const p2x = Math.round(c2Rect.right - gRect.left);
+      const p2y = Math.round(c2Rect.top + c2Rect.height / 2 - gRect.top);
+
+      const p3x = Math.round(c3Rect.left - gRect.left);
+      const p3y = Math.round(c3Rect.top + c3Rect.height / 2 - gRect.top);
+
+      const p4x = Math.round(c4Rect.left - gRect.left);
+      const p4y = Math.round(c4Rect.top + c4Rect.height / 2 - gRect.top);
+
+      // Circle rim snap contact points at 45-degree diagonals
+      const cos45 = 0.7071;
+      const rim1x = Math.round(cx - r * cos45);
+      const rim1y = Math.round(cy - r * cos45);
+
+      const rim2x = Math.round(cx - r * cos45);
+      const rim2y = Math.round(cy + r * cos45);
+
+      const rim3x = Math.round(cx + r * cos45);
+      const rim3y = Math.round(cy - r * cos45);
+
+      const rim4x = Math.round(cx + r * cos45);
+      const rim4y = Math.round(cy + r * cos45);
+
+      // Midpoint joints for dog-leg node connections
+      const midLeftX = Math.round((p1x + rim1x) / 2);
+      const midRightX = Math.round((p3x + rim3x) / 2);
+
+      svg.setAttribute('viewBox', `0 0 ${Math.round(gRect.width)} ${Math.round(gRect.height)}`);
+
+      svg.innerHTML = `
+        <!-- Card 1 (Top Left) to Circle Snap Connection -->
+        <path d="M ${p1x},${p1y} L ${midLeftX},${p1y} L ${rim1x},${rim1y}" fill="none" stroke="#A86543" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="${p1x}" cy="${p1y}" r="3.5" fill="#A86543" />
+        <circle cx="${midLeftX}" cy="${p1y}" r="3" fill="#A86543" />
+        <circle cx="${rim1x}" cy="${rim1y}" r="4" fill="#A86543" />
+
+        <!-- Card 2 (Bottom Left) to Circle Snap Connection -->
+        <path d="M ${p2x},${p2y} L ${midLeftX},${p2y} L ${rim2x},${rim2y}" fill="none" stroke="#A86543" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="${p2x}" cy="${p2y}" r="3.5" fill="#A86543" />
+        <circle cx="${midLeftX}" cy="${p2y}" r="3" fill="#A86543" />
+        <circle cx="${rim2x}" cy="${rim2y}" r="4" fill="#A86543" />
+
+        <!-- Card 3 (Top Right) to Circle Snap Connection -->
+        <path d="M ${p3x},${p3y} L ${midRightX},${p3y} L ${rim3x},${rim3y}" fill="none" stroke="#A86543" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="${p3x}" cy="${p3y}" r="3.5" fill="#A86543" />
+        <circle cx="${midRightX}" cy="${p3y}" r="3" fill="#A86543" />
+        <circle cx="${rim3x}" cy="${rim3y}" r="4" fill="#A86543" />
+
+        <!-- Card 4 (Bottom Right) to Circle Snap Connection -->
+        <path d="M ${p4x},${p4y} L ${midRightX},${p4y} L ${rim4x},${rim4y}" fill="none" stroke="#A86543" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="${p4x}" cy="${p4y}" r="3.5" fill="#A86543" />
+        <circle cx="${midRightX}" cy="${p4y}" r="3" fill="#A86543" />
+        <circle cx="${rim4x}" cy="${rim4y}" r="4" fill="#A86543" />
+
+        <!-- Vertical Circle Node Terminals -->
+        <circle cx="${cx}" cy="${Math.round(cy - r - 12)}" r="3.5" fill="#A86543" />
+        <line x1="${cx}" y1="${Math.round(cy - r - 12)}" x2="${cx}" y2="${Math.round(cy - r)}" stroke="#A86543" stroke-width="1.8" />
+
+        <circle cx="${cx}" cy="${Math.round(cy + r + 12)}" r="3.5" fill="#1A3A2B" />
+        <line x1="${cx}" y1="${Math.round(cy + r)}" x2="${cx}" y2="${Math.round(cy + r + 12)}" stroke="#1A3A2B" stroke-width="1.8" />
+      `;
+    }
+
+    window.addEventListener('load', () => {
+      setTimeout(updateCardConnections, 100);
+      setTimeout(updateCardConnections, 500);
+    });
+    window.addEventListener('resize', updateCardConnections);
+    window.addEventListener('orientationchange', updateCardConnections);
+  </script>
 </body>
 
 </html>

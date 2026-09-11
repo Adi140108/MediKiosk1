@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediKiosk — Traditional Wisdom. Modern Care.</title>
+  <meta name="description" content="A quick and private self check-in to help your doctor understand you better.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'cream-bg': '#F4EFEA',
+            'forest-primary': '#1A3A2B',
+            'forest-dark': '#11271D',
+            'forest-accent': '#26543F',
+            'forest-glow': '#9EB7A5',
+            'terracotta': '#A86543',
+            'terracotta-dark': '#8C4D2E',
+            'gold-line': '#CBB199',
+            'card-bg': '#FFFDFB',
+            'stone-terrazzo': '#D3B79C',
+          },
+          fontFamily: {
+            sans: ['Outfit', 'Plus Jakarta Sans', 'sans-serif'],
+          },
+          letterSpacing: {
+            'widest-banner': '0.28em',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom refined animations and pseudo elements */
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 16px 36px rgba(26, 58, 43, 0.35), 0 0 0 4px rgba(255, 255, 255, 0.4); }
+      50% { box-shadow: 0 20px 48px rgba(26, 58, 43, 0.48), 0 0 0 8px rgba(168, 101, 67, 0.25); }
+    }
+    .cta-circle-glow {
+      animation: pulseGlow 4s infinite ease-in-out;
+    }
+    /* Terrazzo texture speckles */
+    .terrazzo-bg {
+      background-color: #D3B79C;
+      background-image: radial-gradient(#3B2A1E 12%, transparent 16%),
+                        radial-gradient(#8F6E56 15%, transparent 20%),
+                        radial-gradient(#FAF4ED 18%, transparent 22%);
+      background-size: 28px 28px;
+      background-position: 0 0, 14px 14px, 7px 21px;
+    }
+  </style>
+</head>
+
+<body class="bg-cream-bg text-forest-primary font-sans min-h-screen flex flex-col justify-between overflow-x-hidden relative selection:bg-terracotta selection:text-white">
+
+  <!-- ─── BACKGROUND ARTWORK (DESKTOP VISUAL MARGINS & ORGANIC MOTIFS) ─── -->
+  <div class="absolute inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
+    
+    <!-- Central Thin Vertical Line -->
+    <div class="hidden lg:block absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[1px] bg-terracotta/20 z-0"></div>
+
+    <!-- Left Visual Margin: Terracotta Organic Arch & Botanical Silhouettes -->
+    <div class="hidden lg:block absolute left-0 bottom-0 w-[14vw] max-w-[210px] min-w-[140px] h-[78vh] bg-terracotta rounded-tr-[140px] z-10 overflow-hidden shadow-sm">
+      <!-- Leaf pattern silhouette -->
+      <svg class="absolute -left-6 -bottom-6 w-48 h-[420px] opacity-85" viewBox="0 0 160 400" fill="none">
+        <path d="M 10,400 Q 30,280 50,180 Q 70,80 90,10" stroke="#1A3A2B" stroke-width="2.5" stroke-linecap="round" />
+        <path d="M 22,340 C 5,320 0,280 15,260 C 35,270 35,310 22,340 Z" fill="#1A3A2B" />
+        <path d="M 28,310 C 45,290 65,300 70,330 C 50,345 35,330 28,310 Z" fill="#244D3A" />
+        <path d="M 38,250 C 18,230 15,190 35,175 C 50,190 48,230 38,250 Z" fill="#1A3A2B" />
+        <path d="M 44,220 C 65,200 85,215 88,245 C 70,255 52,240 44,220 Z" fill="#244D3A" />
+        <path d="M 56,160 C 40,140 38,105 55,90 C 70,105 68,140 56,160 Z" fill="#1A3A2B" />
+        <path d="M 64,130 C 85,115 105,125 110,155 C 90,165 74,150 64,130 Z" fill="#244D3A" />
+        <path d="M 76,80 C 65,60 70,30 88,20 C 100,35 95,65 76,80 Z" fill="#1A3A2B" />
+      </svg>
+    </div>
+
+    <!-- Left Delicate Outline Arch -->
+    <div class="hidden lg:block absolute left-[14vw] bottom-0 w-[4vw] max-w-[60px] h-[70vh] border-t-[1.5px] border-r-[1.5px] border-terracotta/35 rounded-tr-[50px] z-0"></div>
+
+    <!-- Left Vertical Typography Banner -->
+    <aside aria-label="People care visual quote" class="hidden lg:flex flex-col gap-2 absolute left-7 top-[38%] -translate-y-1/2 text-cream-bg text-[0.65rem] font-semibold tracking-widest-banner leading-[2.1] z-20 select-none">
+      <span>PEOPLE</span>
+      <span>CARE</span>
+      <span>BETTER</span>
+      <span>WITH</span>
+      <span>UNDERSTANDING.</span>
+      <div class="w-7 h-[1.5px] bg-cream-bg/85 mt-2"></div>
+    </aside>
+
+    <!-- Right Visual Margin: Forest Green Organic Frame -->
+    <div class="hidden lg:block absolute right-0 bottom-0 w-[15vw] max-w-[220px] min-w-[150px] h-[86vh] bg-forest-primary rounded-tl-[150px] z-10 overflow-hidden shadow-sm">
+      <!-- Botanical Leaf Silhouettes -->
+      <svg class="absolute right-0 top-0 w-44 h-72 opacity-60" viewBox="0 0 160 300" fill="none">
+        <path d="M 150,0 Q 110,100 80,220" stroke="#11271D" stroke-width="2" stroke-linecap="round" />
+        <path d="M 135,30 C 105,35 90,20 95,5 C 115,0 135,15 135,30 Z" fill="#11271D" />
+        <path d="M 120,80 C 90,85 75,70 80,55 C 100,50 120,65 120,80 Z" fill="#11271D" />
+        <path d="M 105,130 C 75,135 60,120 65,105 C 85,100 105,115 105,130 Z" fill="#11271D" />
+      </svg>
+    </div>
+
+    <!-- Right Vertical Typography Banner -->
+    <aside aria-label="Healthier people visual quote" class="hidden lg:flex flex-col gap-2 absolute right-7 top-[52%] -translate-y-1/2 text-emerald-100 text-[0.65rem] font-semibold tracking-widest-banner leading-[2.1] z-20 select-none">
+      <span>HEALTHIER</span>
+      <span>PEOPLE</span>
+      <span>BRIGHTER</span>
+      <span>TOMORROWS.</span>
+      <div class="w-7 h-[1.5px] bg-emerald-100/85 mt-2"></div>
+    </aside>
+
+    <!-- Right Subtle Terrazzo Accent Wedge (Bottom Corner) -->
+    <div class="hidden lg:block absolute right-0 bottom-0 w-[15vw] max-w-[210px] min-w-[140px] h-[270px] terrazzo-bg rounded-tl-[240px] z-20 shadow-md"></div>
+
+    <!-- Right Small Terracotta Arch Shape -->
+    <div class="hidden lg:block absolute right-[14vw] bottom-0 w-28 h-24 bg-terracotta rounded-t-[100px] z-10"></div>
+
+    <!-- Bottom Center Symmetrical Leaf Shapes sliced seamlessly by Center Line -->
+    <div class="hidden lg:block absolute bottom-0 right-[calc(50%+1px)] w-[22vw] max-w-[280px] h-28 bg-forest-primary rounded-t-[140px] z-10"></div>
+    <div class="hidden lg:block absolute bottom-0 left-[calc(50%+1px)] w-[22vw] max-w-[280px] h-28 bg-forest-accent rounded-t-[140px] z-10"></div>
+    <div id="landing-center-slice" class="hidden lg:block absolute bottom-0 left-1/2 -translate-x-1/2 w-[2px] bg-terracotta z-25 pointer-events-none" style="top: calc(50% + 105px);"></div>
+  </div>
+
+  <!-- ─── TOP NAVIGATION & HEADER BAR ─── -->
+  <header class="relative z-30 w-full px-6 sm:px-10 lg:px-14 py-4 sm:py-6 flex flex-wrap sm:flex-nowrap items-center justify-between gap-4">
+    
+    <!-- Top-Left: Logo Block -->
+    <a href="#" class="flex items-center gap-3.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-primary rounded-xl p-1" aria-label="MediKiosk Home">
+      <img src="/logo.png?v=3" alt="MediKiosk Logo" class="h-10 sm:h-11 w-auto object-contain rounded-xl shadow-sm transition-transform duration-300 group-hover:scale-105"
+        onerror="this.onerror=null; this.src='/logo.png';">
+      <div class="flex flex-col">
+        <span class="text-xl sm:text-2xl font-extrabold text-forest-primary tracking-tight leading-tight">MediKiosk</span>
+        <span class="text-[0.62rem] sm:text-[0.68rem] font-bold text-forest-primary/75 tracking-[0.16em] uppercase">Traditional Wisdom. Modern Care.</span>
+      </div>
+    </a>
+
+    <!-- Top-Right: Dynamic Clock -->
+    <div class="flex items-center gap-4 sm:gap-6 ml-auto">
+      <div class="flex flex-col items-end text-right">
+        <span id="dynamic-date" class="text-xs sm:text-sm font-medium text-forest-primary/80">Thu, 11 Sep 2026</span>
+        <span id="dynamic-time" class="text-base sm:text-lg font-bold text-forest-primary leading-none tracking-tight">07:25 PM</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── CENTRAL HERO CORE & CAPABILITY NODE NETWORK ─── -->
+  <main class="relative z-30 w-full max-w-6xl mx-auto px-4 sm:px-8 py-4 sm:py-6 flex flex-col items-center justify-center flex-1">
+    
+    <!-- Hero Headline & Subtitles -->
+    <div class="text-center mb-6 sm:mb-8 lg:mb-10 max-w-2xl mx-auto">
+      <span class="block text-xs sm:text-sm font-semibold tracking-[0.32em] text-forest-primary/75 uppercase mb-1">WELCOME TO</span>
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-forest-primary tracking-tight leading-none">
+        Medi<span class="text-terracotta">Kiosk</span>
+      </h1>
+      <span class="block text-[0.65rem] sm:text-xs font-bold tracking-[0.24em] text-forest-primary/75 uppercase mt-2">TRADITIONAL WISDOM. MODERN CARE.</span>
+      <div class="w-9 h-[1.5px] bg-terracotta mx-auto my-3" aria-hidden="true"></div>
+      <p class="text-sm sm:text-base lg:text-lg font-medium text-forest-primary/85 leading-snug">
+        A quick and private self check-in to help your<br class="hidden sm:inline"> doctor understand you better.
+      </p>
+    </div>
+
+    <!-- Interactive Node Map / Responsive Grid Architecture -->
+    <section id="landing-diagram-grid" aria-label="Check-in Options and Features" class="relative w-full max-w-4xl flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8 my-auto">
+      
+      <!-- DESKTOP CONNECTOR LINES SVG (Mimicking Node Network Map) -->
+      <svg id="landing-diagram-svg" class="hidden lg:block absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 860 280" preserveAspectRatio="none" aria-hidden="true">
+        <!-- Default Initial Paths (Re-anchored dynamically to exact pixel coordinates) -->
+        <path d="M 230,65 L 320,65 L 360,140" fill="none" stroke="#A86543" stroke-width="1.8" />
+        <path d="M 230,215 L 320,215 L 360,140" fill="none" stroke="#A86543" stroke-width="1.8" />
+        <circle cx="230" cy="65" r="3.5" fill="#A86543" />
+        <circle cx="230" cy="215" r="3.5" fill="#A86543" />
+        <circle cx="290" cy="140" r="4" fill="#A86543" />
+
+        <path d="M 630,65 L 540,65 L 500,140" fill="none" stroke="#A86543" stroke-width="1.8" />
+        <path d="M 630,215 L 540,215 L 500,140" fill="none" stroke="#A86543" stroke-width="1.8" />
+        <circle cx="630" cy="65" r="3.5" fill="#A86543" />
+        <circle cx="630" cy="215" r="3.5" fill="#A86543" />
+        <circle cx="570" cy="140" r="4" fill="#A86543" />
+
+        <circle cx="430" cy="26" r="4" fill="#A86543" />
+        <path d="M 430,26 L 430,36" stroke="#A86543" stroke-width="1.8" />
+        <circle cx="430" cy="254" r="4" fill="#1A3A2B" />
+        <path d="M 430,244 L 430,254" stroke="#1A3A2B" stroke-width="1.8" />
+      </svg>
+
+      <!-- LEFT COLUMN CARDS (Desktop Left / Mobile Top Grid) -->
+      <div class="w-full lg:w-56 flex flex-col sm:flex-row lg:flex-col gap-4 sm:gap-6 z-10 order-2 lg:order-1">
+        
+        <!-- Card 1: AI Symptom Check -->
+        <article id="landing-card-1" onclick="handleBeginCheckin()" class="flex-1 bg-card-bg rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-lg border border-black/5 hover:border-terracotta/40 transition-all duration-300 text-center flex flex-col items-center group cursor-pointer focus-within:ring-2 focus-within:ring-forest-primary">
+          <div class="w-11 h-11 rounded-full bg-[#EFE5DA] text-forest-primary flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform" aria-hidden="true">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+          </div>
+          <h2 class="text-sm sm:text-base font-bold text-gray-900 leading-tight">AI Symptom Check</h2>
+          <p class="text-xs text-gray-500 font-medium mt-0.5">Speak naturally</p>
+        </article>
+
+        <!-- Card 2: Your Language -->
+        <article id="landing-card-2" onclick="handleBeginCheckin()" class="flex-1 bg-card-bg rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-lg border border-black/5 hover:border-terracotta/40 transition-all duration-300 text-center flex flex-col items-center group cursor-pointer focus-within:ring-2 focus-within:ring-forest-primary">
+          <div class="w-11 h-11 rounded-full bg-[#EFE5DA] text-forest-primary flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform" aria-hidden="true">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+          </div>
+          <h2 class="text-sm sm:text-base font-bold text-gray-900 leading-tight">Your Language</h2>
+          <p class="text-xs text-gray-500 font-medium mt-0.5">Hinglish + 10+</p>
+        </article>
+      </div>
+
+      <!-- CENTER HERO CALLOUT: MASSIVE CIRCULAR CTA BUTTON -->
+      <div class="z-20 my-2 lg:my-0 order-1 lg:order-2 flex flex-col items-center">
+        <button id="tap-to-begin-btn" type="button" aria-label="Tap to Begin Medical Check-in" onclick="handleBeginCheckin()"
+          class="cta-circle-glow w-44 h-44 sm:w-52 sm:h-52 lg:w-56 lg:h-56 rounded-full bg-radial from-[#2B5742] via-forest-primary to-forest-dark border-4 sm:border-[6px] border-white/70 text-white flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer group focus:outline-none focus-visible:ring-4 focus-visible:ring-terracotta">
+          
+          <!-- Label -->
+          <span class="text-lg sm:text-xl font-bold tracking-wide text-white drop-shadow-sm">Tap to Begin</span>
+
+          <!-- Forward Arrow Vector -->
+          <svg class="w-6 h-6 text-white transition-transform group-hover:translate-x-1.5 duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <!-- RIGHT COLUMN CARDS (Desktop Right / Mobile Bottom Grid) -->
+      <div class="w-full lg:w-56 flex flex-col sm:flex-row lg:flex-col gap-4 sm:gap-6 z-10 order-3">
+        
+        <!-- Card 3: ABHA Integrated -->
+        <article id="landing-card-3" onclick="handleBeginCheckin()" class="flex-1 bg-card-bg rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-lg border border-black/5 hover:border-terracotta/40 transition-all duration-300 text-center flex flex-col items-center group cursor-pointer focus-within:ring-2 focus-within:ring-forest-primary">
+          <div class="w-11 h-11 rounded-full bg-[#EFE5DA] text-forest-primary flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform" aria-hidden="true">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              <polyline points="9 12 11 14 15 10"></polyline>
+            </svg>
+          </div>
+          <h2 class="text-sm sm:text-base font-bold text-gray-900 leading-tight">ABHA Integrated</h2>
+          <p class="text-xs text-gray-500 font-medium mt-0.5">Secure &amp; Trusted</p>
+        </article>
+
+        <!-- Card 4: Saves Time -->
+        <article id="landing-card-4" onclick="handleBeginCheckin()" class="flex-1 bg-card-bg rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-lg border border-black/5 hover:border-terracotta/40 transition-all duration-300 text-center flex flex-col items-center group cursor-pointer focus-within:ring-2 focus-within:ring-forest-primary">
+          <div class="w-11 h-11 rounded-full bg-[#EFE5DA] text-forest-primary flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform" aria-hidden="true">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <h2 class="text-sm sm:text-base font-bold text-gray-900 leading-tight">Saves Time</h2>
+          <p class="text-xs text-gray-500 font-medium mt-0.5">Better Consultations</p>
+        </article>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ─── BOTTOM FOOTER LAYOUT ─── -->
+  <footer class="relative z-30 w-full px-6 sm:px-10 lg:px-14 py-4 sm:py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+    
+    <!-- Bottom-Left: Privacy Reassurance High-Contrast Pill -->
+    <div class="flex items-center gap-3 text-left bg-white/95 backdrop-blur-md px-4 sm:px-5 py-2.5 rounded-full border border-black/10 shadow-md z-30">
+      <!-- Padlock Icon Vector -->
+      <svg class="w-5 h-5 flex-shrink-0 text-forest-primary" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <rect x="4" y="10" width="16" height="12" rx="3" fill="#1A3A2B" />
+        <path d="M7 10V7a5 5 0 0 1 10 0v3" fill="none" stroke="#1A3A2B" stroke-width="2.5" stroke-linecap="round" />
+        <circle cx="12" cy="15" r="1.5" fill="#FFFFFF" />
+        <path d="M12 16.5V18.5" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" />
+      </svg>
+      <div>
+        <p class="text-xs sm:text-sm font-bold text-gray-900 leading-tight">Your privacy matters.</p>
+        <p class="text-[0.72rem] sm:text-xs text-forest-primary/85 font-semibold">No data is shared without consent.</p>
+      </div>
+    </div>
+
+    <!-- Bottom-Right: Floating Helper Pill Button -->
+    <button id="need-help-btn" type="button" onclick="handleNeedHelp()" aria-label="Get Assistance from Clinic Staff"
+      class="flex items-center gap-2 bg-white/90 backdrop-blur-md px-5 py-2.5 rounded-full border border-black/10 shadow-md text-xs sm:text-sm font-semibold text-forest-primary hover:bg-white hover:shadow-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-primary z-30">
+      <svg class="w-4 h-4 text-forest-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+      <span>Need Help?</span>
+    </button>
+  </footer>
+
+  <!-- ─── ACCESSIBLE HELP MODAL DIALOG ─── -->
+  <div id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-modal-title" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+    <div class="bg-card-bg rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border border-terracotta/20 text-center">
+      <div class="w-12 h-12 rounded-full bg-cream-bg text-terracotta flex items-center justify-center mx-auto mb-4">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </div>
+      <h3 id="help-modal-title" class="text-lg font-bold text-forest-primary mb-2">Need Assistance?</h3>
+      <p class="text-xs sm:text-sm text-gray-600 mb-6">A clinic nurse or attendant is available nearby to guide you through your check-in.</p>
+      <button type="button" onclick="closeHelpModal()" class="w-full py-2.5 bg-forest-primary text-white rounded-full font-bold text-sm hover:bg-forest-dark transition-all focus:outline-none focus:ring-2 focus:ring-terracotta">
+        Got it, Thank you
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── VANILLA JAVASCRIPT LOGIC ─── -->
+  <script>
+    // 1. Dynamic Live Clock Update
+    function updateClock() {
+      const now = new Date();
+      const dateEl = document.getElementById('dynamic-date');
+      const timeEl = document.getElementById('dynamic-time');
+      
+      const dateOptions = { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' };
+      const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+      
+      if (dateEl) dateEl.innerText = now.toLocaleDateString('en-US', dateOptions);
+      if (timeEl) timeEl.innerText = now.toLocaleTimeString('en-US', timeOptions);
+    }
+    updateClock();
+    setInterval(updateClock, 10000);
+
+    // 2. Begin Check-in Action
+    function handleBeginCheckin() {
+      // Connect to MediKiosk Intake Wizard if present, or navigate
+      if (window.goToStep && typeof window.goToStep === 'function') {
+        window.goToStep(2);
+      } else {
+        window.location.href = '/?step=2';
+      }
+    }
+
+    // 3. Help Modal Toggle
+    function handleNeedHelp() {
+      const modal = document.getElementById('help-modal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeHelpModal() {
+      const modal = document.getElementById('help-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    // 5. Dynamic Node Card Connections
+    function updateLandingCardConnections() {
+      if (window.innerWidth < 1024) return;
+      const grid = document.getElementById('landing-diagram-grid');
+      const svg = document.getElementById('landing-diagram-svg');
+      const c1 = document.getElementById('landing-card-1');
+      const c2 = document.getElementById('landing-card-2');
+      const c3 = document.getElementById('landing-card-3');
+      const c4 = document.getElementById('landing-card-4');
+      const btn = document.getElementById('tap-to-begin-btn');
+      const centerSlice = document.getElementById('landing-center-slice');
+
+      if (!grid || !svg || !c1 || !c2 || !c3 || !c4 || !btn) return;
+
+      const gRect = grid.getBoundingClientRect();
+      const bRect = btn.getBoundingClientRect();
+      const c1Rect = c1.getBoundingClientRect();
+      const c2Rect = c2.getBoundingClientRect();
+      const c3Rect = c3.getBoundingClientRect();
+      const c4Rect = c4.getBoundingClientRect();
+
+      if (centerSlice) {
+        centerSlice.style.top = `${bRect.bottom}px`;
+      }
+
+      const cx = bRect.left + bRect.width / 2 - gRect.left;
+      const cy = bRect.top + bRect.height / 2 - gRect.top;
+      const r = bRect.width / 2;
+
+      const p1x = Math.round(c1Rect.right - gRect.left);
+      const p1y = Math.round(c1Rect.top + c1Rect.height / 2 - gRect.top);
+
+      const p2x = Math.round(c2Rect.right - gRect.left);
+      const p2y = Math.round(c2Rect.top + c2Rect.height / 2 - gRect.top);
+
+      const p3x = Math.round(c3Rect.left - gRect.left);
+      const p3y = Math.round(c3Rect.top + c3Rect.height / 2 - gRect.top);
+
+      const p4x = Math.round(c4Rect.left - gRect.left);
+      const p4y = Math.round(c4Rect.top + c4Rect.height / 2 - gRect.top);
+
+      const cos45 = 0.7071;
+      const rim1x = Math.round(cx - r * cos45);
+      const rim1y = Math.round(cy - r * cos45);
+
+      const rim2x = Math.round(cx - r * cos45);
+      const rim2y = Math.round(cy + r * cos45);
+
+      const rim3x = Math.round(cx + r * cos45);
+      const rim3y = Math.round(cy - r * cos45);
+
+      const rim4x = Math.round(cx + r * cos45);
+      const rim4y = Math.round(cy + r * cos45);
+
+      const midLeftX = Math.round((p1x + rim1x) / 2);
+      const midRightX = Math.round((p3x + rim3x) / 2);
+
+      svg.setAttribute('viewBox', `0 0 ${Math.round(gRect.width)} ${Math.round(gRect.height)}`);
+
+      svg.innerHTML = `
+        <path d="M ${p1x},${p1y} L ${midLeftX},${p1y} L ${rim1x},${rim1y}" fill="none" stroke="#A86543" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="${p1x}" cy="${p1y}" r="3.5" fill="#A86543" />
+        <circle cx="${midLeftX}" cy="${p1y}" r="3" fill="#A86543" />
+        <circle cx="${rim1x}" cy="${rim1y}" r="4" fill="#A86543" />
+
+        <path d="M ${p2x},${p2y} L ${midLeftX},${p2y} L ${rim2x},${rim2y}" fill="none" stroke="#A86543" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="${p2x}" cy="${p2y}" r="3.5" fill="#A86543" />
+        <circle cx="${midLeftX}" cy="${p2y}" r="3" fill="#A86543" />
+        <circle cx="${rim2x}" cy="${rim2y}" r="4" fill="#A86543" />
+
+        <path d="M ${p3x},${p3y} L ${midRightX},${p3y} L ${rim3x},${rim3y}" fill="none" stroke="#A86543" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="${p3x}" cy="${p3y}" r="3.5" fill="#A86543" />
+        <circle cx="${midRightX}" cy="${p3y}" r="3" fill="#A86543" />
+        <circle cx="${rim3x}" cy="${rim3y}" r="4" fill="#A86543" />
+
+        <path d="M ${p4x},${p4y} L ${midRightX},${p4y} L ${rim4x},${rim4y}" fill="none" stroke="#A86543" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="${p4x}" cy="${p4y}" r="3.5" fill="#A86543" />
+        <circle cx="${midRightX}" cy="${p4y}" r="3" fill="#A86543" />
+        <circle cx="${rim4x}" cy="${rim4y}" r="4" fill="#A86543" />
+
+        <circle cx="${cx}" cy="${Math.round(cy - r - 12)}" r="3.5" fill="#A86543" />
+        <line x1="${cx}" y1="${Math.round(cy - r - 12)}" x2="${cx}" y2="${Math.round(cy - r)}" stroke="#A86543" stroke-width="1.8" />
+
+        <circle cx="${cx}" cy="${Math.round(cy + r + 12)}" r="3.5" fill="#1A3A2B" />
+        <line x1="${cx}" y1="${Math.round(cy + r)}" x2="${cx}" y2="${Math.round(cy + r + 12)}" stroke="#1A3A2B" stroke-width="1.8" />
+      `;
+    }
+
+    window.addEventListener('load', () => {
+      setTimeout(updateLandingCardConnections, 100);
+      setTimeout(updateLandingCardConnections, 500);
+    });
+    window.addEventListener('resize', updateLandingCardConnections);
+  </script>
+
+</body>
+</html>
