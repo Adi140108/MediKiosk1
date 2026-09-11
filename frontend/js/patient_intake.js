@@ -296,10 +296,7 @@ const PatientIntake = {
       console.warn("Step indicator notice:", e);
     }
 
-    try {
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (e) {}
-
     if (this.stepSpeechTimer) {
       clearTimeout(this.stepSpeechTimer);
       this.stepSpeechTimer = null;
@@ -995,11 +992,6 @@ const PatientIntake = {
     await this.startCameraStream();
   },
 
-  async switchCamera() {
-    this._cameraFacingMode = (this._cameraFacingMode === "environment") ? "user" : "environment";
-    await this._startCameraStream();
-  },
-
   capturePhotoFromWebcam() {
     const video = document.getElementById("camera-video-feed");
     const canvas = document.getElementById("camera-canvas");
@@ -1472,11 +1464,23 @@ const PatientIntake = {
 
   speakCurrentQuestion() {
     if (this.currentQuestionText) {
-      SpeechManager.speakText(this.currentQuestionText, this.language, () => {
-        SpeechManager.activeTargetInputId = 'patient-answer-input';
-        SpeechManager.activeTargetBtnId = 'btn-mic-toggle';
-        SpeechManager.startListeningWithSilenceTimeout(4000);
-      });
+      if (typeof SpeechManager !== 'undefined') {
+        if (SpeechManager.isSpeaking && !SpeechManager.isMuted) {
+          SpeechManager.isMuted = true;
+          try { localStorage.setItem('medikiosk_muted', 'true'); } catch(e) {}
+          SpeechManager.stopAllAudio();
+          SpeechManager.updateButtonStates('muted');
+        } else {
+          SpeechManager.isMuted = false;
+          try { localStorage.setItem('medikiosk_muted', 'false'); } catch(e) {}
+          SpeechManager.updateButtonStates('idle');
+          SpeechManager.speakText(this.currentQuestionText, this.language, () => {
+            SpeechManager.activeTargetInputId = 'patient-answer-input';
+            SpeechManager.activeTargetBtnId = 'btn-mic-toggle';
+            SpeechManager.startListeningWithSilenceTimeout(4000);
+          });
+        }
+      }
     }
   },
 

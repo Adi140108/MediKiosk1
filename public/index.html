@@ -44,6 +44,7 @@
       }
       var sec = document.getElementById('section-patient');
       if (sec) { sec.style.display = 'block'; sec.classList.add('active'); }
+      
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     window.goToStep = goToStep;
@@ -90,11 +91,9 @@
     <div class="nav-actions" style="display:flex; align-items:center; gap:12px;">
       <!-- Global Audio Mute / Sound Toggle Pill -->
       <div class="audio-mute-nav-pill" id="navbar-audio-toggle" onclick="SpeechManager.toggleGlobalMute()" title="Sound ON — Tap to Mute Audio">
-        <span class="live-dot-beacon" id="audio-pill-dot" style="background:#10B981;"></span>
         <span class="audio-pill-icon" id="navbar-audio-icon">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
         </span>
-        <span id="navbar-audio-label">SOUND ON</span>
       </div>
 
       <!-- Staff OPD Mode Switcher Pill -->
@@ -115,23 +114,6 @@
         </svg>
       </div>
 
-      <div class="lang-pill-indicator" onclick="PatientIntake.goToStep(2)" title="Tap to Select / Change Language">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="2" y1="12" x2="22" y2="12"></line>
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-        </svg>
-        <span id="current-lang-pill">EN</span>
-      </div>
-          <!-- Single Universal Audio Guidance / Mute Toggle (Prominent) -->
-      <button id="navbar-audio-toggle" class="nav-audio-pill" onclick="SpeechManager.toggleMute()" title="Toggle Voice Guidance" type="button" aria-label="Toggle Voice Guidance">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-        </svg>
-        <span>Voice On</span>
-      </button>
     </div>
   </nav>
 
@@ -316,12 +298,12 @@
           </div>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2.25rem; flex-wrap:wrap; gap:1rem;">
-          <button class="btn-secondary-action" onclick="PatientIntake.goToStep(1)">
-            ← Back to Welcome
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2.25rem; gap:1rem;">
+          <button type="button" class="btn-secondary-action" onclick="PatientIntake.goToStep(1)" style="flex:1; justify-content:center; padding:0.85rem 0.5rem;">
+            ← Back
           </button>
-          <button id="step2-continue-btn" class="btn-primary-action" onclick="PatientIntake.goToStep(3)">
-            <span data-i18n="continue_btn">Continue to Consent</span> →
+          <button type="button" id="step2-continue-btn" class="btn-primary-action" onclick="PatientIntake.goToStep(3)" style="flex:1; justify-content:center; padding:0.85rem 0.5rem;">
+            <span data-i18n="continue_btn">Continue</span> →
           </button>
         </div>
       </div>

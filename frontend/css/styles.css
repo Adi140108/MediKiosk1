@@ -756,7 +756,6 @@ img {
     justify-content: flex-start;
   }
 }
-}
 
 .hero-main-card::before {
   content: '';
@@ -827,6 +826,7 @@ img {
 .hero-brand-gradient {
   background: linear-gradient(135deg, #0D9488 0%, #0369A1 50%, #6366F1 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;
 }
@@ -1152,16 +1152,14 @@ img {
 .audio-mute-nav-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 0.32rem 0.85rem;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   background: #F0FDFA;
   border: 1.5px solid #99F6E4;
   color: #0F766E;
-  border-radius: var(--radius-pill);
-  font-family: 'Outfit', sans-serif;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  border-radius: 50%;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 2px 6px rgba(13, 148, 136, 0.08);
@@ -2737,8 +2735,9 @@ img {
   }
 
   .opd-mode-pill {
-    padding: 0.25rem 0.6rem !important;
-    font-size: 0.75rem !important;
+    padding: 0.15rem 0.4rem !important;
+    font-size: 0.65rem !important;
+    gap: 0.25rem !important;
   }
 
   .lang-pill-indicator {
@@ -2748,10 +2747,16 @@ img {
 
   .safety-top-banner {
     flex-direction: column !important;
-    gap: 0.35rem !important;
-    padding: 0.45rem 0.75rem !important;
-    font-size: 0.72rem !important;
+    gap: 0.25rem !important;
+    padding: 0.35rem 0.5rem !important;
+    font-size: 0.65rem !important;
     text-align: center !important;
+  }
+
+  .physician-loop-pill {
+    padding: 0.2rem 0.6rem !important;
+    font-size: 0.6rem !important;
+    gap: 0.3rem !important;
   }
 
   /* Hero Section Mobile Polish */
